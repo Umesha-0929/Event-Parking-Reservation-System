@@ -1,29 +1,22 @@
+using SEVPMS.Api.Klegar;
 using SEVPMS.Api.Middleware;
 using SEVPMS.Infrastructure;
 using SEVPMS.Realtime;
 using SEVPMS.Realtime.Hubs;
-
 var builder = WebApplication.CreateBuilder(args);
-
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddRealtime();
-
+builder.Services.AddKlegarBackend();
 var app = builder.Build();
-
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
 app.UseHttpsRedirection();
 app.UseAuthorization();
-
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapHub<EventHub>("/hubs/events");
-
 app.Run();
-
 public partial class Program;
