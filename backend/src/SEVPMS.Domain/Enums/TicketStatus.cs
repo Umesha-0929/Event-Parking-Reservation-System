@@ -1,3 +1,2 @@
 namespace SEVPMS.Domain.Enums;
-
-public enum TicketStatus { Active, CheckedIn, Cancelled }
+public enum TicketStatus { Active, CheckedIn, Cancelled, Voided }
