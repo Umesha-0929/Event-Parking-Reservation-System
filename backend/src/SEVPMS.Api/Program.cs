@@ -1,19 +1,110 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using SEVPMS.Api.Middleware;
 using SEVPMS.Infrastructure;
 using SEVPMS.Realtime;
 using SEVPMS.Realtime.Hubs;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition(
+        "Bearer",
+        new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description =
+                "Enter your JWT access token."
+        });
 
-builder.Services.AddInfrastructure(builder.Configuration);
+    options.AddSecurityRequirement(
+        new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference =
+                        new OpenApiReference
+                        {
+                            Type =
+                                ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                },
+                Array.Empty<string>()
+            }
+        });
+});
+
+// =============================================
+// JWT Authentication
+// =============================================
+
+var jwtIssuer =
+    builder.Configuration["Jwt:Issuer"]
+    ?? throw new InvalidOperationException(
+        "JWT issuer is not configured.");
+
+var jwtAudience =
+    builder.Configuration["Jwt:Audience"]
+    ?? throw new InvalidOperationException(
+        "JWT audience is not configured.");
+
+var jwtKey =
+    builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException(
+        "JWT signing key is not configured.");
+
+builder.Services
+    .AddAuthentication(
+        JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwtIssuer,
+
+                ValidateAudience = true,
+                ValidAudience = jwtAudience,
+
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtKey)),
+
+                ValidateLifetime = true,
+
+                ClockSkew = TimeSpan.FromSeconds(30)
+            };
+    });
+
+builder.Services.AddAuthorization();
+
+// =============================================
+// Project Services
+// =============================================
+
+builder.Services.AddInfrastructure(
+    builder.Configuration);
+
 builder.Services.AddRealtime();
 
 var app = builder.Build();
+
+// =============================================
+// Swagger
+// =============================================
 
 if (app.Environment.IsDevelopment())
 {
@@ -21,15 +112,30 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// =============================================
+// Middleware
+// =============================================
+
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
+
+// IMPORTANT: Authentication first
+app.UseAuthentication();
 app.UseAuthorization();
 
+// =============================================
+// Endpoints
+// =============================================
+
 app.MapControllers();
-app.MapHub<NotificationHub>("/hubs/notifications");
-app.MapHub<EventHub>("/hubs/events");
+
+app.MapHub<NotificationHub>(
+    "/hubs/notifications");
+
+app.MapHub<EventHub>(
+    "/hubs/events");
 
 app.Run();
 
