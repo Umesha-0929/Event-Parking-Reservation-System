@@ -1,11 +1,13 @@
 using SEVPMS.Application.Features.Users.DTOs;
 using SEVPMS.Application.Features.Users.Interfaces;
 using SEVPMS.Application.Interfaces.Repositories;
+using SEVPMS.Application.Features.Auth.Interfaces;
 
 namespace SEVPMS.Application.Features.Users.Services;
 
 public sealed class UserService(
-    IUserRepository userRepository)
+    IUserRepository userRepository,
+    IPasswordHasher passwordHasher)
     : IUserService
 {   
     public async Task<UserProfileResponse> GetProfileAsync(
@@ -89,5 +91,81 @@ public sealed class UserService(
             PhoneNumber = user.PhoneNumber,
             Role = user.Role
         };
+    }
+
+    public async Task ChangePasswordAsync(
+        Guid userId,
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (string.IsNullOrWhiteSpace(
+            request.CurrentPassword))
+        {
+            throw new ArgumentException(
+                "Current password is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(
+            request.NewPassword))
+        {
+            throw new ArgumentException(
+                "New password is required.");
+        }
+
+        if (request.NewPassword.Length < 8)
+        {
+            throw new ArgumentException(
+                "New password must be at least 8 characters.");
+        }
+
+        if (request.CurrentPassword ==
+            request.NewPassword)
+        {
+            throw new ArgumentException(
+                "New password must be different from current password.");
+        }
+
+        var user =
+            await userRepository.GetByIdAsync(
+                userId,
+                cancellationToken);
+
+        if (user is null)
+        {
+            throw new InvalidOperationException(
+                "User account was not found.");
+        }
+
+        var isCurrentPasswordValid =
+            passwordHasher.VerifyPassword(
+            user.PasswordHash,
+            request.CurrentPassword);
+
+        if (!isCurrentPasswordValid)
+        {
+            throw new UnauthorizedAccessException(
+                "Current password is incorrect.");
+        }
+
+        var changedAtUtc =
+            DateTime.UtcNow;
+
+        user.PasswordHash =
+            passwordHasher.HashPassword(
+                request.NewPassword);
+
+        user.UpdatedAtUtc =
+            changedAtUtc;
+
+        await userRepository
+            .RevokeActiveRefreshTokensAsync(
+                userId,
+                changedAtUtc,
+                cancellationToken);
+
+        await userRepository.SaveChangesAsync(
+            cancellationToken);
     }
 }

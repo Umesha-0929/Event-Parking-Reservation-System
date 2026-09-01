@@ -12,4 +12,9 @@ public interface IUserService
         Guid userId,
         UpdateProfileRequest request,
         CancellationToken cancellationToken = default);
+    
+    Task ChangePasswordAsync(
+        Guid userId,
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken = default);
 }

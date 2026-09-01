@@ -17,7 +17,7 @@ public sealed class UserRepository(
                 x => x.Id == userId,
                 cancellationToken);
     }
-    
+
     public Task<User?> GetByNormalizedEmailAsync(
         string normalizedEmail,
         CancellationToken cancellationToken = default)
@@ -62,5 +62,25 @@ public sealed class UserRepository(
         await dbContext.RefreshTokens.AddAsync(
             refreshToken,
             cancellationToken);
+    }
+
+    public async Task RevokeActiveRefreshTokensAsync(
+        Guid userId,
+        DateTime revokedAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var refreshTokens =
+            await dbContext.RefreshTokens
+                .Where(
+                    x => x.UserId == userId &&
+                        x.RevokedAtUtc == null &&
+                        x.ExpiresAtUtc > revokedAtUtc)
+                .ToListAsync(cancellationToken);
+
+        foreach (var refreshToken in refreshTokens)
+        {
+            refreshToken.RevokedAtUtc =
+                revokedAtUtc;
+        }
     }
 }

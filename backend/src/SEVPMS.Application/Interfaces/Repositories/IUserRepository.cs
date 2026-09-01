@@ -26,4 +26,9 @@ public interface IUserRepository
 
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);
+
+    Task RevokeActiveRefreshTokensAsync(
+        Guid userId,
+        DateTime revokedAtUtc,
+        CancellationToken cancellationToken = default);
 }

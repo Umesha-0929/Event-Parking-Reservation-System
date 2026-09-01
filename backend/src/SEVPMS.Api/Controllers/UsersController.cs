@@ -67,4 +67,28 @@ public sealed class UsersController(
 
         return Ok(response);
     }
+
+    [HttpPut("me/password")]
+    public async Task<IActionResult> ChangePassword(
+        [FromBody] ChangePasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userIdValue =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(
+            userIdValue,
+            out var userId))
+        {
+            return Unauthorized();
+        }
+
+        await userService.ChangePasswordAsync(
+            userId,
+            request,
+            cancellationToken);
+
+        return NoContent();
+    }
 }
