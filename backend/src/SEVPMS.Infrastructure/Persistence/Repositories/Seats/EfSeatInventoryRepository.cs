@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using Microsoft.EntityFrameworkCore;
 using SEVPMS.Application.Features.Seats.Interfaces;
 using SEVPMS.Domain.Entities.Seats;
@@ -75,24 +75,80 @@ public sealed class EfSeatInventoryRepository(SEVPMSDbContext db) : ISeatInvento
         await db.SaveChangesAsync(cancellationToken); return seat;
     }
 
-    public async Task<SeatViewAsset?> GetSeatViewAsync(Guid eventId, Guid seatId, CancellationToken cancellationToken = default)
+    public async Task<SeatViewAsset?> GetSeatViewAsync(
+        Guid eventId,
+        Guid seatId,
+        CancellationToken cancellationToken = default)
     {
-        var seat = await db.Set<Seat>().AsNoTracking().FirstOrDefaultAsync(s => s.Id == seatId && s.EventId == eventId, cancellationToken);
-        if (seat is null) return null;
+        var seat = await db.Set<Seat>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.Id == seatId &&
+                     x.EventId == eventId,
+                cancellationToken);
+
+        if (seat is null)
+            return null;
+
+        // 1. Explicit asset assigned directly to this seat.
         if (seat.SeatViewAssetId.HasValue)
         {
-            var direct = await db.Set<SeatViewAsset>().AsNoTracking().FirstOrDefaultAsync(a => a.Id == seat.SeatViewAssetId && a.EventId == eventId, cancellationToken);
-            if (direct is not null) return direct;
-        }
-        var exact = await db.Set<SeatViewAsset>().AsNoTracking().FirstOrDefaultAsync(a => a.EventId == eventId && a.SeatId == seatId, cancellationToken);
-        return exact ?? await db.Set<SeatViewAsset>().AsNoTracking().Where(a => a.EventId == eventId && a.SectionId == seat.SectionId && a.SeatId == null).OrderByDescending(a => a.UpdatedAtUtc ?? a.CreatedAtUtc).FirstOrDefaultAsync(cancellationToken);
-    }
+            var direct = await db.Set<SeatViewAsset>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(
+                    x => x.Id == seat.SeatViewAssetId.Value &&
+                         x.EventId == eventId,
+                    cancellationToken);
 
+            if (direct is not null)
+                return direct;
+        }
+
+        // 2. Asset mapped specifically to this seat.
+        var seatView = await db.Set<SeatViewAsset>()
+            .AsNoTracking()
+            .Where(x =>
+                x.EventId == eventId &&
+                x.SeatId == seatId)
+            .OrderByDescending(x => x.IsRepresentative)
+            .ThenByDescending(x => x.UpdatedAtUtc ?? x.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (seatView is not null)
+            return seatView;
+
+        // 3. Shared panorama mapped to this row inside this section.
+        var rowView = await db.Set<SeatViewAsset>()
+            .AsNoTracking()
+            .Where(x =>
+                x.EventId == eventId &&
+                x.SectionId == seat.SectionId &&
+                x.RowLabel == seat.RowLabel &&
+                x.SeatId == null)
+            .OrderByDescending(x => x.IsRepresentative)
+            .ThenByDescending(x => x.UpdatedAtUtc ?? x.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (rowView is not null)
+            return rowView;
+
+        // 4. Representative panorama for the entire section.
+        return await db.Set<SeatViewAsset>()
+            .AsNoTracking()
+            .Where(x =>
+                x.EventId == eventId &&
+                x.SectionId == seat.SectionId &&
+                x.RowLabel == null &&
+                x.SeatId == null)
+            .OrderByDescending(x => x.IsRepresentative)
+            .ThenByDescending(x => x.UpdatedAtUtc ?? x.CreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
     public async Task<SeatViewAsset> UpsertSeatViewAsync(Guid eventId, SeatViewAsset asset, CancellationToken cancellationToken = default)
     {
         var existing = await db.Set<SeatViewAsset>().FirstOrDefaultAsync(x => x.Id == asset.Id, cancellationToken);
         if (existing is null) { asset.EventId = eventId; db.Set<SeatViewAsset>().Add(asset); }
-        else { if (existing.EventId != eventId) throw new InvalidOperationException("Seat view belongs to another event."); existing.SectionId = asset.SectionId; existing.SeatId = asset.SeatId; existing.MediaUrl = asset.MediaUrl; existing.ViewerType = asset.ViewerType; existing.DefaultYaw = asset.DefaultYaw; existing.DefaultPitch = asset.DefaultPitch; existing.DefaultFov = asset.DefaultFov; existing.IsRepresentative = asset.IsRepresentative; existing.UpdatedAtUtc = DateTime.UtcNow; asset = existing; }
+        else { if (existing.EventId != eventId) throw new InvalidOperationException("Seat view belongs to another event."); existing.SectionId = asset.SectionId; existing.RowLabel = asset.RowLabel; existing.SeatId = asset.SeatId; existing.MediaUrl = asset.MediaUrl; existing.ViewerType = asset.ViewerType; existing.DefaultYaw = asset.DefaultYaw; existing.DefaultPitch = asset.DefaultPitch; existing.DefaultFov = asset.DefaultFov; existing.IsRepresentative = asset.IsRepresentative; existing.UpdatedAtUtc = DateTime.UtcNow; asset = existing; }
         await db.SaveChangesAsync(cancellationToken); return asset;
     }
 
@@ -104,3 +160,4 @@ public sealed class EfSeatInventoryRepository(SEVPMSDbContext db) : ISeatInvento
         await db.SaveChangesAsync(ct);
     }
 }
+
