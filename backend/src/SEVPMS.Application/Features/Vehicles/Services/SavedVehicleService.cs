@@ -1,5 +1,6 @@
 using SEVPMS.Application.Features.Vehicles.DTOs;
 using SEVPMS.Application.Features.Vehicles.Interfaces;
+using SEVPMS.Application.Features.Vehicles.Validators;
 using SEVPMS.Domain.Entities.Vehicles;
 
 namespace SEVPMS.Application.Features.Vehicles.Services;
@@ -42,6 +43,8 @@ public sealed class SavedVehicleService(
         CreateSavedVehicleRequest request,
         CancellationToken cancellationToken = default)
     {
+        SavedVehicleValidator.Validate(request);
+
         var vehicle = new SavedVehicle
         {
             UserId = userId,
@@ -63,6 +66,8 @@ public sealed class SavedVehicleService(
         UpdateSavedVehicleRequest request,
         CancellationToken cancellationToken = default)
     {
+        SavedVehicleValidator.Validate(request);
+
         var vehicle = await repository.GetByIdAsync(
             vehicleId,
             cancellationToken);
