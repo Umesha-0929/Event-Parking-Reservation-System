@@ -12,11 +12,6 @@ public interface ISavedVehicleRepository
         Guid vehicleId,
         CancellationToken cancellationToken = default);
 
-    Task<SavedVehicle?> GetByRegistrationNoAsync(
-        Guid userId,
-        string registrationNo,
-        CancellationToken cancellationToken = default);
-
     Task AddAsync(
         SavedVehicle vehicle,
         CancellationToken cancellationToken = default);
