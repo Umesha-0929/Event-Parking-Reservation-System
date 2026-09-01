@@ -14,11 +14,13 @@ public static class KlegarServiceCollectionExtensions
         services.AddScoped<ISeatInventoryRepository, EfSeatInventoryRepository>();
         services.AddScoped<ISeatingLayoutRepository, EfSeatingLayoutRepository>(); services.AddScoped<ITicketRepository, EfTicketRepository>();
         services.AddScoped<ISeatService, SeatService>();
-        services.AddScoped<ISeatingLayoutService, SeatingLayoutService>(); services.AddScoped<ITicketService, TicketService>();
+        services.AddScoped<ISeatingLayoutService, SeatingLayoutService>();
+        services.AddScoped<ISeatTicketFulfillmentService, SeatTicketFulfillmentService>(); services.AddScoped<ITicketService, TicketService>();
         services.AddSingleton<ITicketQrTokenService, HmacTicketQrTokenService>();
         services.AddScoped<KlegarRealtimeNotifier>(); services.AddScoped<ISeatRealtimeNotifier>(sp => sp.GetRequiredService<KlegarRealtimeNotifier>()); services.AddScoped<ITicketRealtimeNotifier>(sp => sp.GetRequiredService<KlegarRealtimeNotifier>());
         services.AddScoped<RequestUserResolver>();
         return services;
     }
 }
+
 
