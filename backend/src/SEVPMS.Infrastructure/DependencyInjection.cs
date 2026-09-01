@@ -22,7 +22,8 @@ public static class DependencyInjection
     {
         var connectionString =
             configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
+            ?? throw new InvalidOperationException(
+                "Connection string 'DefaultConnection' was not found.");
 
         services.AddDbContext<SEVPMSDbContext>(options =>
             options.UseSqlServer(connectionString));
@@ -39,10 +40,14 @@ public static class DependencyInjection
         services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
 
         services.AddScoped<IAuthService, AuthService>();
+
         // Development-safe provider implementations.
         services.AddScoped<IPaymentProvider, MockPaymentProvider>();
         services.AddScoped<ISmsSender, ConsoleSmsSender>();
         services.AddScoped<IEmailSender, ConsoleEmailSender>();
+
+        services.AddVehicleModule();
+        services.AddParkingModule();
 
         return services;
     }
