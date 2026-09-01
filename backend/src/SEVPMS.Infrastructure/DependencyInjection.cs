@@ -14,6 +14,7 @@ using SEVPMS.Infrastructure.Providers.Sms;
 using SEVPMS.Application.Features.Auth.Interfaces;
 using SEVPMS.Infrastructure.Identity;
 
+
 namespace SEVPMS.Infrastructure;
 
 public static class DependencyInjection
@@ -43,6 +44,8 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
 
         services.AddScoped<IUserService, UserService>();
+
+        services.AddScoped<IAdminUserService, AdminUserService>();
         // Development-safe provider implementations.
         services.AddScoped<IPaymentProvider, MockPaymentProvider>();
         services.AddScoped<ISmsSender, ConsoleSmsSender>();

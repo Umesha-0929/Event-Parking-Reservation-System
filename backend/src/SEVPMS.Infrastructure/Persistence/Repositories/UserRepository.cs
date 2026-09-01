@@ -8,6 +8,15 @@ public sealed class UserRepository(
     SEVPMSDbContext dbContext)
     : IUserRepository
 {
+    public async Task<IReadOnlyList<User>> GetAllAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Users
+            .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
+
     public Task<User?> GetByIdAsync(
         Guid userId,
         CancellationToken cancellationToken = default)

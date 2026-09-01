@@ -4,6 +4,9 @@ namespace SEVPMS.Application.Interfaces.Repositories;
 
 public interface IUserRepository
 {
+    Task<IReadOnlyList<User>> GetAllAsync(
+        CancellationToken cancellationToken = default);
+
     Task<User?> GetByIdAsync(
         Guid userId,
         CancellationToken cancellationToken = default);
