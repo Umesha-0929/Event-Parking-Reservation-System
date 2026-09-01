@@ -1,3 +1,4 @@
+using Xunit;
 namespace SEVPMS.IntegrationTests;
 
 public sealed class SmokeTests
