@@ -90,8 +90,11 @@ public sealed class SeatRepositoryConcurrencyTests
     private static Seat NewSeat(Guid eventId) => new()
     {
         EventId = eventId,
+        SeatingLayoutId = Guid.NewGuid(),
         SectionId = Guid.NewGuid(),
         RowLabel = "A",
+        RowNumber = 1,
+        ColumnNumber = 1,
         SeatNumber = "1",
         Status = SeatStatus.Available
     };
@@ -107,8 +110,12 @@ public sealed class SeatRepositoryConcurrencyTests
                 "CreatedAtUtc",
                 "UpdatedAtUtc",
                 "EventId",
+                "SeatingLayoutId",
                 "SectionId",
+                "SeatCategoryId",
                 "RowLabel",
+                "RowNumber",
+                "ColumnNumber",
                 "SeatNumber",
                 "X",
                 "Y",
@@ -124,8 +131,12 @@ public sealed class SeatRepositoryConcurrencyTests
                 {seat.CreatedAtUtc},
                 NULL,
                 {seat.EventId},
+                {seat.SeatingLayoutId},
                 {seat.SectionId},
+                NULL,
                 {seat.RowLabel},
+                {seat.RowNumber},
+                {seat.ColumnNumber},
                 {seat.SeatNumber},
                 {seat.X},
                 {seat.Y},
