@@ -1,4 +1,4 @@
-using SEVPMS.Application.Features.Seats.DTOs;
+﻿using SEVPMS.Application.Features.Seats.DTOs;
 using SEVPMS.Application.Features.Seats.Interfaces;
 using SEVPMS.Domain.Entities.Seats;
 using SEVPMS.Domain.Enums;
@@ -65,8 +65,8 @@ public sealed class SeatService(ISeatInventoryRepository repository, ISeatRealti
     public async Task<SeatViewAssetDto> UpsertSeatViewAsync(Guid eventId, UpsertSeatViewAssetRequest request, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(request.MediaUrl)) throw new ArgumentException("Media URL is required.");
-        if (request.SectionId is null && request.SeatId is null) throw new ArgumentException("Map the view to a section or seat.");
-        var asset = new SeatViewAsset { Id = request.AssetId ?? Guid.NewGuid(), EventId = eventId, SectionId = request.SectionId, SeatId = request.SeatId, MediaUrl = request.MediaUrl.Trim(), ViewerType = string.IsNullOrWhiteSpace(request.ViewerType) ? "panorama" : request.ViewerType.Trim(), DefaultYaw = request.DefaultYaw, DefaultPitch = request.DefaultPitch, DefaultFov = request.DefaultFov, IsRepresentative = request.IsRepresentative };
+        if (request.SectionId is null && string.IsNullOrWhiteSpace(request.RowLabel) && request.SeatId is null) throw new ArgumentException("Map the view to a seat, row or section.");
+        var asset = new SeatViewAsset { Id = request.Id ?? Guid.NewGuid(), EventId = eventId, SectionId = request.SectionId, RowLabel = string.IsNullOrWhiteSpace(request.RowLabel) ? null : request.RowLabel.Trim().ToUpperInvariant(), SeatId = request.SeatId, MediaUrl = request.MediaUrl.Trim(), ViewerType = string.IsNullOrWhiteSpace(request.ViewerType) ? "panorama" : request.ViewerType.Trim(), DefaultYaw = request.DefaultYaw, DefaultPitch = request.DefaultPitch, DefaultFov = request.DefaultFov, IsRepresentative = request.IsRepresentative };
         return MapView(await repository.UpsertSeatViewAsync(eventId, asset, cancellationToken));
     }
 
@@ -75,6 +75,7 @@ public sealed class SeatService(ISeatInventoryRepository repository, ISeatRealti
         var state = item.Seat.Status switch { SeatStatus.Booked => "Booked", SeatStatus.Blocked => "Blocked", _ when item.ActiveHoldExpiresAtUtc.HasValue => "Held", _ => "Available" };
         return new(item.Seat.Id, item.Seat.EventId, item.Seat.SectionId, item.Seat.RowLabel, item.Seat.SeatNumber, item.Seat.X, item.Seat.Y, item.Seat.TicketTypeId, item.Seat.IsAccessible, state, item.ActiveHoldExpiresAtUtc);
     }
-    private static SeatViewAssetDto MapView(SeatViewAsset a) => new(a.Id, a.EventId, a.SectionId, a.SeatId, a.MediaUrl, a.ViewerType, a.DefaultYaw, a.DefaultPitch, a.DefaultFov, a.IsRepresentative);
+    private static SeatViewAssetDto MapView(SeatViewAsset a) => new(a.Id, a.EventId, a.SectionId, a.RowLabel, a.SeatId, a.MediaUrl, a.ViewerType, a.DefaultYaw, a.DefaultPitch, a.DefaultFov, a.IsRepresentative);
     private static SeatHoldResponse Failure(string code, string message) => new(false, null, Array.Empty<Guid>(), code, message);
 }
+
