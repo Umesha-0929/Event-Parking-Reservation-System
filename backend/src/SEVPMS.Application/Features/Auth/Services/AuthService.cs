@@ -16,6 +16,9 @@ public sealed class AuthService(
     private const int MaxFailedLoginAttempts = 5;
     private const int LockoutMinutes = 15;
 
+    // =========================================================
+    // REGISTER
+    // =========================================================
     public async Task<AuthResponse> RegisterAsync(
         RegisterRequest request,
         CancellationToken cancellationToken = default)
@@ -25,15 +28,12 @@ public sealed class AuthService(
         ValidateRegistration(request);
 
         var email = request.Email.Trim();
-
-        var normalizedEmail =
-            email.ToUpperInvariant();
+        var normalizedEmail = email.ToUpperInvariant();
 
         var existingUser =
-            await userRepository
-                .GetByNormalizedEmailAsync(
-                    normalizedEmail,
-                    cancellationToken);
+            await userRepository.GetByNormalizedEmailAsync(
+                normalizedEmail,
+                cancellationToken);
 
         if (existingUser is not null)
         {
@@ -47,12 +47,15 @@ public sealed class AuthService(
             LastName = request.LastName.Trim(),
             Email = email,
             NormalizedEmail = normalizedEmail,
+
             PhoneNumber =
                 string.IsNullOrWhiteSpace(request.PhoneNumber)
                     ? null
                     : request.PhoneNumber.Trim(),
+
             Role = request.Role,
             Status = AccountStatus.Active,
+
             PasswordHash =
                 passwordHasher.HashPassword(
                     request.Password)
@@ -61,14 +64,14 @@ public sealed class AuthService(
         var refreshToken =
             refreshTokenService.GenerateToken();
 
+        // User is new here, so adding the token through
+        // the navigation collection is safe.
         user.RefreshTokens.Add(
             new RefreshToken
             {
-                TokenHash =
-                    refreshToken.TokenHash,
-
-                ExpiresAtUtc =
-                    refreshToken.ExpiresAtUtc
+                UserId = user.Id,
+                TokenHash = refreshToken.TokenHash,
+                ExpiresAtUtc = refreshToken.ExpiresAtUtc
             });
 
         await userRepository.AddAsync(
@@ -83,11 +86,21 @@ public sealed class AuthService(
             refreshToken);
     }
 
+    // =========================================================
+    // LOGIN
+    // =========================================================
     public async Task<AuthResponse> LoginAsync(
         LoginRequest request,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        if (string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.Password))
+        {
+            throw new UnauthorizedAccessException(
+                "Invalid email or password.");
+        }
 
         var normalizedEmail =
             request.Email
@@ -95,10 +108,9 @@ public sealed class AuthService(
                 .ToUpperInvariant();
 
         var user =
-            await userRepository
-                .GetByNormalizedEmailAsync(
-                    normalizedEmail,
-                    cancellationToken);
+            await userRepository.GetByNormalizedEmailAsync(
+                normalizedEmail,
+                cancellationToken);
 
         if (user is null)
         {
@@ -108,6 +120,7 @@ public sealed class AuthService(
 
         var now = DateTime.UtcNow;
 
+        // Account lock check
         if (user.LockoutEndUtc.HasValue &&
             user.LockoutEndUtc.Value > now)
         {
@@ -115,12 +128,14 @@ public sealed class AuthService(
                 "Account is temporarily locked.");
         }
 
+        // Account status check
         if (user.Status != AccountStatus.Active)
         {
             throw new UnauthorizedAccessException(
                 "Account is not active.");
         }
 
+        // Password verification
         var passwordValid =
             passwordHasher.VerifyPassword(
                 user.PasswordHash,
@@ -145,6 +160,7 @@ public sealed class AuthService(
                 "Invalid email or password.");
         }
 
+        // Successful login
         user.FailedLoginAttempts = 0;
         user.LockoutEndUtc = null;
         user.LastLoginAtUtc = now;
@@ -152,15 +168,21 @@ public sealed class AuthService(
         var refreshToken =
             refreshTokenService.GenerateToken();
 
-        user.RefreshTokens.Add(
+        // IMPORTANT:
+        // Existing user-ku navigation collection-la direct add
+        // panna EF tracking issue varalaam.
+        // So explicit repository Add use pannrom.
+        var refreshTokenEntity =
             new RefreshToken
             {
-                TokenHash =
-                    refreshToken.TokenHash,
+                UserId = user.Id,
+                TokenHash = refreshToken.TokenHash,
+                ExpiresAtUtc = refreshToken.ExpiresAtUtc
+            };
 
-                ExpiresAtUtc =
-                    refreshToken.ExpiresAtUtc
-            });
+        await userRepository.AddRefreshTokenAsync(
+            refreshTokenEntity,
+            cancellationToken);
 
         await userRepository.SaveChangesAsync(
             cancellationToken);
@@ -170,6 +192,9 @@ public sealed class AuthService(
             refreshToken);
     }
 
+    // =========================================================
+    // REFRESH TOKEN
+    // =========================================================
     public async Task<AuthResponse> RefreshTokenAsync(
         RefreshTokenRequest request,
         CancellationToken cancellationToken = default)
@@ -183,15 +208,16 @@ public sealed class AuthService(
                 "Invalid refresh token.");
         }
 
+        // Browser sends raw refresh token.
+        // DB stores only the hash.
         var tokenHash =
             refreshTokenService.HashToken(
                 request.RefreshToken);
 
         var storedToken =
-            await userRepository
-                .GetByRefreshTokenHashAsync(
-                    tokenHash,
-                    cancellationToken);
+            await userRepository.GetByRefreshTokenHashAsync(
+                tokenHash,
+                cancellationToken);
 
         if (storedToken is null ||
             storedToken.IsRevoked ||
@@ -209,22 +235,28 @@ public sealed class AuthService(
                 "Account is not active.");
         }
 
-        // Rotate the refresh token.
+        // Revoke old refresh token
         storedToken.RevokedAtUtc =
             DateTime.UtcNow;
 
+        // Generate replacement refresh token
         var newRefreshToken =
             refreshTokenService.GenerateToken();
 
-        user.RefreshTokens.Add(
+        var newRefreshTokenEntity =
             new RefreshToken
             {
+                UserId = user.Id,
                 TokenHash =
                     newRefreshToken.TokenHash,
 
                 ExpiresAtUtc =
                     newRefreshToken.ExpiresAtUtc
-            });
+            };
+
+        await userRepository.AddRefreshTokenAsync(
+            newRefreshTokenEntity,
+            cancellationToken);
 
         await userRepository.SaveChangesAsync(
             cancellationToken);
@@ -234,21 +266,28 @@ public sealed class AuthService(
             newRefreshToken);
     }
 
+    // =========================================================
+    // CREATE AUTH RESPONSE
+    // =========================================================
     private AuthResponse CreateAuthResponse(
         User user,
         RefreshTokenResult refreshToken)
     {
         var accessToken =
-            jwtTokenService
-                .GenerateAccessToken(user);
+            jwtTokenService.GenerateAccessToken(
+                user);
 
         return new AuthResponse
         {
             UserId = user.Id,
+
             FirstName = user.FirstName,
             LastName = user.LastName,
             Email = user.Email,
+
             Role = user.Role,
+
+            TokenType = "Bearer",
 
             AccessToken =
                 accessToken.Token,
@@ -264,6 +303,9 @@ public sealed class AuthService(
         };
     }
 
+    // =========================================================
+    // REGISTER VALIDATION
+    // =========================================================
     private static void ValidateRegistration(
         RegisterRequest request)
     {
@@ -301,8 +343,8 @@ public sealed class AuthService(
                 "Password must contain at least 8 characters.");
         }
 
-        // Admin accounts must not be created
-        // through public registration.
+        // Admin account public registration-la
+        // create panna allow panna koodadhu.
         if (request.Role == UserRole.Admin)
         {
             throw new InvalidOperationException(

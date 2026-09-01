@@ -44,4 +44,13 @@ public sealed class UserRepository(
         await dbContext.SaveChangesAsync(
             cancellationToken);
     }
+
+    public async Task AddRefreshTokenAsync(
+        RefreshToken refreshToken,
+        CancellationToken cancellationToken = default)
+    {
+        await dbContext.RefreshTokens.AddAsync(
+            refreshToken,
+            cancellationToken);
+    }
 }
