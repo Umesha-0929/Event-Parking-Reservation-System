@@ -406,27 +406,92 @@ public sealed class SeatingLayoutService(
         CancellationToken cancellationToken = default)
     {
         if (eventId == Guid.Empty)
-            throw new ArgumentException("Event id is required.", nameof(eventId));
+            throw new ArgumentException(
+                "Event id is required.",
+                nameof(eventId));
 
-        var layout = await repository.GetPublishedLayoutByEventAsync(
-            eventId,
-            cancellationToken);
+        var layout =
+            await repository.GetPublishedLayoutByEventAsync(
+                eventId,
+                cancellationToken);
 
         if (layout is null)
             return null;
 
-        var sections = await repository.GetSectionsAsync(
-            layout.Id,
-            cancellationToken);
+        var sections =
+            await repository.GetSectionsAsync(
+                layout.Id,
+                cancellationToken);
 
-        var categories = await repository.GetCategoriesAsync(
-            layout.Id,
-            cancellationToken);
+        var categories =
+            await repository.GetCategoriesAsync(
+                layout.Id,
+                cancellationToken);
 
-        var seats = await seatService.GetAvailabilityAsync(
-            eventId,
-            null,
-            cancellationToken);
+        var persistedSeats =
+            await repository.GetSeatsAsync(
+                eventId,
+                cancellationToken);
+
+        var availability =
+            await seatService.GetAvailabilityAsync(
+                eventId,
+                null,
+                cancellationToken);
+
+        var availabilityBySeat =
+            availability.ToDictionary(
+                x => x.SeatId);
+
+        var categoryById =
+            categories.ToDictionary(
+                x => x.Id);
+
+        var publishedSeats =
+            persistedSeats
+                .Select(seat =>
+                {
+                    availabilityBySeat.TryGetValue(
+                        seat.Id,
+                        out var liveState);
+
+                    SeatCategory? category = null;
+
+                    if (seat.SeatCategoryId.HasValue)
+                    {
+                        categoryById.TryGetValue(
+                            seat.SeatCategoryId.Value,
+                            out category);
+                    }
+
+                    var state =
+                        liveState?.State ??
+                        seat.Status switch
+                        {
+                            SeatStatus.Booked => "Booked",
+                            SeatStatus.Blocked => "Unavailable",
+                            _ => "Available"
+                        };
+
+                    return new PublishedSeatDto(
+                        seat.Id,
+                        seat.EventId,
+                        seat.SectionId,
+                        seat.SeatCategoryId,
+                        category?.Name,
+                        category?.Code,
+                        category?.Price,
+                        seat.RowLabel,
+                        seat.RowNumber,
+                        seat.ColumnNumber,
+                        seat.SeatNumber,
+                        seat.X,
+                        seat.Y,
+                        seat.IsAccessible,
+                        state,
+                        liveState?.HeldUntilUtc);
+                })
+                .ToArray();
 
         return new PublishedSeatingLayoutDto(
             layout.Id,
@@ -446,9 +511,8 @@ public sealed class SeatingLayoutService(
                 .Where(x => x.IsActive)
                 .Select(MapCategory)
                 .ToArray(),
-            seats);
+            publishedSeats);
     }
-
     private async Task<SeatingLayout> RequireLayoutAsync(
         Guid eventId,
         CancellationToken cancellationToken)
@@ -647,3 +711,4 @@ public sealed class SeatingLayoutService(
         return new string(characters.ToArray());
     }
 }
+

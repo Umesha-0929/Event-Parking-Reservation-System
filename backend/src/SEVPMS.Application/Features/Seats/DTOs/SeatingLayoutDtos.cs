@@ -114,4 +114,23 @@ public sealed record PublishedSeatingLayoutDto(
     decimal StageHeight,
     IReadOnlyCollection<SeatSectionDto> Sections,
     IReadOnlyCollection<SeatCategoryDto> Categories,
-    IReadOnlyCollection<SeatAvailabilityDto> Seats);
+    IReadOnlyCollection<PublishedSeatDto> Seats);
+
+public sealed record PublishedSeatDto(
+    Guid SeatId,
+    Guid EventId,
+    Guid SectionId,
+    Guid? SeatCategoryId,
+    string? CategoryName,
+    string? CategoryCode,
+    decimal? Price,
+    string RowLabel,
+    int RowNumber,
+    int ColumnNumber,
+    string SeatNumber,
+    decimal X,
+    decimal Y,
+    bool IsAccessible,
+    string State,
+    DateTime? HeldUntilUtc);
+
