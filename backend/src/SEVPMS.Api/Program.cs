@@ -8,6 +8,7 @@ using SEVPMS.Realtime.Hubs;
 using Microsoft.OpenApi.Models;
 using SEVPMS.Api.Authorization;
 using SEVPMS.Domain.Enums;
+using SEVPMS.Api.Bootstrap;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -129,12 +130,11 @@ builder.Services.AddRealtime();
 
 var app = builder.Build();
 
-// =============================================
-// Swagger
-// =============================================
-
 if (app.Environment.IsDevelopment())
 {
+    await AdminBootstrapSeeder.SeedAsync(
+        app.Services,
+        app.Configuration);
     app.UseSwagger();
     app.UseSwaggerUI();
 }
