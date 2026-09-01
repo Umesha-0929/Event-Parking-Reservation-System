@@ -1,3 +1,4 @@
+﻿using Xunit;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using SEVPMS.Domain.Entities.Tickets;
@@ -27,3 +28,4 @@ public sealed class TicketRepositoryCheckInTests
         var options = new DbContextOptionsBuilder<SEVPMSDbContext>().UseSqlite(connection).Options; var db = new SEVPMSDbContext(options); await db.Database.EnsureCreatedAsync(); return db;
     }
 }
+

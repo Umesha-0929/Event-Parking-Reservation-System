@@ -1,3 +1,4 @@
+﻿using Xunit;
 using SEVPMS.Application.Features.Seats.DTOs;
 using SEVPMS.Application.Features.Seats.Interfaces;
 using SEVPMS.Application.Features.Seats.Services;
@@ -40,3 +41,4 @@ public sealed class SeatServiceTests
         public Task<SeatViewAsset> UpsertSeatViewAsync(Guid eventId, SeatViewAsset asset, CancellationToken cancellationToken = default) => Task.FromResult(asset);
     }
 }
+

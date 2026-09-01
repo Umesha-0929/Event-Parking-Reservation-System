@@ -1,3 +1,4 @@
+﻿using Xunit;
 using System.Security.Cryptography;
 using System.Text;
 using SEVPMS.Application.Features.Tickets.DTOs;
@@ -48,3 +49,4 @@ public sealed class TicketServiceTests
         public Task<bool> CancelAsync(string ticketNo, DateTime nowUtc, CancellationToken cancellationToken = default) => Task.FromResult(false);
     }
 }
+
