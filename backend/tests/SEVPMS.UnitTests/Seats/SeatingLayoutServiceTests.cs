@@ -223,6 +223,82 @@ public sealed class SeatingLayoutServiceTests
         Assert.True(published.IsPublished);
     }
 
+    [Fact]
+    public async Task GetPublishedLayout_ReturnsNullWhenLayoutIsNotPublished()
+    {
+        var repository = new FakeSeatingLayoutRepository();
+
+        var eventId = Guid.NewGuid();
+
+        await repository.AddLayoutAsync(
+            new SeatingLayout
+            {
+                EventId = eventId,
+                StageType = StageType.EndOnStage,
+                RowCount = 6,
+                ColumnCount = 10,
+                CanvasWidth = 1200,
+                CanvasHeight = 800,
+                StageWidth = 500,
+                StageHeight = 100,
+                IsPublished = false
+            });
+
+        var service = CreateService(repository);
+
+        var result = await service.GetPublishedLayoutAsync(eventId);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task PublishedLayout_CannotBeModifiedUntilUnpublished()
+    {
+        var repository = new FakeSeatingLayoutRepository();
+
+        var eventId = Guid.NewGuid();
+        var organizerId = Guid.NewGuid();
+
+        await repository.AddLayoutAsync(
+            new SeatingLayout
+            {
+                EventId = eventId,
+                StageType = StageType.InTheRoundStage,
+                RowCount = 8,
+                ColumnCount = 12,
+                CanvasWidth = 1200,
+                CanvasHeight = 800,
+                StageWidth = 400,
+                StageHeight = 400,
+                IsPublished = true,
+                PublishedAtUtc = DateTime.UtcNow
+            });
+
+        var service = CreateService(repository);
+
+        var request = new ConfigureSeatingLayoutRequest(
+            StageType.ArenaStage,
+            10,
+            14,
+            1200,
+            800,
+            300,
+            100,
+            500,
+            150);
+
+        var exception =
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => service.ConfigureLayoutAsync(
+                    eventId,
+                    organizerId,
+                    request));
+
+        Assert.Contains(
+            "Unpublish",
+            exception.Message,
+            StringComparison.OrdinalIgnoreCase);
+    }
     private static SeatingLayoutService CreateService(
         FakeSeatingLayoutRepository repository)
     {
@@ -412,3 +488,4 @@ public sealed class SeatingLayoutServiceTests
             => throw new NotSupportedException();
     }
 }
+
