@@ -6,6 +6,8 @@ using SEVPMS.Infrastructure;
 using SEVPMS.Realtime;
 using SEVPMS.Realtime.Hubs;
 using Microsoft.OpenApi.Models;
+using SEVPMS.Api.Authorization;
+using SEVPMS.Domain.Enums;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,7 +91,32 @@ builder.Services
             };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        AuthorizationPolicies.CustomerOnly,
+        policy =>
+            policy.RequireRole(
+                UserRole.Customer.ToString()));
+
+    options.AddPolicy(
+        AuthorizationPolicies.EventOrganizerOnly,
+        policy =>
+            policy.RequireRole(
+                UserRole.EventOrganizer.ToString()));
+
+    options.AddPolicy(
+        AuthorizationPolicies.VenueOwnerOnly,
+        policy =>
+            policy.RequireRole(
+                UserRole.VenueOwner.ToString()));
+
+    options.AddPolicy(
+        AuthorizationPolicies.AdminOnly,
+        policy =>
+            policy.RequireRole(
+                UserRole.Admin.ToString()));
+});
 
 // =============================================
 // Project Services
