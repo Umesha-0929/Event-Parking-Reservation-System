@@ -1,3 +1,5 @@
+using SEVPMS.Application.Features.Users.Interfaces;
+using SEVPMS.Application.Features.Users.Services;
 using SEVPMS.Application.Features.Auth.Services;
 using SEVPMS.Application.Interfaces.Repositories;
 using SEVPMS.Infrastructure.Persistence.Repositories;
@@ -39,6 +41,8 @@ public static class DependencyInjection
         services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
 
         services.AddScoped<IAuthService, AuthService>();
+
+        services.AddScoped<IUserService, UserService>();
         // Development-safe provider implementations.
         services.AddScoped<IPaymentProvider, MockPaymentProvider>();
         services.AddScoped<ISmsSender, ConsoleSmsSender>();

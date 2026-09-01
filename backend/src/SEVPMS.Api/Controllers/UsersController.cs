@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEVPMS.Application.Features.Users.DTOs;
+using SEVPMS.Application.Features.Users.Interfaces;
 using SEVPMS.Domain.Enums;
 
 namespace SEVPMS.Api.Controllers;
@@ -10,8 +11,13 @@ namespace SEVPMS.Api.Controllers;
 [ApiController]
 [Route("api/users")]
 [Authorize]
-public sealed class UsersController : ControllerBase
+public sealed class UsersController(
+    IUserService userService)
+    : ControllerBase
 {
+    // =========================================================
+    // GET CURRENT USER
+    // =========================================================
     [HttpGet("me")]
     public ActionResult<UserProfileResponse> GetMe()
     {
@@ -58,5 +64,34 @@ public sealed class UsersController : ControllerBase
                 Name = name,
                 Role = role
             });
+    }
+
+    // =========================================================
+    // UPDATE CURRENT USER PROFILE
+    // =========================================================
+    [HttpPut("me")]
+    public async Task<ActionResult<UserProfileResponse>>
+        UpdateMe(
+            [FromBody] UpdateProfileRequest request,
+            CancellationToken cancellationToken)
+    {
+        var userIdValue =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(
+            userIdValue,
+            out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var response =
+            await userService.UpdateProfileAsync(
+                userId,
+                request,
+                cancellationToken);
+
+        return Ok(response);
     }
 }

@@ -8,6 +8,16 @@ public sealed class UserRepository(
     SEVPMSDbContext dbContext)
     : IUserRepository
 {
+    public Task<User?> GetByIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        return dbContext.Users
+            .FirstOrDefaultAsync(
+                x => x.Id == userId,
+                cancellationToken);
+    }
+    
     public Task<User?> GetByNormalizedEmailAsync(
         string normalizedEmail,
         CancellationToken cancellationToken = default)
