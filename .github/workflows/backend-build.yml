@@ -1,0 +1,33 @@
+name: Backend Build
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-build.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-build.yml"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore backend/SEVPMS.sln
+
+      - name: Build
+        run: dotnet build backend/SEVPMS.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test backend/SEVPMS.sln --configuration Release --no-build
