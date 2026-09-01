@@ -7,7 +7,32 @@ namespace SEVPMS.Application.Features.Users.Services;
 public sealed class UserService(
     IUserRepository userRepository)
     : IUserService
-{
+{   
+    public async Task<UserProfileResponse> GetProfileAsync(
+    Guid userId,
+    CancellationToken cancellationToken = default)
+        {
+            var user =
+             await userRepository.GetByIdAsync(
+                userId,
+                cancellationToken);
+
+        if (user is null)
+        {
+            throw new InvalidOperationException(
+                "User account was not found.");
+        }
+
+        return new UserProfileResponse
+        {
+            UserId = user.Id,
+            Email = user.Email,
+            Name = $"{user.FirstName} {user.LastName}",
+            PhoneNumber = user.PhoneNumber,
+            Role = user.Role
+        };
+    }
+
     public async Task<UserProfileResponse> UpdateProfileAsync(
         Guid userId,
         UpdateProfileRequest request,
@@ -61,6 +86,7 @@ public sealed class UserService(
             Email = user.Email,
             Name =
                 $"{user.FirstName} {user.LastName}",
+            PhoneNumber = user.PhoneNumber,
             Role = user.Role
         };
     }

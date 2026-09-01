@@ -1,10 +1,8 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEVPMS.Application.Features.Users.DTOs;
 using SEVPMS.Application.Features.Users.Interfaces;
-using SEVPMS.Domain.Enums;
 
 namespace SEVPMS.Api.Controllers;
 
@@ -19,7 +17,8 @@ public sealed class UsersController(
     // GET CURRENT USER
     // =========================================================
     [HttpGet("me")]
-    public ActionResult<UserProfileResponse> GetMe()
+    public async Task<ActionResult<UserProfileResponse>> GetMe(
+        CancellationToken cancellationToken)
     {
         var userIdValue =
             User.FindFirstValue(
@@ -32,38 +31,12 @@ public sealed class UsersController(
             return Unauthorized();
         }
 
-        var email =
-            User.FindFirstValue(
-                JwtRegisteredClaimNames.Email)
-            ?? User.FindFirstValue(
-                ClaimTypes.Email)
-            ?? string.Empty;
+        var response =
+            await userService.GetProfileAsync(
+                userId,
+                cancellationToken);
 
-        var name =
-            User.FindFirstValue(
-                ClaimTypes.Name)
-            ?? string.Empty;
-
-        var roleValue =
-            User.FindFirstValue(
-                ClaimTypes.Role);
-
-        if (!Enum.TryParse<UserRole>(
-            roleValue,
-            true,
-            out var role))
-        {
-            return Unauthorized();
-        }
-
-        return Ok(
-            new UserProfileResponse
-            {
-                UserId = userId,
-                Email = email,
-                Name = name,
-                Role = role
-            });
+        return Ok(response);
     }
 
     // =========================================================
