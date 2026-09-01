@@ -1,3 +1,6 @@
+using SEVPMS.Application.Features.Auth.Services;
+using SEVPMS.Application.Interfaces.Repositories;
+using SEVPMS.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,6 +34,11 @@ public static class DependencyInjection
 
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
+        services.AddScoped<IUserRepository, UserRepository>();
+
+        services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
+
+        services.AddScoped<IAuthService, AuthService>();
         // Development-safe provider implementations.
         services.AddScoped<IPaymentProvider, MockPaymentProvider>();
         services.AddScoped<ISmsSender, ConsoleSmsSender>();
