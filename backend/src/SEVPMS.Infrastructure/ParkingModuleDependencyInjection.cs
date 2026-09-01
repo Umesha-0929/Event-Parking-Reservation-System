@@ -13,6 +13,9 @@ public static class ParkingModuleDependencyInjection
         services.AddScoped<IParkingRepository, ParkingRepository>();
         services.AddScoped<IParkingService, ParkingService>();
 
+        services.AddScoped<IParkingRouteRepository, ParkingRouteRepository>();
+        services.AddScoped<IParkingRouteService, ParkingRouteService>();
+
         return services;
     }
 }
