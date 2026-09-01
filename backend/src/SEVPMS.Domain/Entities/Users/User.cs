@@ -26,4 +26,10 @@ public sealed class User : AuditableEntity
     public DateTime? LockoutEndUtc { get; set; }
 
     public DateTime? LastLoginAtUtc { get; set; }
+
+    public ICollection<RefreshToken> RefreshTokens { get; set; }
+    = new List<RefreshToken>();
+
+    public ICollection<PasswordResetToken> PasswordResetTokens { get; set; }
+    = new List<PasswordResetToken>();
 }
