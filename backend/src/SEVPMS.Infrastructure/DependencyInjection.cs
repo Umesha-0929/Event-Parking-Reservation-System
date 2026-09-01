@@ -6,6 +6,8 @@ using SEVPMS.Infrastructure.Persistence;
 using SEVPMS.Infrastructure.Providers.Email;
 using SEVPMS.Infrastructure.Providers.Payments.MockPayment;
 using SEVPMS.Infrastructure.Providers.Sms;
+using SEVPMS.Application.Features.Auth.Interfaces;
+using SEVPMS.Infrastructure.Identity;
 
 namespace SEVPMS.Infrastructure;
 
@@ -21,6 +23,13 @@ public static class DependencyInjection
 
         services.AddDbContext<SEVPMSDbContext>(options =>
             options.UseSqlServer(connectionString));
+
+        services.Configure<JwtOptions>(
+            configuration.GetSection(JwtOptions.SectionName));
+
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
+
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
         // Development-safe provider implementations.
         services.AddScoped<IPaymentProvider, MockPaymentProvider>();
