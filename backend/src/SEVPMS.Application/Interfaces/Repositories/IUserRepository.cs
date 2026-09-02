@@ -4,6 +4,13 @@ namespace SEVPMS.Application.Interfaces.Repositories;
 
 public interface IUserRepository
 {
+    Task<IReadOnlyList<User>> GetAllAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<User?> GetByIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
+
     Task<User?> GetByNormalizedEmailAsync(
         string normalizedEmail,
         CancellationToken cancellationToken = default);
@@ -21,5 +28,10 @@ public interface IUserRepository
         CancellationToken cancellationToken = default);
 
     Task SaveChangesAsync(
+        CancellationToken cancellationToken = default);
+
+    Task RevokeActiveRefreshTokensAsync(
+        Guid userId,
+        DateTime revokedAtUtc,
         CancellationToken cancellationToken = default);
 }

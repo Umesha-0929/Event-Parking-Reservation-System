@@ -8,6 +8,25 @@ public sealed class UserRepository(
     SEVPMSDbContext dbContext)
     : IUserRepository
 {
+    public async Task<IReadOnlyList<User>> GetAllAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Users
+            .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<User?> GetByIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        return dbContext.Users
+            .FirstOrDefaultAsync(
+                x => x.Id == userId,
+                cancellationToken);
+    }
+
     public Task<User?> GetByNormalizedEmailAsync(
         string normalizedEmail,
         CancellationToken cancellationToken = default)
@@ -52,5 +71,25 @@ public sealed class UserRepository(
         await dbContext.RefreshTokens.AddAsync(
             refreshToken,
             cancellationToken);
+    }
+
+    public async Task RevokeActiveRefreshTokensAsync(
+        Guid userId,
+        DateTime revokedAtUtc,
+        CancellationToken cancellationToken = default)
+    {
+        var refreshTokens =
+            await dbContext.RefreshTokens
+                .Where(
+                    x => x.UserId == userId &&
+                        x.RevokedAtUtc == null &&
+                        x.ExpiresAtUtc > revokedAtUtc)
+                .ToListAsync(cancellationToken);
+
+        foreach (var refreshToken in refreshTokens)
+        {
+            refreshToken.RevokedAtUtc =
+                revokedAtUtc;
+        }
     }
 }

@@ -10,5 +10,7 @@ public sealed class UserProfileResponse
 
     public string Name { get; set; } = string.Empty;
 
+    public string? PhoneNumber { get; set; }
+
     public UserRole Role { get; set; }
 }
