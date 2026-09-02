@@ -71,10 +71,13 @@ public static class DependencyInjection
         services.AddScoped<IReceiptService, ReceiptService>();
         services.AddScoped<INotificationService, NotificationService>();
 
-        // Development-safe provider implementations.
         services.AddScoped<IPaymentProvider, MockPaymentProvider>();
         services.AddScoped<ISmsSender, ConsoleSmsSender>();
         services.AddScoped<IEmailSender, ConsoleEmailSender>();
+
+        services.AddVehicleModule();
+        services.AddParkingModule();
+        services.AddFoodModule();
 
         return services;
     }
