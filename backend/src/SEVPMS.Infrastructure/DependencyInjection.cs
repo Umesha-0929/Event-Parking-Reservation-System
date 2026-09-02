@@ -14,7 +14,6 @@ using SEVPMS.Infrastructure.Providers.Sms;
 using SEVPMS.Application.Features.Auth.Interfaces;
 using SEVPMS.Infrastructure.Identity;
 
-
 namespace SEVPMS.Infrastructure;
 
 public static class DependencyInjection
@@ -25,7 +24,8 @@ public static class DependencyInjection
     {
         var connectionString =
             configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
+            ?? throw new InvalidOperationException(
+                "Connection string 'DefaultConnection' was not found.");
 
         services.AddDbContext<SEVPMSDbContext>(options =>
             options.UseSqlServer(connectionString));
@@ -46,10 +46,14 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
 
         services.AddScoped<IAdminUserService, AdminUserService>();
-        // Development-safe provider implementations.
+
         services.AddScoped<IPaymentProvider, MockPaymentProvider>();
         services.AddScoped<ISmsSender, ConsoleSmsSender>();
         services.AddScoped<IEmailSender, ConsoleEmailSender>();
+
+        services.AddVehicleModule();
+        services.AddParkingModule();
+        services.AddFoodModule();
 
         return services;
     }
