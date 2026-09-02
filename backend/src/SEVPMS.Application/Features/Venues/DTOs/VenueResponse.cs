@@ -1,0 +1,34 @@
+namespace SEVPMS.Application.Features.Venues.DTOs;
+
+public sealed class VenueResponse
+{
+    public Guid VenueId { get; set; }
+
+    public Guid OwnerUserId { get; set; }
+
+    public string Name { get; set; } = string.Empty;
+
+    public string Description { get; set; } = string.Empty;
+
+    public string AddressLine1 { get; set; } = string.Empty;
+
+    public string? AddressLine2 { get; set; }
+
+    public string City { get; set; } = string.Empty;
+
+    public string District { get; set; } = string.Empty;
+
+    public string Country { get; set; } = string.Empty;
+
+    public int Capacity { get; set; }
+
+    public string? ContactPhone { get; set; }
+
+    public string? ContactEmail { get; set; }
+
+    public bool IsActive { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; }
+
+    public DateTime? UpdatedAtUtc { get; set; }
+}

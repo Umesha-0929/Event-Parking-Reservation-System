@@ -1,5 +1,7 @@
 using SEVPMS.Application.Features.Users.Interfaces;
 using SEVPMS.Application.Features.Users.Services;
+using SEVPMS.Application.Features.Venues.Interfaces;
+using SEVPMS.Application.Features.Venues.Services;
 using SEVPMS.Application.Features.Auth.Services;
 using SEVPMS.Application.Interfaces.Repositories;
 using SEVPMS.Infrastructure.Persistence.Repositories;
@@ -38,6 +40,10 @@ public static class DependencyInjection
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
         services.AddScoped<IUserRepository, UserRepository>();
+
+        services.AddScoped<IVenueRepository, VenueRepository>();
+
+        services.AddScoped<IVenueService, VenueService>();
 
         services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
 
