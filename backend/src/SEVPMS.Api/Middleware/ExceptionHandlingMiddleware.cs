@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using SEVPMS.Application.Common.Exceptions;
 
 namespace SEVPMS.Api.Middleware;
 
@@ -27,19 +28,25 @@ public sealed class ExceptionHandlingMiddleware(
     {
         var statusCode =
             exception switch
-            {
-                ArgumentException =>
-                    HttpStatusCode.BadRequest,
+        {
+            ArgumentException =>
+                HttpStatusCode.BadRequest,
 
-                UnauthorizedAccessException =>
-                    HttpStatusCode.Unauthorized,
+            UnauthorizedAccessException =>
+                HttpStatusCode.Unauthorized,
 
-                InvalidOperationException =>
-                    HttpStatusCode.Conflict,
+            ForbiddenAccessException =>
+                HttpStatusCode.Forbidden,
 
-                _ =>
-                    HttpStatusCode.InternalServerError
-            };
+            KeyNotFoundException =>
+                HttpStatusCode.NotFound,
+
+            InvalidOperationException =>
+                HttpStatusCode.Conflict,
+
+            _ =>
+                HttpStatusCode.InternalServerError
+        };
 
         if (statusCode ==
             HttpStatusCode.InternalServerError)

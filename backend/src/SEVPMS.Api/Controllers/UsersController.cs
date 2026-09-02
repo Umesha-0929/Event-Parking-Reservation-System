@@ -1,19 +1,24 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEVPMS.Application.Features.Users.DTOs;
-using SEVPMS.Domain.Enums;
+using SEVPMS.Application.Features.Users.Interfaces;
 
 namespace SEVPMS.Api.Controllers;
 
 [ApiController]
 [Route("api/users")]
 [Authorize]
-public sealed class UsersController : ControllerBase
+public sealed class UsersController(
+    IUserService userService)
+    : ControllerBase
 {
+    // =========================================================
+    // GET CURRENT USER
+    // =========================================================
     [HttpGet("me")]
-    public ActionResult<UserProfileResponse> GetMe()
+    public async Task<ActionResult<UserProfileResponse>> GetMe(
+        CancellationToken cancellationToken)
     {
         var userIdValue =
             User.FindFirstValue(
@@ -26,37 +31,64 @@ public sealed class UsersController : ControllerBase
             return Unauthorized();
         }
 
-        var email =
-            User.FindFirstValue(
-                JwtRegisteredClaimNames.Email)
-            ?? User.FindFirstValue(
-                ClaimTypes.Email)
-            ?? string.Empty;
+        var response =
+            await userService.GetProfileAsync(
+                userId,
+                cancellationToken);
 
-        var name =
-            User.FindFirstValue(
-                ClaimTypes.Name)
-            ?? string.Empty;
+        return Ok(response);
+    }
 
-        var roleValue =
+    // =========================================================
+    // UPDATE CURRENT USER PROFILE
+    // =========================================================
+    [HttpPut("me")]
+    public async Task<ActionResult<UserProfileResponse>>
+        UpdateMe(
+            [FromBody] UpdateProfileRequest request,
+            CancellationToken cancellationToken)
+    {
+        var userIdValue =
             User.FindFirstValue(
-                ClaimTypes.Role);
+                ClaimTypes.NameIdentifier);
 
-        if (!Enum.TryParse<UserRole>(
-            roleValue,
-            true,
-            out var role))
+        if (!Guid.TryParse(
+            userIdValue,
+            out var userId))
         {
             return Unauthorized();
         }
 
-        return Ok(
-            new UserProfileResponse
-            {
-                UserId = userId,
-                Email = email,
-                Name = name,
-                Role = role
-            });
+        var response =
+            await userService.UpdateProfileAsync(
+                userId,
+                request,
+                cancellationToken);
+
+        return Ok(response);
+    }
+
+    [HttpPut("me/password")]
+    public async Task<IActionResult> ChangePassword(
+        [FromBody] ChangePasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userIdValue =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(
+            userIdValue,
+            out var userId))
+        {
+            return Unauthorized();
+        }
+
+        await userService.ChangePasswordAsync(
+            userId,
+            request,
+            cancellationToken);
+
+        return NoContent();
     }
 }

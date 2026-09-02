@@ -1,3 +1,4 @@
+using SEVPMS.Application.Common.Exceptions;
 using SEVPMS.Application.Features.Auth.DTOs;
 using SEVPMS.Application.Features.Auth.Interfaces;
 using SEVPMS.Application.Interfaces.Repositories;
@@ -131,7 +132,7 @@ public sealed class AuthService(
         // Account status check
         if (user.Status != AccountStatus.Active)
         {
-            throw new UnauthorizedAccessException(
+            throw new ForbiddenAccessException(
                 "Account is not active.");
         }
 
@@ -231,7 +232,7 @@ public sealed class AuthService(
 
         if (user.Status != AccountStatus.Active)
         {
-            throw new UnauthorizedAccessException(
+            throw new ForbiddenAccessException(
                 "Account is not active.");
         }
 
