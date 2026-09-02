@@ -91,7 +91,7 @@ public sealed class FoodControllerTests
                     CustomerUserId = userId,
                     EventId = Guid.NewGuid(),
                     EventFoodStallId = Guid.NewGuid(),
-                    Status = "Pending",
+                    Status = "Placed",
                     FulfillmentType = "Pickup",
                     Total = 2500m,
                     CreatedAtUtc = DateTime.UtcNow
@@ -147,7 +147,7 @@ public sealed class FoodControllerTests
             CustomerUserId = userId,
             EventId = Guid.NewGuid(),
             EventFoodStallId = Guid.NewGuid(),
-            Status = "Pending",
+            Status = "Placed",
             FulfillmentType = "Pickup",
             Total = 1500m,
             CreatedAtUtc = DateTime.UtcNow
