@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SEVPMS.Domain.Entities.Users;
+using SEVPMS.Domain.Entities.Venues;
 
 namespace SEVPMS.Infrastructure.Persistence;
 
@@ -13,6 +14,8 @@ public sealed class SEVPMSDbContext(
 
     public DbSet<PasswordResetToken> PasswordResetTokens
         => Set<PasswordResetToken>();
+    
+    public DbSet<Venue> Venues => Set<Venue>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
