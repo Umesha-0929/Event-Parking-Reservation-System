@@ -1,3 +1,4 @@
+﻿using SEVPMS.Api.Klegar;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -127,6 +128,7 @@ builder.Services.AddInfrastructure(
     builder.Configuration);
 
 builder.Services.AddRealtime();
+builder.Services.AddKlegarBackend();
 
 var app = builder.Build();
 
