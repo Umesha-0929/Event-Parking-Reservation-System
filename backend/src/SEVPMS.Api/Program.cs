@@ -14,6 +14,25 @@ using SEVPMS.Api.Bootstrap;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+const string AngularDevCorsPolicy = "AngularDev";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        AngularDevCorsPolicy,
+        policy =>
+        {
+            policy
+                .WithOrigins(
+                    "http://localhost:4200",
+                    "http://localhost:4201",
+                    "http://localhost:4202")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -149,6 +168,8 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
+
+app.UseCors(AngularDevCorsPolicy);
 
 // IMPORTANT: Authentication first
 app.UseAuthentication();
