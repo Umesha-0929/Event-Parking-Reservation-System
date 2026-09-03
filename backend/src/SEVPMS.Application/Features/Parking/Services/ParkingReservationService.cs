@@ -21,13 +21,20 @@ public sealed class ParkingReservationService(
         Guid reservationId,
         CancellationToken cancellationToken = default)
     {
-        var reservation = await reservationRepository.GetByIdAsync(reservationId, cancellationToken);
+        var reservation = await reservationRepository.GetByIdAsync(
+            reservationId,
+            cancellationToken);
+
         if (reservation is null)
         {
             return null;
         }
 
-        await EnsureOwnedBookingAsync(userId, reservation.BookingId, cancellationToken);
+        await EnsureOwnedBookingAsync(
+            userId,
+            reservation.BookingId,
+            cancellationToken);
+
         return Map(reservation);
     }
 
@@ -40,24 +47,32 @@ public sealed class ParkingReservationService(
 
         if (request.BookingId == Guid.Empty)
         {
-            throw new ParkingReservationValidationException("Booking is required.");
+            throw new ParkingReservationValidationException(
+                "Booking is required.");
         }
 
         if (request.ParkingSlotId == Guid.Empty)
         {
-            throw new ParkingReservationValidationException("Parking slot is required.");
-        }
-
-        var booking = await EnsureOwnedBookingAsync(userId, request.BookingId, cancellationToken);
-        if (booking.Status != BookingStatus.Confirmed)
-        {
             throw new ParkingReservationValidationException(
-                "Parking can only be reserved for a confirmed booking.");
+                "Parking slot is required.");
         }
 
-        var existingForBooking = await reservationRepository.GetByBookingIdAsync(
+        var booking = await EnsureOwnedBookingAsync(
+            userId,
             request.BookingId,
             cancellationToken);
+
+        if (booking.Status != BookingStatus.Pending &&
+            booking.Status != BookingStatus.Confirmed)
+        {
+            throw new ParkingReservationValidationException(
+                "Parking can only be reserved for a pending or confirmed booking.");
+        }
+
+        var existingForBooking =
+            await reservationRepository.GetByBookingIdAsync(
+                request.BookingId,
+                cancellationToken);
 
         if (existingForBooking is not null &&
             existingForBooking.Status != ParkingReservationStatuses.Cancelled &&
@@ -67,26 +82,33 @@ public sealed class ParkingReservationService(
                 "This booking already has an active parking reservation.");
         }
 
-        var slot = await reservationRepository.GetParkingSlotByIdAsync(
-            request.ParkingSlotId,
-            cancellationToken)
-            ?? throw new KeyNotFoundException("Parking slot was not found.");
+        var slot =
+            await reservationRepository.GetParkingSlotByIdAsync(
+                request.ParkingSlotId,
+                cancellationToken)
+            ?? throw new KeyNotFoundException(
+                "Parking slot was not found.");
 
-        if (slot.EventId.HasValue && slot.EventId.Value != booking.EventId)
+        if (slot.EventId.HasValue &&
+            slot.EventId.Value != booking.EventId)
         {
             throw new ParkingReservationValidationException(
                 "Parking slot does not belong to the booked event.");
         }
 
-        if (!string.Equals(slot.Status, "Available", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(
+                slot.Status,
+                "Available",
+                StringComparison.OrdinalIgnoreCase))
         {
             throw new ParkingReservationValidationException(
                 "Parking slot is not available.");
         }
 
-        var activeForSlot = await reservationRepository.GetActiveByParkingSlotIdAsync(
-            slot.Id,
-            cancellationToken);
+        var activeForSlot =
+            await reservationRepository.GetActiveByParkingSlotIdAsync(
+                slot.Id,
+                cancellationToken);
 
         if (activeForSlot is not null)
         {
@@ -99,14 +121,17 @@ public sealed class ParkingReservationService(
 
         if (request.VehicleId.HasValue)
         {
-            var vehicle = await vehicleRepository.GetByIdAsync(
-                request.VehicleId.Value,
-                cancellationToken)
-                ?? throw new KeyNotFoundException("Saved vehicle was not found.");
+            var vehicle =
+                await vehicleRepository.GetByIdAsync(
+                    request.VehicleId.Value,
+                    cancellationToken)
+                ?? throw new KeyNotFoundException(
+                    "Saved vehicle was not found.");
 
             if (vehicle.UserId != userId)
             {
-                throw new ForbiddenAccessException("You do not own the selected vehicle.");
+                throw new ForbiddenAccessException(
+                    "You do not own the selected vehicle.");
             }
 
             vehicleId = vehicle.Id;
@@ -114,7 +139,10 @@ public sealed class ParkingReservationService(
         }
         else
         {
-            registration = request.VehicleRegistration?.Trim() ?? string.Empty;
+            registration =
+                request.VehicleRegistration?.Trim()
+                ?? string.Empty;
+
             if (string.IsNullOrWhiteSpace(registration))
             {
                 throw new ParkingReservationValidationException(
@@ -135,9 +163,14 @@ public sealed class ParkingReservationService(
         slot.Status = "Reserved";
         slot.UpdatedAtUtc = DateTime.UtcNow;
 
-        await reservationRepository.AddAsync(reservation, cancellationToken);
+        await reservationRepository.AddAsync(
+            reservation,
+            cancellationToken);
+
         reservationRepository.UpdateParkingSlot(slot);
-        await reservationRepository.SaveChangesAsync(cancellationToken);
+
+        await reservationRepository.SaveChangesAsync(
+            cancellationToken);
 
         return Map(reservation);
     }
@@ -183,35 +216,48 @@ public sealed class ParkingReservationService(
         Guid reservationId,
         CancellationToken cancellationToken = default)
     {
-        var reservation = await GetOwnedReservationAsync(userId, reservationId, cancellationToken);
+        var reservation = await GetOwnedReservationAsync(
+            userId,
+            reservationId,
+            cancellationToken);
 
-        if (reservation.Status == ParkingReservationStatuses.Cancelled)
+        if (reservation.Status ==
+            ParkingReservationStatuses.Cancelled)
         {
             return true;
         }
 
-        if (reservation.Status != ParkingReservationStatuses.Reserved)
+        if (reservation.Status !=
+            ParkingReservationStatuses.Reserved)
         {
             throw new ParkingReservationValidationException(
                 "Only a reserved parking reservation can be cancelled.");
         }
 
-        reservation.Status = ParkingReservationStatuses.Cancelled;
-        reservation.UpdatedAtUtc = DateTime.UtcNow;
+        reservation.Status =
+            ParkingReservationStatuses.Cancelled;
 
-        var slot = await reservationRepository.GetParkingSlotByIdAsync(
-            reservation.ParkingSlotId,
-            cancellationToken);
+        reservation.UpdatedAtUtc =
+            DateTime.UtcNow;
+
+        var slot =
+            await reservationRepository.GetParkingSlotByIdAsync(
+                reservation.ParkingSlotId,
+                cancellationToken);
 
         if (slot is not null)
         {
             slot.Status = "Available";
             slot.UpdatedAtUtc = DateTime.UtcNow;
+
             reservationRepository.UpdateParkingSlot(slot);
         }
 
         reservationRepository.Update(reservation);
-        await reservationRepository.SaveChangesAsync(cancellationToken);
+
+        await reservationRepository.SaveChangesAsync(
+            cancellationToken);
+
         return true;
     }
 
@@ -222,17 +268,32 @@ public sealed class ParkingReservationService(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var reservationId = ParseParkingPassCode(request.ParkingPassCode);
-        var action = request.Action?.Trim() ?? string.Empty;
+        var reservationId =
+            ParseParkingPassCode(
+                request.ParkingPassCode);
 
-        if (action.Equals("Enter", StringComparison.OrdinalIgnoreCase))
+        var action =
+            request.Action?.Trim()
+            ?? string.Empty;
+
+        if (action.Equals(
+                "Enter",
+                StringComparison.OrdinalIgnoreCase))
         {
-            return await MarkEnteredAsync(userId, reservationId, cancellationToken);
+            return await MarkEnteredAsync(
+                userId,
+                reservationId,
+                cancellationToken);
         }
 
-        if (action.Equals("Exit", StringComparison.OrdinalIgnoreCase))
+        if (action.Equals(
+                "Exit",
+                StringComparison.OrdinalIgnoreCase))
         {
-            return await MarkExitedAsync(userId, reservationId, cancellationToken);
+            return await MarkExitedAsync(
+                userId,
+                reservationId,
+                cancellationToken);
         }
 
         throw new ParkingReservationValidationException(
@@ -247,7 +308,11 @@ public sealed class ParkingReservationService(
         string slotStatus,
         CancellationToken cancellationToken)
     {
-        var reservation = await GetOwnedReservationAsync(userId, reservationId, cancellationToken);
+        var reservation =
+            await GetOwnedReservationAsync(
+                userId,
+                reservationId,
+                cancellationToken);
 
         if (reservation.Status == nextStatus)
         {
@@ -264,19 +329,23 @@ public sealed class ParkingReservationService(
         reservation.Status = nextStatus;
         reservation.UpdatedAtUtc = DateTime.UtcNow;
 
-        var slot = await reservationRepository.GetParkingSlotByIdAsync(
-            reservation.ParkingSlotId,
-            cancellationToken);
+        var slot =
+            await reservationRepository.GetParkingSlotByIdAsync(
+                reservation.ParkingSlotId,
+                cancellationToken);
 
         if (slot is not null)
         {
             slot.Status = slotStatus;
             slot.UpdatedAtUtc = DateTime.UtcNow;
+
             reservationRepository.UpdateParkingSlot(slot);
         }
 
         reservationRepository.Update(reservation);
-        await reservationRepository.SaveChangesAsync(cancellationToken);
+
+        await reservationRepository.SaveChangesAsync(
+            cancellationToken);
 
         return Map(reservation);
     }
@@ -286,10 +355,18 @@ public sealed class ParkingReservationService(
         Guid reservationId,
         CancellationToken cancellationToken)
     {
-        var reservation = await reservationRepository.GetByIdAsync(reservationId, cancellationToken)
-            ?? throw new KeyNotFoundException("Parking reservation was not found.");
+        var reservation =
+            await reservationRepository.GetByIdAsync(
+                reservationId,
+                cancellationToken)
+            ?? throw new KeyNotFoundException(
+                "Parking reservation was not found.");
 
-        await EnsureOwnedBookingAsync(userId, reservation.BookingId, cancellationToken);
+        await EnsureOwnedBookingAsync(
+            userId,
+            reservation.BookingId,
+            cancellationToken);
+
         return reservation;
     }
 
@@ -298,24 +375,37 @@ public sealed class ParkingReservationService(
         Guid bookingId,
         CancellationToken cancellationToken)
     {
-        var booking = await bookingRepository.GetByIdAsync(bookingId, cancellationToken)
-            ?? throw new KeyNotFoundException("Booking was not found.");
+        var booking =
+            await bookingRepository.GetByIdAsync(
+                bookingId,
+                cancellationToken)
+            ?? throw new KeyNotFoundException(
+                "Booking was not found.");
 
         if (booking.CustomerUserId != userId)
         {
-            throw new ForbiddenAccessException("You do not own this booking.");
+            throw new ForbiddenAccessException(
+                "You do not own this booking.");
         }
 
         return booking;
     }
 
-    private static Guid ParseParkingPassCode(string? passCode)
+    private static Guid ParseParkingPassCode(
+        string? passCode)
     {
-        var value = passCode?.Trim() ?? string.Empty;
+        var value =
+            passCode?.Trim()
+            ?? string.Empty;
+
         const string prefix = "PARK-";
 
-        if (!value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
-            !Guid.TryParse(value[prefix.Length..], out var reservationId))
+        if (!value.StartsWith(
+                prefix,
+                StringComparison.OrdinalIgnoreCase) ||
+            !Guid.TryParse(
+                value[prefix.Length..],
+                out var reservationId))
         {
             throw new ParkingReservationValidationException(
                 "Parking pass code is invalid.");
@@ -324,15 +414,18 @@ public sealed class ParkingReservationService(
         return reservationId;
     }
 
-    private static ParkingReservationDto Map(ParkingReservation reservation)
+    private static ParkingReservationDto Map(
+        ParkingReservation reservation)
         => new()
         {
             Id = reservation.Id,
             BookingId = reservation.BookingId,
             ParkingSlotId = reservation.ParkingSlotId,
             VehicleId = reservation.VehicleId,
-            VehicleRegSnapshot = reservation.VehicleRegSnapshot,
+            VehicleRegSnapshot =
+                reservation.VehicleRegSnapshot,
             Status = reservation.Status,
-            ReservedAtUtc = reservation.ReservedAtUtc
+            ReservedAtUtc =
+                reservation.ReservedAtUtc
         };
 }

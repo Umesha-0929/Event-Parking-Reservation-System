@@ -33,5 +33,8 @@ public sealed class ParkingSlotConfiguration
 
         builder.Property(slot => slot.Status)
             .IsRequired();
+
+        builder.Property(slot => slot.UpdatedAtUtc)
+            .IsConcurrencyToken();
     }
 }
