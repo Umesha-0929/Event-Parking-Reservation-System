@@ -1,3 +1,12 @@
 namespace SEVPMS.Domain.Enums;
 
-public enum FoodOrderStatus { Pending, Accepted, Preparing, Ready, Completed, Cancelled }
+public enum FoodOrderStatus
+{
+    Placed,
+    Accepted,
+    Preparing,
+    Ready,
+    Completed,
+    Rejected,
+    Cancelled
+}

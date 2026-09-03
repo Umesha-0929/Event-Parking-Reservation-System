@@ -16,11 +16,17 @@ public interface IParkingReservationRepository
         Guid parkingSlotId,
         CancellationToken cancellationToken = default);
 
+    Task<ParkingSlot?> GetParkingSlotByIdAsync(
+        Guid parkingSlotId,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         ParkingReservation reservation,
         CancellationToken cancellationToken = default);
 
     void Update(ParkingReservation reservation);
+
+    void UpdateParkingSlot(ParkingSlot parkingSlot);
 
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);

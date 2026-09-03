@@ -129,7 +129,7 @@ public sealed class FoodServiceTests
         Assert.Equal(customerUserId, result.CustomerUserId);
         Assert.Equal(eventId, result.EventId);
         Assert.Equal(stall.Id, result.EventFoodStallId);
-        Assert.Equal("Pending", result.Status);
+        Assert.Equal("Placed", result.Status);
         Assert.Equal(2500m, result.Total);
 
         Assert.Single(repository.Orders);
@@ -137,7 +137,7 @@ public sealed class FoodServiceTests
         Assert.Single(repository.StatusHistory);
 
         Assert.Equal(2500m, repository.OrderItems[0].LineTotal);
-        Assert.Equal("Pending", repository.StatusHistory[0].NewStatus);
+        Assert.Equal("Placed", repository.StatusHistory[0].NewStatus);
         Assert.Equal(1, repository.SaveChangesCallCount);
     }
 
@@ -197,7 +197,7 @@ public sealed class FoodServiceTests
             CustomerUserId = Guid.NewGuid(),
             EventId = Guid.NewGuid(),
             EventFoodStallId = Guid.NewGuid(),
-            Status = "Pending",
+            Status = "Placed",
             FulfillmentType = "Pickup",
             Total = 1000m,
             CreatedAtUtc = DateTime.UtcNow
@@ -224,7 +224,7 @@ public sealed class FoodServiceTests
             CustomerUserId = Guid.NewGuid(),
             EventId = Guid.NewGuid(),
             EventFoodStallId = Guid.NewGuid(),
-            Status = "Pending",
+            Status = "Placed",
             FulfillmentType = "Pickup",
             Total = 1800m,
             CreatedAtUtc = DateTime.UtcNow
@@ -253,7 +253,7 @@ public sealed class FoodServiceTests
 
         var history = Assert.Single(repository.StatusHistory);
 
-        Assert.Equal("Pending", history.OldStatus);
+        Assert.Equal("Placed", history.OldStatus);
         Assert.Equal("Accepted", history.NewStatus);
         Assert.Equal(changedByUserId, history.ChangedByUserId);
         Assert.Equal(
