@@ -36,3 +36,14 @@ public sealed class EventResponse
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? UpdatedAtUtc { get; set; }
 }
+
+public sealed class EventSearchRequest
+{
+    public string? Search { get; set; }
+
+    public Guid? Venue { get; set; }
+
+    public string? Category { get; set; }
+
+    public DateOnly? Date { get; set; }
+}

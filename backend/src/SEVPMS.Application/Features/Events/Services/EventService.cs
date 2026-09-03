@@ -12,8 +12,16 @@ public sealed class EventService(
     IVenueRepository venueRepository)
     : IEventService
 {
-    public async Task<IReadOnlyList<EventResponse>> GetPublishedAsync(CancellationToken cancellationToken = default)
-        => (await eventRepository.GetPublishedAsync(cancellationToken)).Select(Map).ToList();
+    public async Task<IReadOnlyList<EventResponse>>
+    GetPublishedAsync(
+        EventSearchRequest request,
+        CancellationToken cancellationToken = default)
+    => (await eventRepository
+        .GetPublishedAsync(
+            request,
+            cancellationToken))
+        .Select(Map)
+        .ToList();
 
     public async Task<EventResponse> GetPublicByIdAsync(Guid eventId, CancellationToken cancellationToken = default)
     {
