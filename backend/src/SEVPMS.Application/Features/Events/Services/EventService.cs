@@ -9,26 +9,59 @@ namespace SEVPMS.Application.Features.Events.Services;
 
 public sealed class EventService(
     IEventRepository eventRepository,
-    IVenueRepository venueRepository)
+    IVenueRepository venueRepository,
+    IVenueRentalRepository venueRentalRepository)
     : IEventService
 {
-    public async Task<IReadOnlyList<EventResponse>> GetPublishedAsync(CancellationToken cancellationToken = default)
-        => (await eventRepository.GetPublishedAsync(cancellationToken)).Select(Map).ToList();
+    public async Task<IReadOnlyList<EventResponse>> GetPublishedAsync(
+        EventSearchRequest request,
+        CancellationToken cancellationToken = default)
+        => (await eventRepository.GetPublishedAsync(
+                request,
+                cancellationToken))
+            .Select(Map)
+            .ToList();
 
-    public async Task<EventResponse> GetPublicByIdAsync(Guid eventId, CancellationToken cancellationToken = default)
+    public async Task<EventResponse> GetPublicByIdAsync(
+        Guid eventId,
+        CancellationToken cancellationToken = default)
     {
-        var eventEntity = await eventRepository.GetByIdAsync(eventId, cancellationToken);
-        if (eventEntity is null || eventEntity.Status != EventStatus.Published)
-            throw new KeyNotFoundException("Event was not found.");
+        var eventEntity =
+            await eventRepository.GetByIdAsync(
+                eventId,
+                cancellationToken);
+
+        if (eventEntity is null ||
+            eventEntity.Status != EventStatus.Published)
+        {
+            throw new KeyNotFoundException(
+                "Event was not found.");
+        }
+
         return Map(eventEntity);
     }
 
-    public async Task<IReadOnlyList<EventResponse>> GetMineAsync(Guid organizerUserId, CancellationToken cancellationToken = default)
-        => (await eventRepository.GetByOrganizerUserIdAsync(organizerUserId, cancellationToken)).Select(Map).ToList();
+    public async Task<IReadOnlyList<EventResponse>> GetMineAsync(
+        Guid organizerUserId,
+        CancellationToken cancellationToken = default)
+        => (await eventRepository.GetByOrganizerUserIdAsync(
+                organizerUserId,
+                cancellationToken))
+            .Select(Map)
+            .ToList();
 
-    public async Task<EventResponse> CreateAsync(Guid organizerUserId, CreateEventRequest request, CancellationToken cancellationToken = default)
+    public async Task<EventResponse> CreateAsync(
+        Guid organizerUserId,
+        CreateEventRequest request,
+        CancellationToken cancellationToken = default)
     {
-        await ValidateRequestAsync(request.VenueId, request.Title, request.Category, request.StartAtUtc, request.EndAtUtc, cancellationToken);
+        await ValidateRequestAsync(
+            request.VenueId,
+            request.Title,
+            request.Category,
+            request.StartAtUtc,
+            request.EndAtUtc,
+            cancellationToken);
 
         var eventEntity = new Event
         {
@@ -42,68 +75,154 @@ public sealed class EventService(
             Status = EventStatus.Draft
         };
 
-        await eventRepository.AddAsync(eventEntity, cancellationToken);
-        await eventRepository.SaveChangesAsync(cancellationToken);
+        await eventRepository.AddAsync(
+            eventEntity,
+            cancellationToken);
+
+        await eventRepository.SaveChangesAsync(
+            cancellationToken);
+
         return Map(eventEntity);
     }
 
-    public async Task<EventResponse> UpdateAsync(Guid organizerUserId, Guid eventId, UpdateEventRequest request, CancellationToken cancellationToken = default)
+    public async Task<EventResponse> UpdateAsync(
+        Guid organizerUserId,
+        Guid eventId,
+        UpdateEventRequest request,
+        CancellationToken cancellationToken = default)
     {
-        var eventEntity = await GetOwnedAsync(organizerUserId, eventId, cancellationToken);
+        var eventEntity =
+            await GetOwnedAsync(
+                organizerUserId,
+                eventId,
+                cancellationToken);
 
-        if (eventEntity.Status is EventStatus.Completed or EventStatus.Cancelled)
-            throw new InvalidOperationException("Completed or cancelled events cannot be edited.");
+        if (eventEntity.Status is
+            EventStatus.Completed or
+            EventStatus.Cancelled)
+        {
+            throw new InvalidOperationException(
+                "Completed or cancelled events cannot be edited.");
+        }
 
-        await ValidateRequestAsync(request.VenueId, request.Title, request.Category, request.StartAtUtc, request.EndAtUtc, cancellationToken);
+        await ValidateRequestAsync(
+            request.VenueId,
+            request.Title,
+            request.Category,
+            request.StartAtUtc,
+            request.EndAtUtc,
+            cancellationToken);
 
         eventEntity.VenueId = request.VenueId;
         eventEntity.Title = request.Title.Trim();
-        eventEntity.Description = request.Description?.Trim() ?? string.Empty;
+        eventEntity.Description =
+            request.Description?.Trim() ?? string.Empty;
         eventEntity.Category = request.Category.Trim();
         eventEntity.StartAtUtc = request.StartAtUtc;
         eventEntity.EndAtUtc = request.EndAtUtc;
         eventEntity.UpdatedAtUtc = DateTime.UtcNow;
 
-        await eventRepository.SaveChangesAsync(cancellationToken);
+        await eventRepository.SaveChangesAsync(
+            cancellationToken);
+
         return Map(eventEntity);
     }
 
-    public async Task<EventResponse> PublishAsync(Guid organizerUserId, Guid eventId, CancellationToken cancellationToken = default)
+    public async Task<EventResponse> PublishAsync(
+        Guid organizerUserId,
+        Guid eventId,
+        CancellationToken cancellationToken = default)
     {
-        var eventEntity = await GetOwnedAsync(organizerUserId, eventId, cancellationToken);
+        var eventEntity =
+            await GetOwnedAsync(
+                organizerUserId,
+                eventId,
+                cancellationToken);
 
         if (eventEntity.Status != EventStatus.Draft)
-            throw new InvalidOperationException("Only draft events can be published.");
+        {
+            throw new InvalidOperationException(
+                "Only draft events can be published.");
+        }
 
-        var venue = await venueRepository.GetByIdAsync(eventEntity.VenueId, cancellationToken);
+        var venue =
+            await venueRepository.GetByIdAsync(
+                eventEntity.VenueId,
+                cancellationToken);
+
         if (venue is null || !venue.IsActive)
-            throw new InvalidOperationException("The selected venue is not active.");
+        {
+            throw new InvalidOperationException(
+                "The selected venue is not active.");
+        }
+
+        var hasAcceptedRental =
+            await venueRentalRepository
+                .HasAcceptedRentalForOrganizerAsync(
+                    organizerUserId,
+                    eventEntity.VenueId,
+                    eventEntity.StartAtUtc,
+                    eventEntity.EndAtUtc,
+                    cancellationToken);
+
+        if (!hasAcceptedRental)
+        {
+            throw new InvalidOperationException(
+                "An accepted venue rental covering the event time is required before publishing.");
+        }
 
         eventEntity.Status = EventStatus.Published;
         eventEntity.UpdatedAtUtc = DateTime.UtcNow;
-        await eventRepository.SaveChangesAsync(cancellationToken);
+
+        await eventRepository.SaveChangesAsync(
+            cancellationToken);
+
         return Map(eventEntity);
     }
 
-    public async Task<EventResponse> CancelAsync(Guid organizerUserId, Guid eventId, CancellationToken cancellationToken = default)
+    public async Task<EventResponse> CancelAsync(
+        Guid organizerUserId,
+        Guid eventId,
+        CancellationToken cancellationToken = default)
     {
-        var eventEntity = await GetOwnedAsync(organizerUserId, eventId, cancellationToken);
+        var eventEntity =
+            await GetOwnedAsync(
+                organizerUserId,
+                eventId,
+                cancellationToken);
+
         if (eventEntity.Status == EventStatus.Completed)
-            throw new InvalidOperationException("Completed events cannot be cancelled.");
+        {
+            throw new InvalidOperationException(
+                "Completed events cannot be cancelled.");
+        }
 
         eventEntity.Status = EventStatus.Cancelled;
         eventEntity.UpdatedAtUtc = DateTime.UtcNow;
-        await eventRepository.SaveChangesAsync(cancellationToken);
+
+        await eventRepository.SaveChangesAsync(
+            cancellationToken);
+
         return Map(eventEntity);
     }
 
-    private async Task<Event> GetOwnedAsync(Guid organizerUserId, Guid eventId, CancellationToken cancellationToken)
+    private async Task<Event> GetOwnedAsync(
+        Guid organizerUserId,
+        Guid eventId,
+        CancellationToken cancellationToken)
     {
-        var eventEntity = await eventRepository.GetByIdAsync(eventId, cancellationToken)
-            ?? throw new KeyNotFoundException("Event was not found.");
+        var eventEntity =
+            await eventRepository.GetByIdAsync(
+                eventId,
+                cancellationToken)
+            ?? throw new KeyNotFoundException(
+                "Event was not found.");
 
         if (eventEntity.OrganizerUserId != organizerUserId)
-            throw new ForbiddenAccessException("You do not have permission to manage this event.");
+        {
+            throw new ForbiddenAccessException(
+                "You do not have permission to manage this event.");
+        }
 
         return eventEntity;
     }
@@ -118,16 +237,31 @@ public sealed class EventService(
     {
         if (venueId == Guid.Empty)
             throw new ArgumentException("Venue is required.");
+
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("Event title is required.");
+
         if (string.IsNullOrWhiteSpace(category))
             throw new ArgumentException("Event category is required.");
-        if (startAtUtc == default || endAtUtc == default || endAtUtc <= startAtUtc)
-            throw new ArgumentException("Event end time must be later than start time.");
 
-        var venue = await venueRepository.GetByIdAsync(venueId, cancellationToken);
+        if (startAtUtc == default ||
+            endAtUtc == default ||
+            endAtUtc <= startAtUtc)
+        {
+            throw new ArgumentException(
+                "Event end time must be later than start time.");
+        }
+
+        var venue =
+            await venueRepository.GetByIdAsync(
+                venueId,
+                cancellationToken);
+
         if (venue is null || !venue.IsActive)
-            throw new ArgumentException("The selected venue does not exist or is inactive.");
+        {
+            throw new ArgumentException(
+                "The selected venue does not exist or is inactive.");
+        }
     }
 
     private static EventResponse Map(Event x) => new()

@@ -4,7 +4,9 @@ namespace SEVPMS.Application.Features.Events.Interfaces;
 
 public interface IEventService
 {
-    Task<IReadOnlyList<EventResponse>> GetPublishedAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<EventResponse>> GetPublishedAsync(
+        EventSearchRequest request,
+        CancellationToken cancellationToken = default);    
     Task<EventResponse> GetPublicByIdAsync(Guid eventId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<EventResponse>> GetMineAsync(Guid organizerUserId, CancellationToken cancellationToken = default);
     Task<EventResponse> CreateAsync(Guid organizerUserId, CreateEventRequest request, CancellationToken cancellationToken = default);
