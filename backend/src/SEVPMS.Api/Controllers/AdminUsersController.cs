@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using SEVPMS.Api.Authorization;
 using SEVPMS.Application.Features.Users.DTOs;
 using SEVPMS.Application.Features.Users.Interfaces;
+using System.Security.Claims;
+using SEVPMS.Application.Features.Audit.Interfaces;
 
 namespace SEVPMS.Api.Controllers;
 
@@ -10,7 +12,8 @@ namespace SEVPMS.Api.Controllers;
 [Route("api/admin/users")]
 [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
 public sealed class AdminUsersController(
-    IAdminUserService adminUserService)
+    IAdminUserService adminUserService,
+    IAuditLogService auditLogService)
     : ControllerBase
 {
     // =========================================================
@@ -58,11 +61,36 @@ public sealed class AdminUsersController(
             [FromBody] UpdateUserStatusRequest request,
             CancellationToken cancellationToken)
     {
+        var before =
+            await adminUserService.GetUserByIdAsync(
+                id,
+                cancellationToken);
+
         var user =
             await adminUserService.UpdateUserStatusAsync(
                 id,
                 request,
                 cancellationToken);
+
+        var rawActor =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        Guid? actorUserId =
+            Guid.TryParse(rawActor, out var parsed)
+                ? parsed
+                : null;
+
+        await auditLogService.WriteAsync(
+            actorUserId,
+            "Admin changed user account status",
+            "User",
+            id.ToString(),
+            before.Status.ToString(),
+            user.Status.ToString(),
+            HttpContext.TraceIdentifier,
+            HttpContext.Connection.RemoteIpAddress?.ToString(),
+            cancellationToken);
 
         return Ok(user);
     }

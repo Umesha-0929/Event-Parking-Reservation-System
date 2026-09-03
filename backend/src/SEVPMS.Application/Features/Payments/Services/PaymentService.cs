@@ -128,6 +128,20 @@ public sealed class PaymentService(
             PaymentStatus.Failed,
             null,
             cancellationToken);
+        
+        if (auditLogService is not null)
+        {
+            await auditLogService.WriteAsync(
+                payment.CustomerUserId,
+                "Payment marked failed",
+                "Payment",
+                payment.Id.ToString(),
+                "Pending",
+                "Failed",
+                null,
+                null,
+                cancellationToken);
+        }
 
         await notificationService.CreateAsync(
             payment.CustomerUserId,
@@ -185,6 +199,20 @@ public sealed class PaymentService(
                 PaymentStatus.Failed,
                 callbackVerifier.HashPayload(request),
                 cancellationToken);
+
+                if (auditLogService is not null)
+                {
+                    await auditLogService.WriteAsync(
+                    payment.CustomerUserId,
+                    $"Sandbox payment callback {status}",
+                    "Payment",
+                    payment.Id.ToString(),
+                    "Pending",
+                    "Failed",
+                    null,
+                    null,
+                    cancellationToken);
+                }
 
             return Map(payment);
         }
@@ -277,6 +305,19 @@ public sealed class PaymentService(
                 PaymentStatus.Failed,
                 payHereGatewayService.HashNotificationPayload(request),
                 cancellationToken);
+                if (auditLogService is not null)
+                {
+                    await auditLogService.WriteAsync(
+                        payment.CustomerUserId,
+                        $"PayHere payment failed ({request.StatusCode})",
+                        "Payment",
+                        payment.Id.ToString(),
+                        "Pending",
+                        "Failed",
+                        null,
+                        null,
+                        cancellationToken);
+                }
         }
 
         return Map(payment);
