@@ -116,6 +116,14 @@ public sealed class ParkingReservationsControllerTests
             throw new NotSupportedException();
         }
 
+        public Task<bool> CancelByBookingAsync(
+            Guid userId,
+            Guid bookingId,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+
         public Task<ParkingReservationDto> ScanAsync(
             Guid userId,
             ParkingQrScanRequest request,

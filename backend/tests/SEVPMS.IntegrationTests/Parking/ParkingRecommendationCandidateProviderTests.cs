@@ -134,7 +134,10 @@ public sealed class ParkingRecommendationCandidateProviderTests
         public Task<IReadOnlyList<ParkingZone>> GetZonesByVenueAsync(
             Guid venueId,
             CancellationToken cancellationToken = default)
-            => Task.FromResult(zones);
+            => Task.FromResult<IReadOnlyList<ParkingZone>>(
+                zones
+                    .Where(x => x.VenueId == venueId)
+                    .ToList());
 
         public Task<IReadOnlyList<ParkingSlot>> GetSlotsByZoneAsync(
             Guid parkingZoneId,
@@ -148,7 +151,45 @@ public sealed class ParkingRecommendationCandidateProviderTests
             Guid parkingSlotId,
             CancellationToken cancellationToken = default)
             => Task.FromResult(
-                slots.SingleOrDefault(x => x.Id == parkingSlotId));
+                slots.SingleOrDefault(
+                    x => x.Id == parkingSlotId));
+
+        public Task<ParkingZone?> GetZoneByIdAsync(
+            Guid parkingZoneId,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(
+                zones.SingleOrDefault(
+                    x => x.Id == parkingZoneId));
+
+        public Task AddZoneAsync(
+            ParkingZone zone,
+            CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public Task AddSlotAsync(
+            ParkingSlot slot,
+            CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public void UpdateZone(
+            ParkingZone zone)
+        {
+        }
+
+        public void UpdateSlot(
+            ParkingSlot slot)
+        {
+        }
+
+        public void DeleteZone(
+            ParkingZone zone)
+        {
+        }
+
+        public void DeleteSlot(
+            ParkingSlot slot)
+        {
+        }
 
         public Task SaveChangesAsync(
             CancellationToken cancellationToken = default)
@@ -186,18 +227,22 @@ public sealed class ParkingRecommendationCandidateProviderTests
             Guid vehicleId,
             CancellationToken cancellationToken = default)
             => Task.FromResult(
-                vehicle?.Id == vehicleId ? vehicle : null);
+                vehicle?.Id == vehicleId
+                    ? vehicle
+                    : null);
 
         public Task AddAsync(
             SavedVehicle vehicle,
             CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
-        public void Update(SavedVehicle vehicle)
+        public void Update(
+            SavedVehicle vehicle)
         {
         }
 
-        public void Remove(SavedVehicle vehicle)
+        public void Remove(
+            SavedVehicle vehicle)
         {
         }
 

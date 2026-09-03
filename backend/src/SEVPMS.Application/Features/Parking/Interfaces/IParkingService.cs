@@ -15,4 +15,30 @@ public interface IParkingService
     Task<ParkingSlotDto?> GetSlotByIdAsync(
         Guid parkingSlotId,
         CancellationToken cancellationToken = default);
+
+    Task<ParkingZoneDto> CreateZoneAsync(
+        UpsertParkingZoneRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ParkingZoneDto> UpdateZoneAsync(
+        Guid parkingZoneId,
+        UpsertParkingZoneRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteZoneAsync(
+        Guid parkingZoneId,
+        CancellationToken cancellationToken = default);
+
+    Task<ParkingSlotDto> CreateSlotAsync(
+        UpsertParkingSlotRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<ParkingSlotDto> UpdateSlotAsync(
+        Guid parkingSlotId,
+        UpsertParkingSlotRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteSlotAsync(
+        Guid parkingSlotId,
+        CancellationToken cancellationToken = default);
 }
