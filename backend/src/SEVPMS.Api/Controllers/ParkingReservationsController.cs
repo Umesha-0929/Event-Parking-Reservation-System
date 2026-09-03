@@ -28,12 +28,15 @@ public sealed class ParkingReservationsController(
 
         try
         {
-            var reservation = await reservationService.GetByIdAsync(
-                userId,
-                reservationId,
-                cancellationToken);
+            var reservation =
+                await reservationService.GetByIdAsync(
+                    userId,
+                    reservationId,
+                    cancellationToken);
 
-            return reservation is null ? NotFound() : Ok(reservation);
+            return reservation is null
+                ? NotFound()
+                : Ok(reservation);
         }
         catch (ForbiddenAccessException)
         {
@@ -53,19 +56,33 @@ public sealed class ParkingReservationsController(
 
         try
         {
-            var reservation = await reservationService.CreateAsync(
-                userId,
-                request,
-                cancellationToken);
+            var reservation =
+                await reservationService.CreateAsync(
+                    userId,
+                    request,
+                    cancellationToken);
 
             return CreatedAtAction(
                 nameof(GetById),
-                new { reservationId = reservation.Id },
+                new
+                {
+                    reservationId = reservation.Id
+                },
                 reservation);
+        }
+        catch (ParkingReservationConflictException exception)
+        {
+            return Conflict(new
+            {
+                error = exception.Message
+            });
         }
         catch (ParkingReservationValidationException exception)
         {
-            return BadRequest(new { error = exception.Message });
+            return BadRequest(new
+            {
+                error = exception.Message
+            });
         }
         catch (ForbiddenAccessException)
         {
@@ -83,7 +100,11 @@ public sealed class ParkingReservationsController(
         CancellationToken cancellationToken)
         => RunTransitionAsync(
             reservationId,
-            (userId, id, ct) => reservationService.MarkEnteredAsync(userId, id, ct),
+            (userId, id, ct) =>
+                reservationService.MarkEnteredAsync(
+                    userId,
+                    id,
+                    ct),
             cancellationToken);
 
     [HttpPost("{reservationId:guid}/park")]
@@ -92,7 +113,11 @@ public sealed class ParkingReservationsController(
         CancellationToken cancellationToken)
         => RunTransitionAsync(
             reservationId,
-            (userId, id, ct) => reservationService.MarkParkedAsync(userId, id, ct),
+            (userId, id, ct) =>
+                reservationService.MarkParkedAsync(
+                    userId,
+                    id,
+                    ct),
             cancellationToken);
 
     [HttpPost("{reservationId:guid}/exit")]
@@ -101,7 +126,11 @@ public sealed class ParkingReservationsController(
         CancellationToken cancellationToken)
         => RunTransitionAsync(
             reservationId,
-            (userId, id, ct) => reservationService.MarkExitedAsync(userId, id, ct),
+            (userId, id, ct) =>
+                reservationService.MarkExitedAsync(
+                    userId,
+                    id,
+                    ct),
             cancellationToken);
 
     [HttpPost("scan")]
@@ -116,11 +145,27 @@ public sealed class ParkingReservationsController(
 
         try
         {
-            return Ok(await reservationService.ScanAsync(userId, request, cancellationToken));
+            var reservation =
+                await reservationService.ScanAsync(
+                    userId,
+                    request,
+                    cancellationToken);
+
+            return Ok(reservation);
+        }
+        catch (ParkingReservationConflictException exception)
+        {
+            return Conflict(new
+            {
+                error = exception.Message
+            });
         }
         catch (ParkingReservationValidationException exception)
         {
-            return BadRequest(new { error = exception.Message });
+            return BadRequest(new
+            {
+                error = exception.Message
+            });
         }
         catch (ForbiddenAccessException)
         {
@@ -144,12 +189,26 @@ public sealed class ParkingReservationsController(
 
         try
         {
-            await reservationService.CancelAsync(userId, reservationId, cancellationToken);
+            await reservationService.CancelAsync(
+                userId,
+                reservationId,
+                cancellationToken);
+
             return NoContent();
+        }
+        catch (ParkingReservationConflictException exception)
+        {
+            return Conflict(new
+            {
+                error = exception.Message
+            });
         }
         catch (ParkingReservationValidationException exception)
         {
-            return BadRequest(new { error = exception.Message });
+            return BadRequest(new
+            {
+                error = exception.Message
+            });
         }
         catch (ForbiddenAccessException)
         {
@@ -161,10 +220,15 @@ public sealed class ParkingReservationsController(
         }
     }
 
-    private async Task<ActionResult<ParkingReservationDto>> RunTransitionAsync(
-        Guid reservationId,
-        Func<Guid, Guid, CancellationToken, Task<ParkingReservationDto>> transition,
-        CancellationToken cancellationToken)
+    private async Task<ActionResult<ParkingReservationDto>>
+        RunTransitionAsync(
+            Guid reservationId,
+            Func<
+                Guid,
+                Guid,
+                CancellationToken,
+                Task<ParkingReservationDto>> transition,
+            CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
         {
@@ -173,11 +237,27 @@ public sealed class ParkingReservationsController(
 
         try
         {
-            return Ok(await transition(userId, reservationId, cancellationToken));
+            var reservation =
+                await transition(
+                    userId,
+                    reservationId,
+                    cancellationToken);
+
+            return Ok(reservation);
+        }
+        catch (ParkingReservationConflictException exception)
+        {
+            return Conflict(new
+            {
+                error = exception.Message
+            });
         }
         catch (ParkingReservationValidationException exception)
         {
-            return BadRequest(new { error = exception.Message });
+            return BadRequest(new
+            {
+                error = exception.Message
+            });
         }
         catch (ForbiddenAccessException)
         {
@@ -189,9 +269,15 @@ public sealed class ParkingReservationsController(
         }
     }
 
-    private bool TryGetUserId(out Guid userId)
+    private bool TryGetUserId(
+        out Guid userId)
     {
-        var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        return Guid.TryParse(value, out userId);
+        var value =
+            User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+        return Guid.TryParse(
+            value,
+            out userId);
     }
 }

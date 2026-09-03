@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SEVPMS.Application.Features.Parking.Interfaces;
+using SEVPMS.Application.Features.Parking.Validators;
 using SEVPMS.Domain.Entities.Parking;
 
 namespace SEVPMS.Infrastructure.Persistence.Repositories;
@@ -60,22 +61,39 @@ public sealed class ParkingReservationRepository(
         ParkingReservation reservation,
         CancellationToken cancellationToken = default)
     {
-        await dbContext.Set<ParkingReservation>().AddAsync(reservation, cancellationToken);
+        await dbContext
+            .Set<ParkingReservation>()
+            .AddAsync(
+                reservation,
+                cancellationToken);
     }
 
     public void Update(ParkingReservation reservation)
     {
-        dbContext.Set<ParkingReservation>().Update(reservation);
+        dbContext
+            .Set<ParkingReservation>()
+            .Update(reservation);
     }
 
     public void UpdateParkingSlot(ParkingSlot parkingSlot)
     {
-        dbContext.Set<ParkingSlot>().Update(parkingSlot);
+        dbContext
+            .Set<ParkingSlot>()
+            .Update(parkingSlot);
     }
 
     public async Task SaveChangesAsync(
         CancellationToken cancellationToken = default)
     {
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException exception)
+        {
+            throw new ParkingReservationConflictException(
+                "Parking slot availability changed because another customer reserved or updated it. Refresh the parking layout and try again.",
+                exception);
+        }
     }
 }
