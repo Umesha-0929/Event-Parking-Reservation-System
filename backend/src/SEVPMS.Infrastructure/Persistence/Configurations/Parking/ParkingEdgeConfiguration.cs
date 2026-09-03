@@ -7,7 +7,8 @@ namespace SEVPMS.Infrastructure.Persistence.Configurations.Parking;
 public sealed class ParkingEdgeConfiguration
     : IEntityTypeConfiguration<ParkingEdge>
 {
-    public void Configure(EntityTypeBuilder<ParkingEdge> builder)
+    public void Configure(
+        EntityTypeBuilder<ParkingEdge> builder)
     {
         builder.ToTable("ParkingEdges");
 
@@ -23,6 +24,7 @@ public sealed class ParkingEdgeConfiguration
             .IsRequired();
 
         builder.Property(edge => edge.Cost)
+            .HasPrecision(18, 2)
             .IsRequired();
 
         builder.Property(edge => edge.IsBidirectional)

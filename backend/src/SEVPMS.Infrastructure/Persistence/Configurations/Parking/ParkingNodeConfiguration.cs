@@ -7,7 +7,8 @@ namespace SEVPMS.Infrastructure.Persistence.Configurations.Parking;
 public sealed class ParkingNodeConfiguration
     : IEntityTypeConfiguration<ParkingNode>
 {
-    public void Configure(EntityTypeBuilder<ParkingNode> builder)
+    public void Configure(
+        EntityTypeBuilder<ParkingNode> builder)
     {
         builder.ToTable("ParkingNodes");
 
@@ -20,9 +21,11 @@ public sealed class ParkingNodeConfiguration
             .IsRequired();
 
         builder.Property(node => node.X)
+            .HasPrecision(18, 4)
             .IsRequired();
 
         builder.Property(node => node.Y)
+            .HasPrecision(18, 4)
             .IsRequired();
 
         builder.Property(node => node.NodeType)

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SEVPMS.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using SEVPMS.Infrastructure.Persistence;
 namespace SEVPMS.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SEVPMSDbContext))]
-    partial class SEVPMSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260903105621_FixParkingDecimalPrecision")]
+    partial class FixParkingDecimalPrecision
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
