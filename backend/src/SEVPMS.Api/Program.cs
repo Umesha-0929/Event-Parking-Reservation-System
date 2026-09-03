@@ -14,6 +14,25 @@ using SEVPMS.Api.Bootstrap;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+const string AngularDevCorsPolicy = "AngularDev";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        AngularDevCorsPolicy,
+        policy =>
+        {
+            policy
+                .WithOrigins(
+                    "http://localhost:4200",
+                    "http://localhost:4201",
+                    "http://localhost:4202")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -91,6 +110,26 @@ builder.Services
 
                 ClockSkew = TimeSpan.FromSeconds(30)
             };
+
+        options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken =
+                    context.Request.Query["access_token"];
+
+                    var path = context.HttpContext.Request.Path;
+
+                    if (!string.IsNullOrWhiteSpace(accessToken) &&
+                        (path.StartsWithSegments("/hubs/notifications") ||
+                        path.StartsWithSegments("/hubs/events")))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                    return Task.CompletedTask;
+                }
+            };
     });
 
 builder.Services.AddAuthorization(options =>
@@ -149,6 +188,8 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
+
+app.UseCors(AngularDevCorsPolicy);
 
 // IMPORTANT: Authentication first
 app.UseAuthentication();

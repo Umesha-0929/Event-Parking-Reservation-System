@@ -14,44 +14,105 @@ public sealed class VenueRentalService(
     INotificationService notificationService)
     : IVenueRentalService
 {
-    public async Task<IReadOnlyList<VenueRentalResponse>> GetMineAsync(Guid organizerUserId, CancellationToken cancellationToken = default)
-        => (await rentalRepository.GetByOrganizerAsync(organizerUserId, cancellationToken)).Select(Map).ToList();
-
-    public async Task<IReadOnlyList<VenueRentalResponse>> GetIncomingAsync(Guid venueOwnerUserId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<VenueRentalResponse>> GetMineAsync(
+        Guid organizerUserId,
+        CancellationToken cancellationToken = default)
     {
-        var venues = await venueRepository.GetByOwnerUserIdAsync(venueOwnerUserId, cancellationToken);
-        var ids = venues.Select(x => x.Id).ToArray();
-        return (await rentalRepository.GetByVenueIdsAsync(ids, cancellationToken)).Select(Map).ToList();
+        var rentals =
+            await rentalRepository.GetByOrganizerAsync(
+                organizerUserId,
+                cancellationToken);
+
+        return rentals
+            .Select(Map)
+            .ToList();
     }
 
-    public async Task<VenueRentalResponse> CreateAsync(Guid organizerUserId, CreateVenueRentalRequest request, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<VenueRentalResponse>> GetIncomingAsync(
+        Guid venueOwnerUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var venues =
+            await venueRepository.GetByOwnerUserIdAsync(
+                venueOwnerUserId,
+                cancellationToken);
+
+        var venueIds =
+            venues
+                .Select(x => x.Id)
+                .ToArray();
+
+        var rentals =
+            await rentalRepository.GetByVenueIdsAsync(
+                venueIds,
+                cancellationToken);
+
+        return rentals
+            .Select(Map)
+            .ToList();
+    }
+
+    public async Task<VenueRentalResponse> CreateAsync(
+        Guid organizerUserId,
+        CreateVenueRentalRequest request,
+        CancellationToken cancellationToken = default)
     {
         if (request.VenueId == Guid.Empty)
-            throw new ArgumentException("Venue is required.");
-        if (request.StartAtUtc == default || request.EndAtUtc == default || request.EndAtUtc <= request.StartAtUtc)
-            throw new ArgumentException("Rental end time must be later than start time.");
-        if (string.IsNullOrWhiteSpace(request.Purpose))
-            throw new ArgumentException("Rental purpose is required.");
-        if (request.OfferedAmount < 0)
-            throw new ArgumentException("Offered amount cannot be negative.");
-
-        var venue = await venueRepository.GetByIdAsync(request.VenueId, cancellationToken);
-        if (venue is null || !venue.IsActive)
-            throw new ArgumentException("Venue does not exist or is inactive.");
-
-        var rental = new VenueRentalRequest
         {
-            OrganizerUserId = organizerUserId,
-            VenueId = request.VenueId,
-            StartAtUtc = request.StartAtUtc,
-            EndAtUtc = request.EndAtUtc,
-            Purpose = request.Purpose.Trim(),
-            OfferedAmount = request.OfferedAmount,
-            Status = RentalRequestStatus.Pending
-        };
+            throw new ArgumentException(
+                "Venue is required.");
+        }
 
-        await rentalRepository.AddAsync(rental, cancellationToken);
-        await rentalRepository.SaveChangesAsync(cancellationToken);
+        if (request.StartAtUtc == default ||
+            request.EndAtUtc == default ||
+            request.EndAtUtc <= request.StartAtUtc)
+        {
+            throw new ArgumentException(
+                "Rental end time must be later than start time.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Purpose))
+        {
+            throw new ArgumentException(
+                "Rental purpose is required.");
+        }
+
+        if (request.OfferedAmount < 0)
+        {
+            throw new ArgumentException(
+                "Offered amount cannot be negative.");
+        }
+
+        var venue =
+            await venueRepository.GetByIdAsync(
+                request.VenueId,
+                cancellationToken);
+
+        if (venue is null || !venue.IsActive)
+        {
+            throw new ArgumentException(
+                "Venue does not exist or is inactive.");
+        }
+
+        var rental =
+            new VenueRentalRequest
+            {
+                OrganizerUserId = organizerUserId,
+                VenueId = request.VenueId,
+                StartAtUtc = request.StartAtUtc,
+                EndAtUtc = request.EndAtUtc,
+                Purpose = request.Purpose.Trim(),
+                OfferedAmount = request.OfferedAmount,
+                Status = RentalRequestStatus.Pending
+            };
+
+        await rentalRepository.AddAsync(
+            rental,
+            cancellationToken);
+
+        await rentalRepository.SaveChangesAsync(
+            cancellationToken);
+
         return Map(rental);
     }
 
@@ -61,26 +122,72 @@ public sealed class VenueRentalService(
         UpdateVenueRentalStatusRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (request.Status is RentalRequestStatus.Pending or RentalRequestStatus.Cancelled)
-            throw new ArgumentException("Venue owner can set only Accepted, Rejected, or Negotiating.");
+        if (request.Status is
+            RentalRequestStatus.Pending or
+            RentalRequestStatus.Cancelled)
+        {
+            throw new ArgumentException(
+                "Venue owner can set only Accepted, Rejected, or Negotiating.");
+        }
 
-        var rental = await rentalRepository.GetByIdAsync(rentalId, cancellationToken)
-            ?? throw new KeyNotFoundException("Venue rental request was not found.");
+        var rental =
+            await rentalRepository.GetByIdAsync(
+                rentalId,
+                cancellationToken)
+            ?? throw new KeyNotFoundException(
+                "Venue rental request was not found.");
 
-        var venue = await venueRepository.GetByIdAsync(rental.VenueId, cancellationToken)
-            ?? throw new KeyNotFoundException("Venue was not found.");
+        var venue =
+            await venueRepository.GetByIdAsync(
+                rental.VenueId,
+                cancellationToken)
+            ?? throw new KeyNotFoundException(
+                "Venue was not found.");
 
         if (venue.OwnerUserId != venueOwnerUserId)
-            throw new ForbiddenAccessException("You do not own this venue.");
+        {
+            throw new ForbiddenAccessException(
+                "You do not own this venue.");
+        }
 
-        if (rental.Status is RentalRequestStatus.Cancelled or RentalRequestStatus.Rejected)
-            throw new InvalidOperationException("This rental request can no longer be updated.");
+        if (rental.Status is
+            RentalRequestStatus.Cancelled or
+            RentalRequestStatus.Rejected)
+        {
+            throw new InvalidOperationException(
+                "This rental request can no longer be updated.");
+        }
+
+        if (request.Status == RentalRequestStatus.Accepted)
+        {
+            var hasConflict =
+                await rentalRepository.HasAcceptedOverlapAsync(
+                    rental.VenueId,
+                    rental.StartAtUtc,
+                    rental.EndAtUtc,
+                    rental.Id,
+                    cancellationToken);
+
+            if (hasConflict)
+            {
+                throw new InvalidOperationException(
+                    "The venue already has an accepted rental during this time.");
+            }
+        }
 
         rental.Status = request.Status;
-        rental.OwnerMessage = string.IsNullOrWhiteSpace(request.OwnerMessage) ? null : request.OwnerMessage.Trim();
-        rental.UpdatedAtUtc = DateTime.UtcNow;
 
-        await rentalRepository.SaveChangesAsync(cancellationToken);
+        rental.OwnerMessage =
+            string.IsNullOrWhiteSpace(
+                request.OwnerMessage)
+                ? null
+                : request.OwnerMessage.Trim();
+
+        rental.UpdatedAtUtc =
+            DateTime.UtcNow;
+
+        await rentalRepository.SaveChangesAsync(
+            cancellationToken);
 
         await notificationService.CreateAsync(
             rental.OrganizerUserId,
@@ -92,35 +199,57 @@ public sealed class VenueRentalService(
         return Map(rental);
     }
 
-    public async Task<VenueRentalResponse> CancelAsync(Guid organizerUserId, Guid rentalId, CancellationToken cancellationToken = default)
+    public async Task<VenueRentalResponse> CancelAsync(
+        Guid organizerUserId,
+        Guid rentalId,
+        CancellationToken cancellationToken = default)
     {
-        var rental = await rentalRepository.GetByIdAsync(rentalId, cancellationToken)
-            ?? throw new KeyNotFoundException("Venue rental request was not found.");
+        var rental =
+            await rentalRepository.GetByIdAsync(
+                rentalId,
+                cancellationToken)
+            ?? throw new KeyNotFoundException(
+                "Venue rental request was not found.");
 
         if (rental.OrganizerUserId != organizerUserId)
-            throw new ForbiddenAccessException("You do not own this rental request.");
+        {
+            throw new ForbiddenAccessException(
+                "You do not own this rental request.");
+        }
 
-        if (rental.Status is RentalRequestStatus.Cancelled or RentalRequestStatus.Rejected)
+        if (rental.Status is
+            RentalRequestStatus.Cancelled or
+            RentalRequestStatus.Rejected)
+        {
             return Map(rental);
+        }
 
-        rental.Status = RentalRequestStatus.Cancelled;
-        rental.UpdatedAtUtc = DateTime.UtcNow;
-        await rentalRepository.SaveChangesAsync(cancellationToken);
+        rental.Status =
+            RentalRequestStatus.Cancelled;
+
+        rental.UpdatedAtUtc =
+            DateTime.UtcNow;
+
+        await rentalRepository.SaveChangesAsync(
+            cancellationToken);
+
         return Map(rental);
     }
 
-    private static VenueRentalResponse Map(VenueRentalRequest x) => new()
-    {
-        RentalRequestId = x.Id,
-        OrganizerUserId = x.OrganizerUserId,
-        VenueId = x.VenueId,
-        StartAtUtc = x.StartAtUtc,
-        EndAtUtc = x.EndAtUtc,
-        Purpose = x.Purpose,
-        OfferedAmount = x.OfferedAmount,
-        Status = x.Status,
-        OwnerMessage = x.OwnerMessage,
-        CreatedAtUtc = x.CreatedAtUtc,
-        UpdatedAtUtc = x.UpdatedAtUtc
-    };
+    private static VenueRentalResponse Map(
+        VenueRentalRequest rental)
+        => new()
+        {
+            RentalRequestId = rental.Id,
+            OrganizerUserId = rental.OrganizerUserId,
+            VenueId = rental.VenueId,
+            StartAtUtc = rental.StartAtUtc,
+            EndAtUtc = rental.EndAtUtc,
+            Purpose = rental.Purpose,
+            OfferedAmount = rental.OfferedAmount,
+            Status = rental.Status,
+            OwnerMessage = rental.OwnerMessage,
+            CreatedAtUtc = rental.CreatedAtUtc,
+            UpdatedAtUtc = rental.UpdatedAtUtc
+        };
 }

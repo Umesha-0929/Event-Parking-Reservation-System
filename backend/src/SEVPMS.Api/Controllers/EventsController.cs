@@ -13,8 +13,14 @@ public sealed class EventsController(IEventService eventService) : ControllerBas
 {
     [AllowAnonymous]
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<EventResponse>>> GetPublished(CancellationToken cancellationToken)
-        => Ok(await eventService.GetPublishedAsync(cancellationToken));
+    public async Task<ActionResult<IReadOnlyList<EventResponse>>>
+        GetPublished(
+            [FromQuery] EventSearchRequest request,
+            CancellationToken cancellationToken)
+        => Ok(await eventService
+            .GetPublishedAsync(
+                request,
+                cancellationToken));
 
     [AllowAnonymous]
     [HttpGet("{id:guid}")]
