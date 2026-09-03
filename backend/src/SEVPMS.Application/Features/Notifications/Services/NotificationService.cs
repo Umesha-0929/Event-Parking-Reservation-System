@@ -1,6 +1,7 @@
 using SEVPMS.Application.Common.Exceptions;
 using SEVPMS.Application.Features.Notifications.DTOs;
 using SEVPMS.Application.Features.Notifications.Interfaces;
+using SEVPMS.Application.Interfaces.Providers;
 using SEVPMS.Application.Interfaces.Repositories;
 using SEVPMS.Domain.Entities.Notifications;
 
@@ -8,19 +9,30 @@ namespace SEVPMS.Application.Features.Notifications.Services;
 
 public sealed class NotificationService(
     INotificationRepository notificationRepository,
-    INotificationRealtimePublisher realtimePublisher)
+    INotificationRealtimePublisher realtimePublisher,
+    IUserRepository? userRepository = null,
+    IEmailSender? emailSender = null,
+    ISmsSender? smsSender = null)
     : INotificationService
 {
-    public async Task<IReadOnlyList<NotificationResponse>> GetMineAsync(Guid userId, CancellationToken cancellationToken = default)
-        => (await notificationRepository.GetByUserAsync(userId, cancellationToken)).Select(Map).ToList();
+    public async Task<IReadOnlyList<NotificationResponse>> GetMineAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+        => (await notificationRepository.GetByUserAsync(userId, cancellationToken))
+            .Select(Map)
+            .ToList();
 
-    public async Task<NotificationResponse> MarkReadAsync(Guid userId, Guid notificationId, CancellationToken cancellationToken = default)
+    public async Task<NotificationResponse> MarkReadAsync(
+        Guid userId,
+        Guid notificationId,
+        CancellationToken cancellationToken = default)
     {
         var notification = await notificationRepository.GetByIdAsync(notificationId, cancellationToken)
             ?? throw new KeyNotFoundException("Notification was not found.");
 
         if (notification.UserId != userId)
-            throw new ForbiddenAccessException("You do not have permission to read this notification.");
+            throw new ForbiddenAccessException(
+                "You do not have permission to read this notification.");
 
         if (!notification.IsRead)
         {
@@ -53,6 +65,48 @@ public sealed class NotificationService(
 
         var response = Map(notification);
         await realtimePublisher.PublishAsync(userId, response, cancellationToken);
+
+        if (userRepository is not null)
+        {
+            var user = await userRepository.GetByIdAsync(userId, cancellationToken);
+
+            if (user is not null)
+            {
+                if (emailSender is not null && !string.IsNullOrWhiteSpace(user.Email))
+                {
+                    try
+                    {
+                        await emailSender.SendAsync(
+                            user.Email,
+                            notification.Title,
+                            notification.Message,
+                            cancellationToken);
+                    }
+                    catch
+                    {
+                        // In-app notification remains authoritative.
+                    }
+                }
+
+                if (smsSender is not null &&
+                    !string.IsNullOrWhiteSpace(user.PhoneNumber) &&
+                    notification.Type is "Payment" or "Refund" or "VenueRental")
+                {
+                    try
+                    {
+                        await smsSender.SendAsync(
+                            user.PhoneNumber,
+                            $"{notification.Title}: {notification.Message}",
+                            cancellationToken);
+                    }
+                    catch
+                    {
+                        // External provider failure must not roll back in-app state.
+                    }
+                }
+            }
+        }
+
         return response;
     }
 

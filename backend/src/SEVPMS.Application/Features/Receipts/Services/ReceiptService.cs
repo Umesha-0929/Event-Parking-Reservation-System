@@ -6,12 +6,22 @@ using SEVPMS.Domain.Entities.Receipts;
 
 namespace SEVPMS.Application.Features.Receipts.Services;
 
-public sealed class ReceiptService(IReceiptRepository receiptRepository) : IReceiptService
+public sealed class ReceiptService(
+    IReceiptRepository receiptRepository,
+    IReceiptDeliveryService? receiptDeliveryService = null)
+    : IReceiptService
 {
-    public async Task<IReadOnlyList<ReceiptResponse>> GetMineAsync(Guid customerUserId, CancellationToken cancellationToken = default)
-        => (await receiptRepository.GetByCustomerAsync(customerUserId, cancellationToken)).Select(Map).ToList();
+    public async Task<IReadOnlyList<ReceiptResponse>> GetMineAsync(
+        Guid customerUserId,
+        CancellationToken cancellationToken = default)
+        => (await receiptRepository.GetByCustomerAsync(customerUserId, cancellationToken))
+            .Select(Map)
+            .ToList();
 
-    public async Task<ReceiptResponse> GetByIdAsync(Guid customerUserId, Guid receiptId, CancellationToken cancellationToken = default)
+    public async Task<ReceiptResponse> GetByIdAsync(
+        Guid customerUserId,
+        Guid receiptId,
+        CancellationToken cancellationToken = default)
     {
         var receipt = await receiptRepository.GetByIdAsync(receiptId, cancellationToken)
             ?? throw new KeyNotFoundException("Receipt was not found.");
@@ -31,22 +41,34 @@ public sealed class ReceiptService(IReceiptRepository receiptRepository) : IRece
         CancellationToken cancellationToken = default)
     {
         var existing = await receiptRepository.GetByPaymentIdAsync(paymentId, cancellationToken);
+
         if (existing is not null)
+        {
+            if (receiptDeliveryService is not null)
+                await receiptDeliveryService.EnsureDeliveredAsync(existing, cancellationToken);
             return Map(existing);
+        }
 
         var receipt = new Receipt
         {
-            ReceiptNumber = $"RCT-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",
+            ReceiptNumber =
+                $"RCT-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}",
             PaymentId = paymentId,
             BookingId = bookingId,
             CustomerUserId = customerUserId,
             Amount = amount,
-            Currency = string.IsNullOrWhiteSpace(currency) ? "LKR" : currency.Trim().ToUpperInvariant(),
+            Currency = string.IsNullOrWhiteSpace(currency)
+                ? "LKR"
+                : currency.Trim().ToUpperInvariant(),
             IssuedAtUtc = DateTime.UtcNow
         };
 
         await receiptRepository.AddAsync(receipt, cancellationToken);
         await receiptRepository.SaveChangesAsync(cancellationToken);
+
+        if (receiptDeliveryService is not null)
+            await receiptDeliveryService.EnsureDeliveredAsync(receipt, cancellationToken);
+
         return Map(receipt);
     }
 
