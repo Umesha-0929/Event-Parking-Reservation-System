@@ -8,4 +8,8 @@ public interface IPaymentService
     Task<PaymentResponse> StartAsync(Guid customerUserId, StartPaymentRequest request, CancellationToken cancellationToken = default);
     Task<PaymentResponse> CompleteMockAsync(Guid paymentId, CancellationToken cancellationToken = default);
     Task<PaymentResponse> FailMockAsync(Guid paymentId, CancellationToken cancellationToken = default);
+    Task<PaymentResponse> ProcessSandboxCallbackAsync(SandboxPaymentCallbackRequest request, CancellationToken cancellationToken = default);
+    Task<PayHereCheckoutResponse> GetPayHereCheckoutAsync(Guid customerUserId, Guid paymentId, CancellationToken cancellationToken = default);
+    Task<PaymentResponse> ProcessPayHereNotificationAsync(PayHereNotifyRequest request, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PaymentTransactionResponse>> GetTransactionsAsync(Guid customerUserId, Guid paymentId, CancellationToken cancellationToken = default);
 }

@@ -4,25 +4,27 @@ using SEVPMS.Domain.Entities.Payments;
 
 namespace SEVPMS.Infrastructure.Persistence.Repositories;
 
-public sealed class PaymentRepository(
-    SEVPMSDbContext dbContext)
-    : IPaymentRepository
+public sealed class PaymentRepository(SEVPMSDbContext dbContext) : IPaymentRepository
 {
     public Task<Payment?> GetByIdAsync(
         Guid paymentId,
         CancellationToken cancellationToken = default)
         => dbContext.Set<Payment>()
-            .FirstOrDefaultAsync(
-                x => x.Id == paymentId,
-                cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == paymentId, cancellationToken);
 
     public Task<Payment?> GetByBookingIdAsync(
         Guid bookingId,
         CancellationToken cancellationToken = default)
         => dbContext.Set<Payment>()
             .OrderByDescending(x => x.CreatedAtUtc)
+            .FirstOrDefaultAsync(x => x.BookingId == bookingId, cancellationToken);
+
+    public Task<Payment?> GetByCheckoutReferenceAsync(
+        string checkoutReference,
+        CancellationToken cancellationToken = default)
+        => dbContext.Set<Payment>()
             .FirstOrDefaultAsync(
-                x => x.BookingId == bookingId,
+                x => x.CheckoutReference == checkoutReference,
                 cancellationToken);
 
     public async Task<IReadOnlyList<Payment>> GetByCustomerAsync(
@@ -37,13 +39,8 @@ public sealed class PaymentRepository(
     public async Task AddAsync(
         Payment payment,
         CancellationToken cancellationToken = default)
-        => await dbContext.Set<Payment>()
-            .AddAsync(
-                payment,
-                cancellationToken);
+        => await dbContext.Set<Payment>().AddAsync(payment, cancellationToken);
 
-    public async Task SaveChangesAsync(
-        CancellationToken cancellationToken = default)
-        => await dbContext.SaveChangesAsync(
-            cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+        => dbContext.SaveChangesAsync(cancellationToken);
 }

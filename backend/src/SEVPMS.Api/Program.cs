@@ -1,4 +1,4 @@
-﻿using SEVPMS.Api.Klegar;
+using SEVPMS.Api.Klegar;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -45,8 +45,7 @@ builder.Services.AddSwaggerGen(options =>
             Scheme = "bearer",
             BearerFormat = "JWT",
             In = ParameterLocation.Header,
-            Description =
-                "Enter your JWT access token."
+            Description = "Enter your JWT access token."
         });
 
     options.AddSecurityRequirement(
@@ -55,41 +54,31 @@ builder.Services.AddSwaggerGen(options =>
             {
                 new OpenApiSecurityScheme
                 {
-                    Reference =
-                        new OpenApiReference
-                        {
-                            Type =
-                                ReferenceType.SecurityScheme,
-                            Id = "Bearer"
-                        }
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
                 },
                 Array.Empty<string>()
             }
         });
 });
 
-// =============================================
-// JWT Authentication
-// =============================================
-
 var jwtIssuer =
     builder.Configuration["Jwt:Issuer"]
-    ?? throw new InvalidOperationException(
-        "JWT issuer is not configured.");
+    ?? throw new InvalidOperationException("JWT issuer is not configured.");
 
 var jwtAudience =
     builder.Configuration["Jwt:Audience"]
-    ?? throw new InvalidOperationException(
-        "JWT audience is not configured.");
+    ?? throw new InvalidOperationException("JWT audience is not configured.");
 
 var jwtKey =
     builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException(
-        "JWT signing key is not configured.");
+    ?? throw new InvalidOperationException("JWT signing key is not configured.");
 
 builder.Services
-    .AddAuthentication(
-        JwtBearerDefaults.AuthenticationScheme)
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters =
@@ -97,75 +86,55 @@ builder.Services
             {
                 ValidateIssuer = true,
                 ValidIssuer = jwtIssuer,
-
                 ValidateAudience = true,
                 ValidAudience = jwtAudience,
-
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey =
                     new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(jwtKey)),
-
                 ValidateLifetime = true,
-
                 ClockSkew = TimeSpan.FromSeconds(30)
             };
 
         options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
             {
-                OnMessageReceived = context =>
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrWhiteSpace(accessToken) &&
+                    (path.StartsWithSegments("/hubs/notifications") ||
+                     path.StartsWithSegments("/hubs/events")))
                 {
-                    var accessToken =
-                    context.Request.Query["access_token"];
-
-                    var path = context.HttpContext.Request.Path;
-
-                    if (!string.IsNullOrWhiteSpace(accessToken) &&
-                        (path.StartsWithSegments("/hubs/notifications") ||
-                        path.StartsWithSegments("/hubs/events")))
-                        {
-                            context.Token = accessToken;
-                        }
-
-                    return Task.CompletedTask;
+                    context.Token = accessToken;
                 }
-            };
+
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(
         AuthorizationPolicies.CustomerOnly,
-        policy =>
-            policy.RequireRole(
-                UserRole.Customer.ToString()));
+        policy => policy.RequireRole(UserRole.Customer.ToString()));
 
     options.AddPolicy(
         AuthorizationPolicies.EventOrganizerOnly,
-        policy =>
-            policy.RequireRole(
-                UserRole.EventOrganizer.ToString()));
+        policy => policy.RequireRole(UserRole.EventOrganizer.ToString()));
 
     options.AddPolicy(
         AuthorizationPolicies.VenueOwnerOnly,
-        policy =>
-            policy.RequireRole(
-                UserRole.VenueOwner.ToString()));
+        policy => policy.RequireRole(UserRole.VenueOwner.ToString()));
 
     options.AddPolicy(
         AuthorizationPolicies.AdminOnly,
-        policy =>
-            policy.RequireRole(
-                UserRole.Admin.ToString()));
+        policy => policy.RequireRole(UserRole.Admin.ToString()));
 });
 
-// =============================================
-// Project Services
-// =============================================
-
-builder.Services.AddInfrastructure(
-    builder.Configuration);
-
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddRealtime();
 builder.Services.AddKlegarBackend();
 
@@ -173,39 +142,24 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    await AdminBootstrapSeeder.SeedAsync(
-        app.Services,
-        app.Configuration);
+    await AdminBootstrapSeeder.SeedAsync(app.Services, app.Configuration);
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-// =============================================
-// Middleware
-// =============================================
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
-
 app.UseCors(AngularDevCorsPolicy);
 
-// IMPORTANT: Authentication first
 app.UseAuthentication();
+app.UseMiddleware<AuditLoggingMiddleware>();
 app.UseAuthorization();
 
-// =============================================
-// Endpoints
-// =============================================
-
 app.MapControllers();
-
-app.MapHub<NotificationHub>(
-    "/hubs/notifications");
-
-app.MapHub<EventHub>(
-    "/hubs/events");
+app.MapHub<NotificationHub>("/hubs/notifications");
+app.MapHub<EventHub>("/hubs/events");
 
 app.Run();
 
