@@ -34,6 +34,11 @@ public interface IParkingReservationService
         Guid reservationId,
         CancellationToken cancellationToken = default);
 
+    Task<bool> CancelByBookingAsync(
+        Guid userId,
+        Guid bookingId,
+        CancellationToken cancellationToken = default);
+
     Task<ParkingReservationDto> ScanAsync(
         Guid userId,
         ParkingQrScanRequest request,

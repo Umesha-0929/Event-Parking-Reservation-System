@@ -261,6 +261,53 @@ public sealed class ParkingReservationService(
         return true;
     }
 
+    public async Task<bool> CancelByBookingAsync(
+        Guid userId,
+        Guid bookingId,
+        CancellationToken cancellationToken = default)
+    {
+        if (bookingId == Guid.Empty)
+        {
+            throw new ParkingReservationValidationException(
+                "Booking is required.");
+        }
+
+        await EnsureOwnedBookingAsync(
+            userId,
+            bookingId,
+            cancellationToken);
+
+        var reservation =
+            await reservationRepository.GetByBookingIdAsync(
+                bookingId,
+                cancellationToken);
+
+        if (reservation is null)
+        {
+            return false;
+        }
+
+        if (reservation.Status ==
+                ParkingReservationStatuses.Cancelled ||
+            reservation.Status ==
+                ParkingReservationStatuses.Exited)
+        {
+            return true;
+        }
+
+        if (reservation.Status !=
+            ParkingReservationStatuses.Reserved)
+        {
+            throw new ParkingReservationValidationException(
+                "Only a reserved parking reservation can be released when cancelling a booking.");
+        }
+
+        return await CancelAsync(
+            userId,
+            reservation.Id,
+            cancellationToken);
+    }
+
     public async Task<ParkingReservationDto> ScanAsync(
         Guid userId,
         ParkingQrScanRequest request,
