@@ -78,6 +78,7 @@ public static class DependencyInjection
         services.AddVehicleModule();
         services.AddParkingModule();
         services.AddFoodModule();
+        services.AddPlaceModule();
 
         return services;
     }
