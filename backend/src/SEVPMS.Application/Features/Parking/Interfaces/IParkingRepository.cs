@@ -16,6 +16,30 @@ public interface IParkingRepository
         Guid parkingSlotId,
         CancellationToken cancellationToken = default);
 
+    Task<ParkingZone?> GetZoneByIdAsync(
+        Guid parkingZoneId,
+        CancellationToken cancellationToken = default);
+
+    Task AddZoneAsync(
+        ParkingZone zone,
+        CancellationToken cancellationToken = default);
+
+    Task AddSlotAsync(
+        ParkingSlot slot,
+        CancellationToken cancellationToken = default);
+
+    void UpdateZone(
+        ParkingZone zone);
+
+    void UpdateSlot(
+        ParkingSlot slot);
+
+    void DeleteZone(
+        ParkingZone zone);
+
+    void DeleteSlot(
+        ParkingSlot slot);
+
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);
 }

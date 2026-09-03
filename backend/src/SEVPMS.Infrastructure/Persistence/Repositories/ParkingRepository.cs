@@ -38,9 +38,75 @@ public sealed class ParkingRepository(
                 cancellationToken);
     }
 
+    public async Task<ParkingZone?> GetZoneByIdAsync(
+        Guid parkingZoneId,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext
+            .Set<ParkingZone>()
+            .SingleOrDefaultAsync(
+                zone => zone.Id == parkingZoneId,
+                cancellationToken);
+    }
+
+    public async Task AddZoneAsync(
+        ParkingZone zone,
+        CancellationToken cancellationToken = default)
+    {
+        await dbContext
+            .Set<ParkingZone>()
+            .AddAsync(
+                zone,
+                cancellationToken);
+    }
+
+    public async Task AddSlotAsync(
+        ParkingSlot slot,
+        CancellationToken cancellationToken = default)
+    {
+        await dbContext
+            .Set<ParkingSlot>()
+            .AddAsync(
+                slot,
+                cancellationToken);
+    }
+
+    public void UpdateZone(
+        ParkingZone zone)
+    {
+        dbContext
+            .Set<ParkingZone>()
+            .Update(zone);
+    }
+
+    public void UpdateSlot(
+        ParkingSlot slot)
+    {
+        dbContext
+            .Set<ParkingSlot>()
+            .Update(slot);
+    }
+
+    public void DeleteZone(
+        ParkingZone zone)
+    {
+        dbContext
+            .Set<ParkingZone>()
+            .Remove(zone);
+    }
+
+    public void DeleteSlot(
+        ParkingSlot slot)
+    {
+        dbContext
+            .Set<ParkingSlot>()
+            .Remove(slot);
+    }
+
     public async Task SaveChangesAsync(
         CancellationToken cancellationToken = default)
     {
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.SaveChangesAsync(
+            cancellationToken);
     }
 }
