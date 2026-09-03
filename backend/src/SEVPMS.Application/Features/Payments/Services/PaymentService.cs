@@ -287,13 +287,23 @@ public sealed class PaymentService(
         Guid paymentId,
         CancellationToken cancellationToken = default)
     {
-        var payment = await paymentRepository.GetByIdAsync(paymentId, cancellationToken)
+        var payment = await paymentRepository.GetByIdAsync(
+            paymentId,
+            cancellationToken)
             ?? throw new KeyNotFoundException("Payment was not found.");
 
         if (payment.CustomerUserId != customerUserId)
             throw new ForbiddenAccessException("You do not own this payment.");
 
-        return (await transactionRepository.GetByPaymentAsync(paymentId, cancellationToken))
+        if (transactionRepository is null)
+        {
+            throw new InvalidOperationException(
+                "Payment transaction repository is not configured.");
+        }
+
+        return (await transactionRepository.GetByPaymentAsync(
+                paymentId,
+                cancellationToken))
             .Select(x => new PaymentTransactionResponse
             {
                 PaymentTransactionId = x.Id,
@@ -449,7 +459,6 @@ public sealed class PaymentService(
             throw new InvalidOperationException(
                 "Payment transaction repository is not configured.");
         }
-            return;
 
         await transactionRepository.AddAsync(
             new PaymentTransaction
