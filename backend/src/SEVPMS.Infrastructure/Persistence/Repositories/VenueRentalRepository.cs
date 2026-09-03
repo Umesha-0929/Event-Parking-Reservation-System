@@ -23,8 +23,7 @@ public sealed class VenueRentalRepository(
             CancellationToken cancellationToken = default)
         => await dbContext.Set<VenueRentalRequest>()
             .AsNoTracking()
-            .Where(x =>
-                x.OrganizerUserId == organizerUserId)
+            .Where(x => x.OrganizerUserId == organizerUserId)
             .OrderByDescending(x => x.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
@@ -34,14 +33,11 @@ public sealed class VenueRentalRepository(
             CancellationToken cancellationToken = default)
     {
         if (venueIds.Count == 0)
-        {
             return Array.Empty<VenueRentalRequest>();
-        }
 
         return await dbContext.Set<VenueRentalRequest>()
             .AsNoTracking()
-            .Where(x =>
-                venueIds.Contains(x.VenueId))
+            .Where(x => venueIds.Contains(x.VenueId))
             .OrderByDescending(x => x.CreatedAtUtc)
             .ToListAsync(cancellationToken);
     }
@@ -57,24 +53,37 @@ public sealed class VenueRentalRepository(
             .AnyAsync(
                 x =>
                     x.VenueId == venueId &&
-                    x.Status ==
-                        RentalRequestStatus.Accepted &&
+                    x.Status == RentalRequestStatus.Accepted &&
                     (!excludeRentalId.HasValue ||
                      x.Id != excludeRentalId.Value) &&
                     x.StartAtUtc < endAtUtc &&
                     x.EndAtUtc > startAtUtc,
                 cancellationToken);
 
+    public Task<bool> HasAcceptedRentalForOrganizerAsync(
+        Guid organizerUserId,
+        Guid venueId,
+        DateTime startAtUtc,
+        DateTime endAtUtc,
+        CancellationToken cancellationToken = default)
+        => dbContext.Set<VenueRentalRequest>()
+            .AsNoTracking()
+            .AnyAsync(
+                x =>
+                    x.OrganizerUserId == organizerUserId &&
+                    x.VenueId == venueId &&
+                    x.Status == RentalRequestStatus.Accepted &&
+                    x.StartAtUtc <= startAtUtc &&
+                    x.EndAtUtc >= endAtUtc,
+                cancellationToken);
+
     public async Task AddAsync(
         VenueRentalRequest request,
         CancellationToken cancellationToken = default)
         => await dbContext.Set<VenueRentalRequest>()
-            .AddAsync(
-                request,
-                cancellationToken);
+            .AddAsync(request, cancellationToken);
 
     public async Task SaveChangesAsync(
         CancellationToken cancellationToken = default)
-        => await dbContext.SaveChangesAsync(
-            cancellationToken);
+        => await dbContext.SaveChangesAsync(cancellationToken);
 }

@@ -23,6 +23,13 @@ public interface IVenueRentalRepository
         Guid? excludeRentalId = null,
         CancellationToken cancellationToken = default);
 
+    Task<bool> HasAcceptedRentalForOrganizerAsync(
+        Guid organizerUserId,
+        Guid venueId,
+        DateTime startAtUtc,
+        DateTime endAtUtc,
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         VenueRentalRequest request,
         CancellationToken cancellationToken = default);
