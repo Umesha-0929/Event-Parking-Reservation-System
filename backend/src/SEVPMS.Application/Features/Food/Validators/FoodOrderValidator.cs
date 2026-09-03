@@ -80,8 +80,9 @@ public static class FoodOrderValidator
 
         var allowed = current switch
         {
-            FoodOrderStatus.Pending =>
+            FoodOrderStatus.Placed =>
                 next is FoodOrderStatus.Accepted
+                    or FoodOrderStatus.Rejected
                     or FoodOrderStatus.Cancelled,
 
             FoodOrderStatus.Accepted =>

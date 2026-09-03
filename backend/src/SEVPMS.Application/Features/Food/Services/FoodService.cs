@@ -306,7 +306,7 @@ public sealed class FoodService(
         }
 
         var initialStatus =
-            FoodOrderStatus.Pending.ToString();
+            FoodOrderStatus.Placed.ToString();
 
         var order =
             new FoodOrder

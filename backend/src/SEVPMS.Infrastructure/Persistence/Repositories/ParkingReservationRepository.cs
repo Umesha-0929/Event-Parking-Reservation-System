@@ -25,7 +25,8 @@ public sealed class ParkingReservationRepository(
     {
         return await dbContext
             .Set<ParkingReservation>()
-            .SingleOrDefaultAsync(
+            .OrderByDescending(reservation => reservation.ReservedAtUtc)
+            .FirstOrDefaultAsync(
                 reservation => reservation.BookingId == bookingId,
                 cancellationToken);
     }
@@ -36,8 +37,7 @@ public sealed class ParkingReservationRepository(
     {
         return await dbContext
             .Set<ParkingReservation>()
-            .Where(reservation =>
-                reservation.ParkingSlotId == parkingSlotId)
+            .Where(reservation => reservation.ParkingSlotId == parkingSlotId)
             .Where(reservation =>
                 reservation.Status == "Reserved" ||
                 reservation.Status == "Entered" ||
@@ -45,29 +45,37 @@ public sealed class ParkingReservationRepository(
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<ParkingSlot?> GetParkingSlotByIdAsync(
+        Guid parkingSlotId,
+        CancellationToken cancellationToken = default)
+    {
+        return await dbContext
+            .Set<ParkingSlot>()
+            .SingleOrDefaultAsync(
+                slot => slot.Id == parkingSlotId,
+                cancellationToken);
+    }
+
     public async Task AddAsync(
         ParkingReservation reservation,
         CancellationToken cancellationToken = default)
     {
-        await dbContext
-            .Set<ParkingReservation>()
-            .AddAsync(
-                reservation,
-                cancellationToken);
+        await dbContext.Set<ParkingReservation>().AddAsync(reservation, cancellationToken);
     }
 
-    public void Update(
-        ParkingReservation reservation)
+    public void Update(ParkingReservation reservation)
     {
-        dbContext
-            .Set<ParkingReservation>()
-            .Update(reservation);
+        dbContext.Set<ParkingReservation>().Update(reservation);
+    }
+
+    public void UpdateParkingSlot(ParkingSlot parkingSlot)
+    {
+        dbContext.Set<ParkingSlot>().Update(parkingSlot);
     }
 
     public async Task SaveChangesAsync(
         CancellationToken cancellationToken = default)
     {
-        await dbContext.SaveChangesAsync(
-            cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

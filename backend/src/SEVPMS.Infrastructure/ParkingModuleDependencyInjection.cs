@@ -25,6 +25,9 @@ public static class ParkingModuleDependencyInjection
             IParkingRecommendationCandidateProvider,
             ParkingRecommendationCandidateProvider>();
 
+        services.AddScoped<IParkingReservationRepository, ParkingReservationRepository>();
+        services.AddScoped<IParkingReservationService, ParkingReservationService>();
+
         return services;
     }
 }

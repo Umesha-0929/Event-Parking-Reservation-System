@@ -91,8 +91,9 @@ public sealed class FoodOrderValidatorTests
     }
 
     [Theory]
-    [InlineData("Pending", "Accepted")]
-    [InlineData("Pending", "Cancelled")]
+    [InlineData("Placed", "Accepted")]
+    [InlineData("Placed", "Rejected")]
+    [InlineData("Placed", "Cancelled")]
     [InlineData("Accepted", "Preparing")]
     [InlineData("Accepted", "Cancelled")]
     [InlineData("Preparing", "Ready")]
@@ -110,10 +111,11 @@ public sealed class FoodOrderValidatorTests
     }
 
     [Theory]
-    [InlineData("Pending", "Ready")]
+    [InlineData("Placed", "Ready")]
     [InlineData("Preparing", "Completed")]
-    [InlineData("Completed", "Pending")]
+    [InlineData("Completed", "Placed")]
     [InlineData("Cancelled", "Accepted")]
+    [InlineData("Rejected", "Accepted")]
     public void ValidateStatusTransition_WithInvalidTransition_ThrowsValidationException(
         string currentStatus,
         string newStatus)
