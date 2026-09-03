@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SEVPMS.Application.Features.Admin.Interfaces;
+using SEVPMS.Application.Features.Admin.Services;
 using SEVPMS.Application.Features.Auth.Interfaces;
 using SEVPMS.Application.Features.Auth.Services;
 using SEVPMS.Application.Features.Bookings.Interfaces;
@@ -59,6 +61,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<IReceiptRepository, ReceiptRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>();
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
@@ -70,6 +73,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IReceiptService, ReceiptService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 
         services.AddScoped<IPaymentProvider, MockPaymentProvider>();
         services.AddScoped<ISmsSender, ConsoleSmsSender>();
