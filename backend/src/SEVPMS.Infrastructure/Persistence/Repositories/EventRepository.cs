@@ -10,13 +10,15 @@ public sealed class EventRepository(
     SEVPMSDbContext dbContext)
     : IEventRepository
 {
-    public async Task<IReadOnlyList<Event>> GetPublishedAsync(
-        EventSearchRequest request,
-        CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Event>>
+        GetPublishedAsync(
+            EventSearchRequest request,
+            CancellationToken cancellationToken = default)
     {
         var query =
             dbContext.Set<Event>()
                 .AsNoTracking()
+                .Include(x => x.CategoryEntity)
                 .Where(x =>
                     x.Status == EventStatus.Published);
 
@@ -39,14 +41,25 @@ public sealed class EventRepository(
                 request.Venue.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(
-                request.Category))
+        if (request.CategoryId.HasValue &&
+            request.CategoryId.Value != Guid.Empty)
+        {
+            query = query.Where(x =>
+                x.CategoryId ==
+                request.CategoryId.Value);
+        }
+        else if (!string.IsNullOrWhiteSpace(
+                     request.Category))
         {
             var category =
                 request.Category.Trim();
 
             query = query.Where(x =>
-                x.Category == category);
+                x.CategoryEntity != null &&
+                (
+                    x.CategoryEntity.Name == category ||
+                    x.CategoryEntity.Code == category
+                ));
         }
 
         if (request.Date.HasValue)
@@ -77,6 +90,7 @@ public sealed class EventRepository(
             CancellationToken cancellationToken = default)
         => await dbContext.Set<Event>()
             .AsNoTracking()
+            .Include(x => x.CategoryEntity)
             .Where(x =>
                 x.OrganizerUserId ==
                 organizerUserId)
@@ -88,6 +102,7 @@ public sealed class EventRepository(
         Guid eventId,
         CancellationToken cancellationToken = default)
         => dbContext.Set<Event>()
+            .Include(x => x.CategoryEntity)
             .FirstOrDefaultAsync(
                 x => x.Id == eventId,
                 cancellationToken);
