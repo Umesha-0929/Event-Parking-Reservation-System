@@ -38,6 +38,9 @@ using SEVPMS.Infrastructure.Providers.Email;
 using SEVPMS.Infrastructure.Providers.Payments;
 using SEVPMS.Infrastructure.Providers.Payments.MockPayment;
 using SEVPMS.Infrastructure.Providers.Sms;
+using SEVPMS.Application.Features.Weather.Interfaces;
+using SEVPMS.Application.Features.Weather.Services;
+using SEVPMS.Infrastructure.Providers.Weather;
 
 namespace SEVPMS.Infrastructure;
 
@@ -97,6 +100,15 @@ public static class DependencyInjection
         services.AddScoped<IAdminDashboardService, AdminDashboardService>();
         services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<IReportService, ReportService>();
+
+        services.AddScoped<IWeatherService, WeatherService>();
+
+        services.AddHttpClient<IWeatherProvider, OpenMeteoWeatherProvider>(
+            client =>
+            {
+                client.Timeout =
+                    TimeSpan.FromSeconds(10);
+            });
 
         services.AddScoped<IPaymentProvider, MockPaymentProvider>();
         services.AddScoped<ISandboxPaymentCallbackVerifier, SandboxPaymentCallbackVerifier>();
