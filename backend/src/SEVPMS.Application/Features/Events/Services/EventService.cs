@@ -1,4 +1,5 @@
 using SEVPMS.Application.Common.Exceptions;
+using SEVPMS.Application.Features.Audit.Interfaces;
 using SEVPMS.Application.Features.Events.DTOs;
 using SEVPMS.Application.Features.Events.Interfaces;
 using SEVPMS.Application.Interfaces.Repositories;
@@ -11,7 +12,8 @@ public sealed class EventService(
     IEventRepository eventRepository,
     IVenueRepository venueRepository,
     IVenueRentalRepository venueRentalRepository,
-    IEventCategoryRepository? eventCategoryRepository = null)
+    IEventCategoryRepository? eventCategoryRepository = null,
+    IAuditLogService? auditLogService = null)
     : IEventService
 {
     public async Task<IReadOnlyList<EventResponse>> GetPublishedAsync(
@@ -90,8 +92,6 @@ public sealed class EventService(
                 CategoryId =
                     category.Id,
 
-                // Compatibility value only.
-                // Category itself is NotMapped.
                 Category =
                     category.Name,
 
@@ -163,9 +163,8 @@ public sealed class EventService(
         entity.Category =
             category.Name;
 
-        // Prevent stale old navigation data from being
-        // returned after CategoryId has changed.
-        entity.CategoryEntity = null;
+        entity.CategoryEntity =
+            null;
 
         entity.Title =
             request.Title.Trim();
@@ -248,7 +247,6 @@ public sealed class EventService(
             else if (!string.IsNullOrWhiteSpace(
                          entity.Category))
             {
-                // Temporary compatibility for old/test data.
                 category =
                     await eventCategoryRepository
                         .FindActiveAsync(
@@ -270,6 +268,9 @@ public sealed class EventService(
                 category.Name;
         }
 
+        var previousStatus =
+            entity.Status;
+
         entity.Status =
             EventStatus.Published;
 
@@ -278,6 +279,20 @@ public sealed class EventService(
 
         await eventRepository.SaveChangesAsync(
             cancellationToken);
+
+        if (auditLogService is not null)
+        {
+            await auditLogService.WriteAsync(
+                organizerUserId,
+                "Event published",
+                "Event",
+                entity.Id.ToString(),
+                $"Status={previousStatus}",
+                $"Status={entity.Status}",
+                null,
+                null,
+                cancellationToken);
+        }
 
         return Map(entity);
     }
@@ -299,6 +314,14 @@ public sealed class EventService(
                 "Completed events cannot be cancelled.");
         }
 
+        if (entity.Status == EventStatus.Cancelled)
+        {
+            return Map(entity);
+        }
+
+        var previousStatus =
+            entity.Status;
+
         entity.Status =
             EventStatus.Cancelled;
 
@@ -307,6 +330,20 @@ public sealed class EventService(
 
         await eventRepository.SaveChangesAsync(
             cancellationToken);
+
+        if (auditLogService is not null)
+        {
+            await auditLogService.WriteAsync(
+                organizerUserId,
+                "Event cancelled",
+                "Event",
+                entity.Id.ToString(),
+                $"Status={previousStatus}",
+                $"Status={entity.Status}",
+                null,
+                null,
+                cancellationToken);
+        }
 
         return Map(entity);
     }
@@ -323,7 +360,8 @@ public sealed class EventService(
             ?? throw new KeyNotFoundException(
                 "Event was not found.");
 
-        if (entity.OrganizerUserId != organizerUserId)
+        if (entity.OrganizerUserId !=
+            organizerUserId)
         {
             throw new ForbiddenAccessException(
                 "You do not have permission to manage this event.");
@@ -373,8 +411,6 @@ public sealed class EventService(
                 "The selected venue does not exist or is inactive.");
         }
 
-        // Kept only for older unit tests / compatibility.
-        // Production DI has IEventCategoryRepository.
         if (eventCategoryRepository is null)
         {
             if (categoryId == Guid.Empty &&
@@ -408,7 +444,6 @@ public sealed class EventService(
 
         EventCategory? category;
 
-        // New final v2.0 API contract.
         if (categoryId != Guid.Empty)
         {
             category =
@@ -427,7 +462,6 @@ public sealed class EventService(
             return category;
         }
 
-        // Temporary old frontend/API compatibility.
         if (string.IsNullOrWhiteSpace(
                 legacyCategory))
         {
