@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using SEVPMS.Application.Features.Auth.DTOs;
 using SEVPMS.Application.Features.Auth.Interfaces;
+using SEVPMS.Application.Features.Audit.Interfaces;
 using SEVPMS.Application.Interfaces.Providers;
 using SEVPMS.Application.Interfaces.Repositories;
 using SEVPMS.Domain.Entities.Users;
@@ -12,7 +13,8 @@ public sealed class AccountSecurityService(
     IUserRepository userRepository,
     IPasswordHasher passwordHasher,
     IRefreshTokenService refreshTokenService,
-    IEmailSender emailSender)
+    IEmailSender emailSender,
+    IAuditLogService? auditLogService = null)
     : IAccountSecurityService
 {
     private static readonly TimeSpan ResetLifetime = TimeSpan.FromMinutes(30);
@@ -29,6 +31,19 @@ public sealed class AccountSecurityService(
         {
             await userRepository.RevokeActiveRefreshTokensAsync(userId, now, cancellationToken);
             await userRepository.SaveChangesAsync(cancellationToken);
+            if (auditLogService is not null)
+            {
+                await auditLogService.WriteAsync(
+                    userId,
+                        "User logged out all sessions",
+                        "User",
+                        userId.ToString(),
+                        "Active refresh sessions",
+                        "All refresh tokens revoked",
+                        null,
+                        null,
+                        cancellationToken);
+            }
             return;
         }
 
@@ -116,6 +131,20 @@ public sealed class AccountSecurityService(
             cancellationToken);
 
         await userRepository.SaveChangesAsync(cancellationToken);
+
+        if (auditLogService is not null)
+        {
+            await auditLogService.WriteAsync(
+            user.Id,
+            "Password reset completed",
+            "User",
+            user.Id.ToString(),
+            "Existing credentials",
+            "Password changed and refresh tokens revoked",
+            null,
+            null,
+            cancellationToken);
+        }
     }
 
     private static string Hash(string value)

@@ -34,9 +34,14 @@ public sealed class ReportService(IReportRepository repository) : IReportService
             $"ConfirmedBookings,{report.ConfirmedBookings}",
             $"SuccessfulPayments,{report.SuccessfulPayments}",
             $"Refunds,{report.Refunds}",
+            $"Attendance,{report.Attendance}",
+            $"ParkingReservations,{report.ParkingReservations}",
+            $"FoodOrders,{report.FoodOrders}",
             $"GrossRevenue,{report.GrossRevenue.ToString("0.00", CultureInfo.InvariantCulture)}",
             $"RefundedAmount,{report.RefundedAmount.ToString("0.00", CultureInfo.InvariantCulture)}",
-            $"NetRevenue,{report.NetRevenue.ToString("0.00", CultureInfo.InvariantCulture)}"
+            $"NetRevenue,{report.NetRevenue.ToString("0.00", CultureInfo.InvariantCulture)}",
+            $"FoodRevenue,{report.FoodRevenue.ToString("0.00", CultureInfo.InvariantCulture)}"
+
         };
 
         return string.Join(Environment.NewLine, lines);

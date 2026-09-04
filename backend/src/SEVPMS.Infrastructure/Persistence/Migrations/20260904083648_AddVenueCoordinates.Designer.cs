@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SEVPMS.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using SEVPMS.Infrastructure.Persistence;
 namespace SEVPMS.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(SEVPMSDbContext))]
-    partial class SEVPMSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260904083648_AddVenueCoordinates")]
+    partial class AddVenueCoordinates
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -851,10 +854,6 @@ namespace SEVPMS.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ProviderReference");
 
-                    b.HasIndex("PaymentId", "Type", "ProviderReference")
-                        .IsUnique()
-                        .HasDatabaseName("UX_PaymentTransactions_PaymentId_Type_ProviderReference");
-
                     b.ToTable("PaymentTransactions", (string)null);
                 });
 
@@ -1098,49 +1097,6 @@ namespace SEVPMS.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("ReceiptDeliveries", (string)null);
-                });
-
-            modelBuilder.Entity("SEVPMS.Domain.Entities.Reviews.EventReview", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("BookingId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Comment")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("CustomerUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Rating")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BookingId")
-                        .IsUnique();
-
-                    b.HasIndex("CustomerUserId");
-
-                    b.HasIndex("EventId");
-
-                    b.HasIndex("EventId", "CustomerUserId")
-                        .IsUnique();
-
-                    b.ToTable("EventReviews", (string)null);
                 });
 
             modelBuilder.Entity("SEVPMS.Domain.Entities.Seats.Seat", b =>
@@ -2147,53 +2103,6 @@ namespace SEVPMS.Infrastructure.Persistence.Migrations
 
                     b.Navigation("CategoryEntity");
                 });
-
-            modelBuilder.Entity("SEVPMS.Domain.Entities.Waitlists.WaitlistEntry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("ConvertedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("CustomerUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("EligibleAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("EventId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("LeftAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CustomerUserId");
-
-                    b.HasIndex("EventId");
-
-                    b.HasIndex("EventId", "CustomerUserId")
-                        .IsUnique();
-
-                    b.HasIndex("EventId", "Status", "CreatedAtUtc");
-
-                    b.ToTable("WaitlistEntries", (string)null);
-                });
-                
 
             modelBuilder.Entity("SEVPMS.Domain.Entities.Users.PasswordResetToken", b =>
                 {

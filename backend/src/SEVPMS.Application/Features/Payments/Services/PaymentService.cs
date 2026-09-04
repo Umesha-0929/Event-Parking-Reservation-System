@@ -128,6 +128,20 @@ public sealed class PaymentService(
             PaymentStatus.Failed,
             null,
             cancellationToken);
+        
+        if (auditLogService is not null)
+        {
+            await auditLogService.WriteAsync(
+                payment.CustomerUserId,
+                "Payment marked failed",
+                "Payment",
+                payment.Id.ToString(),
+                "Pending",
+                "Failed",
+                null,
+                null,
+                cancellationToken);
+        }
 
         await notificationService.CreateAsync(
             payment.CustomerUserId,
@@ -185,6 +199,20 @@ public sealed class PaymentService(
                 PaymentStatus.Failed,
                 callbackVerifier.HashPayload(request),
                 cancellationToken);
+
+                if (auditLogService is not null)
+                {
+                    await auditLogService.WriteAsync(
+                    payment.CustomerUserId,
+                    $"Sandbox payment callback {status}",
+                    "Payment",
+                    payment.Id.ToString(),
+                    "Pending",
+                    "Failed",
+                    null,
+                    null,
+                    cancellationToken);
+                }
 
             return Map(payment);
         }
@@ -277,6 +305,19 @@ public sealed class PaymentService(
                 PaymentStatus.Failed,
                 payHereGatewayService.HashNotificationPayload(request),
                 cancellationToken);
+                if (auditLogService is not null)
+                {
+                    await auditLogService.WriteAsync(
+                        payment.CustomerUserId,
+                        $"PayHere payment failed ({request.StatusCode})",
+                        "Payment",
+                        payment.Id.ToString(),
+                        "Pending",
+                        "Failed",
+                        null,
+                        null,
+                        cancellationToken);
+                }
         }
 
         return Map(payment);
@@ -287,13 +328,23 @@ public sealed class PaymentService(
         Guid paymentId,
         CancellationToken cancellationToken = default)
     {
-        var payment = await paymentRepository.GetByIdAsync(paymentId, cancellationToken)
+        var payment = await paymentRepository.GetByIdAsync(
+            paymentId,
+            cancellationToken)
             ?? throw new KeyNotFoundException("Payment was not found.");
 
         if (payment.CustomerUserId != customerUserId)
             throw new ForbiddenAccessException("You do not own this payment.");
 
-        return (await transactionRepository.GetByPaymentAsync(paymentId, cancellationToken))
+        if (transactionRepository is null)
+        {
+            throw new InvalidOperationException(
+                "Payment transaction repository is not configured.");
+        }
+
+        return (await transactionRepository.GetByPaymentAsync(
+                paymentId,
+                cancellationToken))
             .Select(x => new PaymentTransactionResponse
             {
                 PaymentTransactionId = x.Id,
@@ -449,7 +500,6 @@ public sealed class PaymentService(
             throw new InvalidOperationException(
                 "Payment transaction repository is not configured.");
         }
-            return;
 
         await transactionRepository.AddAsync(
             new PaymentTransaction
