@@ -68,6 +68,8 @@ public sealed class VenueService(
             request.City,
             request.District,
             request.Country,
+            request.Latitude,
+            request.Longitude,
             request.Capacity);
 
         var venue =
@@ -84,6 +86,8 @@ public sealed class VenueService(
                 City = request.City.Trim(),
                 District = request.District.Trim(),
                 Country = request.Country.Trim(),
+                Latitude = request.Latitude,
+                Longitude = request.Longitude,
                 Capacity = request.Capacity,
                 ContactPhone = request.ContactPhone?.Trim(),
                 ContactEmail = request.ContactEmail?.Trim(),
@@ -112,6 +116,8 @@ public sealed class VenueService(
             request.City,
             request.District,
             request.Country,
+            request.Latitude,
+            request.Longitude,
             request.Capacity);
 
         var venue =
@@ -130,6 +136,8 @@ public sealed class VenueService(
         venue.City = request.City.Trim();
         venue.District = request.District.Trim();
         venue.Country = request.Country.Trim();
+        venue.Latitude = request.Latitude;
+        venue.Longitude = request.Longitude;
         venue.Capacity = request.Capacity;
         venue.ContactPhone = request.ContactPhone?.Trim();
         venue.ContactEmail = request.ContactEmail?.Trim();
@@ -190,6 +198,8 @@ public sealed class VenueService(
         string city,
         string district,
         string country,
+        decimal? latitude,
+        decimal? longitude,
         int capacity)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -210,6 +220,28 @@ public sealed class VenueService(
         {
             throw new ArgumentException(
                 "Venue location details are required.");
+        }
+
+        if (latitude.HasValue &&
+            (latitude.Value < -90m ||
+            latitude.Value > 90m))
+        {
+            throw new ArgumentException(
+                "Latitude must be between -90 and 90.");
+        }
+
+        if (longitude.HasValue &&
+            (longitude.Value < -180m ||
+            longitude.Value > 180m))
+        {
+            throw new ArgumentException(
+                "Longitude must be between -180 and 180.");
+        }
+
+        if (latitude.HasValue != longitude.HasValue)
+        {
+            throw new ArgumentException(
+                "Latitude and longitude must be provided together.");
         }
 
         if (capacity <= 0)
@@ -233,6 +265,8 @@ public sealed class VenueService(
             City = venue.City,
             District = venue.District,
             Country = venue.Country,
+            Latitude = venue.Latitude,
+            Longitude = venue.Longitude,
             Capacity = venue.Capacity,
             ContactPhone = venue.ContactPhone,
             ContactEmail = venue.ContactEmail,

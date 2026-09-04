@@ -80,11 +80,31 @@ public sealed class WeatherService(
             return response;
         }
 
-        var forecast =
-            await weatherProvider.GetDailyForecastAsync(
-                location,
-                eventDate,
-                cancellationToken);
+        WeatherProviderForecast? forecast;
+
+        // Prefer precise stored venue coordinates.
+        if (venue.Latitude.HasValue &&
+            venue.Longitude.HasValue)
+        {
+            forecast =
+                await weatherProvider
+                    .GetDailyForecastAsync(
+                        venue.Latitude.Value,
+                        venue.Longitude.Value,
+                        eventDate,
+                        cancellationToken);
+        }
+        else
+        {
+            // Backward-compatible fallback for venues
+            // created before coordinates were stored.
+            forecast =
+                await weatherProvider
+                    .GetDailyForecastAsync(
+                        location,
+                        eventDate,
+                        cancellationToken);
+        }
 
         if (forecast is null)
         {
@@ -120,7 +140,8 @@ public sealed class WeatherService(
             forecast.MaximumWindSpeedKmh;
 
         response.Warning =
-            BuildWarning(forecast);
+            BuildWarning(
+                forecast);
 
         return response;
     }
@@ -140,7 +161,8 @@ public sealed class WeatherService(
             }
             .Where(x =>
                 !string.IsNullOrWhiteSpace(x))
-            .Select(x => x.Trim()));
+            .Select(x =>
+                x.Trim()));
     }
 
     private static string GetCondition(
@@ -148,7 +170,8 @@ public sealed class WeatherService(
     {
         return weatherCode switch
         {
-            0 => "Clear sky",
+            0 =>
+                "Clear sky",
 
             1 or 2 =>
                 "Mainly clear or partly cloudy",
@@ -222,6 +245,8 @@ public sealed class WeatherService(
 
         return warnings.Count == 0
             ? null
-            : string.Join(" ", warnings);
+            : string.Join(
+                " ",
+                warnings);
     }
 }

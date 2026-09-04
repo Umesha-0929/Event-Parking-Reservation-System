@@ -14,4 +14,17 @@ public interface IWeatherProvider
         string locationQuery,
         DateOnly date,
         CancellationToken cancellationToken = default);
+
+    Task<WeatherProviderForecast?> GetDailyForecastAsync(
+        decimal latitude,
+        decimal longitude,
+        DateOnly date,
+        CancellationToken cancellationToken = default)
+    {
+        // Backward-compatible default implementation.
+        // Existing test/fake providers that only implement
+        // location-based lookup will continue to compile.
+        return Task.FromResult<WeatherProviderForecast?>(
+            null);
+    }
 }

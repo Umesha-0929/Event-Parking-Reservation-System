@@ -20,6 +20,10 @@ public sealed class VenueResponse
 
     public string Country { get; set; } = string.Empty;
 
+    public decimal? Latitude { get; set; }
+
+    public decimal? Longitude { get; set; }
+
     public int Capacity { get; set; }
 
     public string? ContactPhone { get; set; }

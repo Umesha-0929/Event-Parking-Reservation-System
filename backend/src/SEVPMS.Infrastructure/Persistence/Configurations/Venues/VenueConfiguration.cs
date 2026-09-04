@@ -40,6 +40,12 @@ public sealed class VenueConfiguration
         builder.Property(x => x.Country)
             .HasMaxLength(100)
             .IsRequired();
+        
+        builder.Property(x => x.Latitude)
+            .HasPrecision(9, 6);
+
+        builder.Property(x => x.Longitude)
+            .HasPrecision(9, 6);
 
         builder.Property(x => x.ContactPhone)
             .HasMaxLength(30);

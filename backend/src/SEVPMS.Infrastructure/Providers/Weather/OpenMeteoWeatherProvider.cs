@@ -27,82 +27,127 @@ public sealed class OpenMeteoWeatherProvider(
                 return null;
             }
 
-            var dateText =
-                date.ToString(
-                    "yyyy-MM-dd",
-                    CultureInfo.InvariantCulture);
-
-            var latitude =
-                location.Latitude.ToString(
-                    CultureInfo.InvariantCulture);
-
-            var longitude =
-                location.Longitude.ToString(
-                    CultureInfo.InvariantCulture);
-
-            var forecastUrl =
-                "https://api.open-meteo.com/v1/forecast" +
-                $"?latitude={latitude}" +
-                $"&longitude={longitude}" +
-                "&daily=weather_code," +
-                "temperature_2m_max," +
-                "temperature_2m_min," +
-                "precipitation_sum," +
-                "precipitation_probability_max," +
-                "wind_speed_10m_max" +
-                "&timezone=UTC" +
-                $"&start_date={dateText}" +
-                $"&end_date={dateText}";
-
-            var response =
-                await httpClient.GetFromJsonAsync<
-                    ForecastResponse>(
-                        forecastUrl,
-                        cancellationToken);
-
-            var daily =
-                response?.Daily;
-
-            if (daily is null ||
-                daily.WeatherCode.Count == 0 ||
-                daily.TemperatureMax.Count == 0 ||
-                daily.TemperatureMin.Count == 0)
-            {
-                return null;
-            }
-
-            return new WeatherProviderForecast(
-                WeatherCode:
-                    daily.WeatherCode[0],
-
-                MinimumTemperatureC:
-                    daily.TemperatureMin[0],
-
-                MaximumTemperatureC:
-                    daily.TemperatureMax[0],
-
-                PrecipitationProbabilityPercent:
-                    daily.PrecipitationProbabilityMax
-                        .FirstOrDefault(),
-
-                PrecipitationMm:
-                    daily.PrecipitationSum
-                        .FirstOrDefault(),
-
-                MaximumWindSpeedKmh:
-                    daily.MaximumWindSpeed
-                        .FirstOrDefault());
+            return await GetForecastAsync(
+                location.Latitude,
+                location.Longitude,
+                date,
+                cancellationToken);
         }
-        catch (
-            HttpRequestException)
+        catch (HttpRequestException)
         {
             return null;
         }
-        catch (
-            TaskCanceledException)
+        catch (TaskCanceledException)
         {
             return null;
         }
+    }
+
+    public async Task<WeatherProviderForecast?>
+        GetDailyForecastAsync(
+            decimal latitude,
+            decimal longitude,
+            DateOnly date,
+            CancellationToken cancellationToken = default)
+    {
+        if (latitude < -90m ||
+            latitude > 90m ||
+            longitude < -180m ||
+            longitude > 180m)
+        {
+            return null;
+        }
+
+        try
+        {
+            return await GetForecastAsync(
+                latitude,
+                longitude,
+                date,
+                cancellationToken);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<WeatherProviderForecast?>
+        GetForecastAsync(
+            decimal latitudeValue,
+            decimal longitudeValue,
+            DateOnly date,
+            CancellationToken cancellationToken)
+    {
+        var dateText =
+            date.ToString(
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture);
+
+        var latitude =
+            latitudeValue.ToString(
+                CultureInfo.InvariantCulture);
+
+        var longitude =
+            longitudeValue.ToString(
+                CultureInfo.InvariantCulture);
+
+        var forecastUrl =
+            "https://api.open-meteo.com/v1/forecast" +
+            $"?latitude={latitude}" +
+            $"&longitude={longitude}" +
+            "&daily=weather_code," +
+            "temperature_2m_max," +
+            "temperature_2m_min," +
+            "precipitation_sum," +
+            "precipitation_probability_max," +
+            "wind_speed_10m_max" +
+            "&timezone=UTC" +
+            $"&start_date={dateText}" +
+            $"&end_date={dateText}";
+
+        var response =
+            await httpClient.GetFromJsonAsync<
+                ForecastResponse>(
+                    forecastUrl,
+                    cancellationToken);
+
+        var daily =
+            response?.Daily;
+
+        if (daily is null ||
+            daily.WeatherCode.Count == 0 ||
+            daily.TemperatureMax.Count == 0 ||
+            daily.TemperatureMin.Count == 0)
+        {
+            return null;
+        }
+
+        return new WeatherProviderForecast(
+            WeatherCode:
+                daily.WeatherCode[0],
+
+            MinimumTemperatureC:
+                daily.TemperatureMin[0],
+
+            MaximumTemperatureC:
+                daily.TemperatureMax[0],
+
+            PrecipitationProbabilityPercent:
+                daily.PrecipitationProbabilityMax
+                    .FirstOrDefault(),
+
+            PrecipitationMm:
+                daily.PrecipitationSum
+                    .FirstOrDefault(),
+
+            MaximumWindSpeedKmh:
+                daily.MaximumWindSpeed
+                    .FirstOrDefault());
     }
 
     private async Task<GeoResult?>
@@ -110,6 +155,12 @@ public sealed class OpenMeteoWeatherProvider(
             string locationQuery,
             CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(
+            locationQuery))
+        {
+            return null;
+        }
+
         var encoded =
             Uri.EscapeDataString(
                 locationQuery);
