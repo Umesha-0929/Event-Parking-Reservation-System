@@ -89,9 +89,11 @@ public static class DependencyInjection
         services.AddScoped<IEventService, EventService>();
         services.AddScoped<IVenueRentalService, VenueRentalService>();
         services.AddScoped<IBookingService, BookingService>();
+
         services.AddScoped<
             IConfirmedBookingCancellationService,
             ConfirmedBookingCancellationService>();
+
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IReceiptDeliveryService, ReceiptDeliveryService>();
         services.AddScoped<IReceiptService, ReceiptService>();
@@ -101,14 +103,17 @@ public static class DependencyInjection
         services.AddScoped<IReportService, ReportService>();
 
         services.AddScoped<IPaymentProvider, MockPaymentProvider>();
+
         services.AddScoped<
             ISandboxPaymentCallbackVerifier,
             SandboxPaymentCallbackVerifier>();
+
         services.AddScoped<IPayHereGatewayService, PayHereGatewayService>();
 
         services.AddScoped<ISmsSender>(sp =>
         {
-            var cfg = sp.GetRequiredService<IConfiguration>();
+            var cfg =
+                sp.GetRequiredService<IConfiguration>();
 
             return string.IsNullOrWhiteSpace(
                 cfg["Sms:Http:Endpoint"])
@@ -118,7 +123,8 @@ public static class DependencyInjection
 
         services.AddScoped<IEmailSender>(sp =>
         {
-            var cfg = sp.GetRequiredService<IConfiguration>();
+            var cfg =
+                sp.GetRequiredService<IConfiguration>();
 
             return string.IsNullOrWhiteSpace(
                 cfg["Email:Smtp:Host"])
@@ -132,6 +138,7 @@ public static class DependencyInjection
         services.AddPlaceModule();
         services.AddWaitlistModule();
         services.AddReviewModule();
+        services.AddRecommendationModule();
 
         return services;
     }
