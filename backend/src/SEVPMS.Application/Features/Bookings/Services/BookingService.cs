@@ -3,6 +3,7 @@ using SEVPMS.Application.Features.Bookings.DTOs;
 using SEVPMS.Application.Features.Bookings.Interfaces;
 using SEVPMS.Application.Features.Parking.Interfaces;
 using SEVPMS.Application.Features.Seats.Interfaces;
+using SEVPMS.Application.Features.Waitlists.Interfaces;
 using SEVPMS.Application.Interfaces.Repositories;
 using SEVPMS.Domain.Entities.Bookings;
 using SEVPMS.Domain.Enums;
@@ -14,7 +15,8 @@ public sealed class BookingService(
     IEventRepository eventRepository,
     ISeatingLayoutRepository seatingLayoutRepository,
     ISeatService seatService,
-    IParkingReservationService parkingReservationService)
+    IParkingReservationService parkingReservationService,
+    IWaitlistService? waitlistService = null)
     : IBookingService
 {
     public async Task<IReadOnlyList<BookingResponse>> GetMineAsync(
@@ -245,6 +247,11 @@ public sealed class BookingService(
                 existingSeatIds);
         }
 
+        var seatIds =
+            await bookingRepository.GetSeatIdsAsync(
+                booking.Id,
+                cancellationToken);
+
         booking.Status =
             BookingStatus.Cancelled;
 
@@ -260,18 +267,24 @@ public sealed class BookingService(
                 booking.Id,
                 cancellationToken);
 
-        await seatService.ReleaseHoldAsync(
-            booking.HoldToken,
-            customerUserId,
-            cancellationToken);
+        var seatsReleased =
+            await seatService.ReleaseHoldAsync(
+                booking.HoldToken,
+                customerUserId,
+                cancellationToken);
 
         await bookingRepository.SaveChangesAsync(
             cancellationToken);
 
-        var seatIds =
-            await bookingRepository.GetSeatIdsAsync(
-                booking.Id,
+        if (seatsReleased &&
+            seatIds.Count > 0 &&
+            waitlistService is not null)
+        {
+            await waitlistService.NotifyNextEligibleAsync(
+                booking.EventId,
+                seatIds.Count,
                 cancellationToken);
+        }
 
         return Map(
             booking,
