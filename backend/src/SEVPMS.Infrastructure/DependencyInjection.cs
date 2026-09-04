@@ -131,6 +131,7 @@ public static class DependencyInjection
         services.AddFoodModule();
         services.AddPlaceModule();
         services.AddWaitlistModule();
+        services.AddReviewModule();
 
         return services;
     }
