@@ -41,6 +41,8 @@ using SEVPMS.Infrastructure.Providers.Sms;
 using SEVPMS.Application.Features.Weather.Interfaces;
 using SEVPMS.Application.Features.Weather.Services;
 using SEVPMS.Infrastructure.Providers.Weather;
+using SEVPMS.Application.Features.Calendar.Interfaces;
+using SEVPMS.Application.Features.Calendar.Services;
 
 namespace SEVPMS.Infrastructure;
 
@@ -102,7 +104,7 @@ public static class DependencyInjection
         services.AddScoped<IReportService, ReportService>();
 
         services.AddScoped<IWeatherService, WeatherService>();
-
+        services.AddScoped<IBookingCalendarService, BookingCalendarService>();
         services.AddHttpClient<IWeatherProvider, OpenMeteoWeatherProvider>(
             client =>
             {
