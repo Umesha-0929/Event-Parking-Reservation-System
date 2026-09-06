@@ -1,0 +1,122 @@
+<header class="builder-head">
+  <div>
+    <span class="eyebrow">Host / Create Event</span>
+    <h1>Start with the event. Build the experience around it.</h1>
+    <p>Create the event details first, then continue to stage and seating configuration.</p>
+  </div>
+  <span class="badge">Step 1 of 5</span>
+</header>
+
+<div class="builder-layout">
+  <form class="card builder-card" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <div class="progress progress--five"><i class="done"></i><i></i><i></i><i></i><i></i></div>
+
+    <h2>Event basics</h2>
+
+    <div class="form-grid">
+      <div class="field">
+        <label for="event-name">Event name</label>
+        <input class="input" id="event-name" formControlName="title" placeholder="Enter event name">
+        @if (form.controls.title.touched && form.controls.title.invalid) {
+          <span class="error">Event name is required.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label for="event-category">Category</label>
+        <select class="select" id="event-category" formControlName="categoryId">
+          <option value="">Choose category</option>
+          @for (category of categories(); track category.eventCategoryId) {
+            <option [value]="category.eventCategoryId">{{ category.name }}</option>
+          }
+        </select>
+        @if (!loadingOptions() && categories().length === 0) {
+          <span class="hint">No active event categories are available yet. Ask an Admin to add one in Event Categories.</span>
+        }
+        @if (form.controls.categoryId.touched && form.controls.categoryId.invalid) {
+          <span class="error">Choose a category.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label for="event-venue">Venue</label>
+        <select class="select" id="event-venue" formControlName="venueId">
+          <option value="">Choose a venue</option>
+          @for (venue of venues(); track venueId(venue)) {
+            <option [value]="venueId(venue)">{{ venue.name }} · {{ venue.city }}</option>
+          }
+        </select>
+        <span class="hint">Choose an active venue registered on Nvent.</span>
+        @if (form.controls.venueId.touched && form.controls.venueId.invalid) {
+          <span class="error">Choose a venue.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label for="event-start">Start</label>
+        <input class="input" id="event-start" type="datetime-local" formControlName="startAt">
+        @if (form.controls.startAt.touched && form.controls.startAt.invalid) {
+          <span class="error">Choose the event start date and time.</span>
+        }
+      </div>
+
+      <div class="field">
+        <label for="event-end">End</label>
+        <input
+          class="input"
+          id="event-end"
+          type="datetime-local"
+          formControlName="endAt"
+          [attr.min]="form.controls.startAt.value || null">
+        @if (form.controls.endAt.touched && form.controls.endAt.hasError('required')) {
+          <span class="error">Choose the event end date and time.</span>
+        }
+        @if (form.controls.startAt.value && form.controls.endAt.value && endBeforeStart()) {
+          <span class="error error--time" role="alert">End time must be later than the start time.</span>
+        }
+      </div>
+
+      <div class="field span-2">
+        <label for="event-desc">Description</label>
+        <textarea class="textarea" id="event-desc" formControlName="description" placeholder="Describe the attendee experience"></textarea>
+        @if (form.controls.description.touched && form.controls.description.hasError('required')) {
+          <span class="error">Description is required.</span>
+        } @else if (form.controls.description.touched && form.controls.description.hasError('minlength')) {
+          <span class="error">Description must be at least 10 characters.</span>
+        }
+      </div>
+    </div>
+
+    @if (error()) {
+      <div class="preview-note error-note action-error" role="alert">
+        <span>!</span>
+        <div><strong>Event could not be created</strong><br>{{ error() }}</div>
+      </div>
+    }
+
+    @if (loadingOptions()) {
+      <div class="form-status" aria-live="polite">Loading categories and venues…</div>
+    }
+
+    <div class="builder-actions">
+      <a class="btn btn--secondary" href="/organizer/events">Cancel</a>
+      <button class="btn btn--primary" type="submit" [disabled]="saving() || loadingOptions()">
+        {{ saving() ? 'Creating draft…' : 'Create event draft →' }}
+      </button>
+    </div>
+
+    @if (created()) {<div class="preview-note ready-note"><span>✓</span><div><strong>Event draft created.</strong><br>Opening stage setup…</div></div>}
+  </form>
+
+  <aside class="card next-card">
+    <span class="eyebrow">Setup flow</span>
+    <h2>What comes next</h2>
+    <ol>
+      <li class="active"><b>1</b><span><strong>Event details</strong><small>Save the event draft</small></span></li>
+      <li><b>2</b><span><strong>Stage type</strong><small>Choose one of 6 supported stages</small></span></li>
+      <li><b>3</b><span><strong>Seating layout</strong><small>Rows, columns, sections and access</small></span></li>
+      <li><b>4</b><span><strong>Seat categories</strong><small>Pricing and customer choices</small></span></li>
+      <li><b>5</b><span><strong>Review & publish</strong><small>Generate seats, confirm venue and publish</small></span></li>
+    </ol>
+  </aside>
+</div>
