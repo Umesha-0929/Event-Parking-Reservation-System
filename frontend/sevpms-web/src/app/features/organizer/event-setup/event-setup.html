@@ -1,0 +1,150 @@
+<header class="setup-head">
+  <div>
+    <span class="eyebrow">Event setup · Step {{ stepNumber() }} of 5</span>
+    <h1>{{ eventTitle() }}</h1>
+    <p>Keep every setup choice tied to this event as you move from stage design to seating, pricing and final publishing.</p>
+  </div>
+  <a class="btn btn--secondary" routerLink="/organizer/events">← My events</a>
+</header>
+
+<nav class="setup-progress" aria-label="Event setup progress">
+  <span class="complete"><b>1</b><span>Event details</span></span>
+  <a [routerLink]="['/organizer/events', eventId, 'stage']" [class.active]="step === 'stage'"><b>2</b><span>Stage</span></a>
+  <a [routerLink]="['/organizer/events', eventId, 'seating']" [class.active]="step === 'seating'"><b>3</b><span>Seating</span></a>
+  <a [routerLink]="['/organizer/events', eventId, 'categories']" [class.active]="step === 'categories'"><b>4</b><span>Categories</span></a>
+  <a [routerLink]="['/organizer/events', eventId, 'preview']" [class.active]="step === 'preview'"><b>5</b><span>Review</span></a>
+</nav>
+
+@if (loading()) {
+  <div class="card loading-card">Loading event setup…</div>
+} @else if (error() && !event()) {
+  <div class="empty-state"><span class="badge badge--danger">Unable to continue</span><h3>Event setup could not be opened.</h3><p>{{ error() }}</p><a class="btn btn--primary" routerLink="/organizer/events">Choose another event</a></div>
+} @else {
+  @if (notice()) {<div class="feedback feedback--success" role="status">{{ notice() }}</div>}
+  @if (error()) {<div class="feedback feedback--error" role="alert">{{ error() }}</div>}
+  @if (readOnly()) {<div class="feedback">This event or seating layout is already published. Setup is shown for review and cannot be edited.</div>}
+
+  @if (step === 'stage') {
+    <div class="setup-grid">
+      <section class="card setup-card">
+        <span class="eyebrow">Stage type</span>
+        <h2>Choose how the audience faces the experience.</h2>
+        <div class="stage-grid">
+          @for (stage of stages; track stage.value) {
+            <label class="stage-option" [class.selected]="stageType === stage.value">
+              <input type="radio" name="stageType" [value]="stage.value" [(ngModel)]="stageType" [disabled]="readOnly()">
+              <span class="stage-icon" [class.round]="stage.value === 6" [class.thrust]="stage.value === 4" [class.traverse]="stage.value === 5"></span>
+              <strong>{{ stage.label }}</strong><small>{{ stage.help }}</small>
+            </label>
+          }
+        </div>
+        <div class="form-grid compact">
+          <div class="field"><label>Planned rows</label><input class="input" type="number" min="1" max="30" [(ngModel)]="rows" [disabled]="readOnly()"></div>
+          <div class="field"><label>Planned columns</label><input class="input" type="number" min="1" max="40" [(ngModel)]="columns" [disabled]="readOnly()"></div>
+        </div>
+        <div class="actions"><a class="btn btn--secondary" routerLink="/organizer/events">Cancel</a><button class="btn btn--primary" type="button" (click)="saveStage()" [disabled]="saving() || readOnly()">{{ saving() ? 'Saving…' : 'Save stage & continue →' }}</button></div>
+      </section>
+      <aside class="card preview-card"><span class="eyebrow">Live preview</span><h2>{{ stageLabel() }}</h2><div class="mini-stage" [class.round]="stageType === 6" [class.thrust]="stageType === 4" [class.traverse]="stageType === 5">Stage</div><div class="mini-seats" [style.grid-template-columns]="'repeat(' + (columns > 16 ? 16 : columns) + ', 1fr)'">@for (seat of previewSeatIndexes(); track seat) {<i></i>}</div><p>Preview is simplified here. Detailed sections and accessibility are configured next.</p></aside>
+    </div>
+  }
+
+  @if (step === 'seating') {
+    @if (!layout()) {
+      <div class="empty-state"><span class="badge badge--warning">Stage required</span><h3>Choose the stage before arranging seats.</h3><p>This keeps the seating layout attached to the correct event.</p><button class="btn btn--primary" type="button" (click)="go('stage')">Choose stage</button></div>
+    } @else {
+      <div class="setup-grid seating-grid">
+        <section class="card setup-card">
+          <span class="eyebrow">Seating layout</span><h2>Set the overall grid, then add one or more seating sections.</h2>
+          <div class="form-grid compact">
+            <div class="field"><label>Overall rows</label><input class="input" type="number" min="1" max="30" [(ngModel)]="rows" [disabled]="readOnly()"></div>
+            <div class="field"><label>Overall columns</label><input class="input" type="number" min="1" max="40" [(ngModel)]="columns" [disabled]="readOnly()"></div>
+          </div>
+          <button class="btn btn--secondary full" type="button" (click)="updateGrid()" [disabled]="saving() || readOnly()">Update overall grid</button>
+          <hr>
+          <div class="section-title"><div><h3>{{ editingSectionId ? 'Edit section' : 'Add seating section' }}</h3><p>Examples: Main Floor, Balcony, VIP Left.</p></div>@if(editingSectionId){<button type="button" (click)="resetSectionForm()">New section</button>}</div>
+          <div class="form-grid">
+            <div class="field"><label>Section name</label><input class="input" [(ngModel)]="sectionName" [disabled]="readOnly()"></div>
+            <div class="field"><label>Section code</label><input class="input" [(ngModel)]="sectionCode" [disabled]="readOnly()"></div>
+            <div class="field"><label>Rows</label><input class="input" type="number" min="1" [max]="rows" [(ngModel)]="sectionRows" [disabled]="readOnly()"></div>
+            <div class="field"><label>Columns</label><input class="input" type="number" min="1" [max]="columns" [(ngModel)]="sectionColumns" [disabled]="readOnly()"></div>
+            <label class="check span-2"><input type="checkbox" [(ngModel)]="sectionAccessible" [disabled]="readOnly()"><span>Make every seat in this section accessible</span></label>
+          </div>
+          <button class="btn btn--primary full" type="button" (click)="saveSection()" [disabled]="saving() || readOnly()">{{ editingSectionId ? 'Save section changes' : 'Add section' }}</button>
+        </section>
+        <section class="card setup-card">
+          <div class="section-title"><div><span class="eyebrow">Saved sections</span><h2>{{ layout()!.sections.length }} section{{ layout()!.sections.length === 1 ? '' : 's' }}</h2></div></div>
+          @if (layout()!.sections.length === 0) {<div class="small-empty">Add at least one section before continuing.</div>}
+          <div class="saved-list">@for(section of layout()!.sections; track section.id){<button type="button" class="saved-row" (click)="editSection(section)"><span><strong>{{section.name}}</strong><small>{{section.code}} · {{section.rowCount}} × {{section.columnCount}}{{section.isAccessibleSection ? ' · Accessible' : ''}}</small></span><b>Edit</b></button>}</div>
+          <div class="canvas-preview"><div class="canvas-stage">{{ stageLabel() }}</div>@for(section of layout()!.sections; track section.id){<div class="canvas-section"><b>{{section.name}}</b><small>{{section.rowCount * section.columnCount}} planned positions</small></div>}</div>
+          <div class="actions"><button class="btn btn--secondary" type="button" (click)="go('stage')">← Stage</button><button class="btn btn--primary" type="button" (click)="go('categories')" [disabled]="layout()!.sections.length === 0">Seat categories →</button></div>
+        </section>
+      </div>
+    }
+  }
+
+  @if (step === 'categories') {
+    @if (!layout() || layout()!.sections.length === 0) {
+      <div class="empty-state"><span class="badge badge--warning">Seating required</span><h3>Add a seating section first.</h3><p>Seat categories need a configured event layout.</p><button class="btn btn--primary" type="button" (click)="go('seating')">Configure seating</button></div>
+    } @else {
+      <div class="setup-grid categories-grid">
+        <section class="card setup-card">
+          <span class="eyebrow">Seat categories & pricing</span><h2>{{ editingCategoryId ? 'Edit category' : 'Add a price category' }}</h2><p class="muted">Create the choices customers will understand during seat selection.</p>
+          <div class="form-grid">
+            <div class="field"><label>Category name</label><input class="input" placeholder="VIP" [(ngModel)]="categoryName" [disabled]="readOnly()"></div>
+            <div class="field"><label>Code</label><input class="input" placeholder="VIP" [(ngModel)]="categoryCode" [disabled]="readOnly()"></div>
+            <div class="field span-2"><label>Price (LKR)</label><input class="input" type="number" min="0" [(ngModel)]="categoryPrice" [disabled]="readOnly()"></div>
+            <label class="check span-2"><input type="checkbox" [(ngModel)]="categoryActive" [disabled]="readOnly()"><span>Available for seat assignment</span></label>
+          </div>
+          <div class="actions"><button class="btn btn--secondary" type="button" (click)="resetCategoryForm()" [disabled]="readOnly()">Clear</button><button class="btn btn--primary" type="button" (click)="saveCategory()" [disabled]="saving() || readOnly()">{{ editingCategoryId ? 'Save category' : 'Add category' }}</button></div>
+        </section>
+        <section class="card setup-card">
+          <span class="eyebrow">Current categories</span><h2>Pricing visible to customers</h2>
+          @if (layout()!.categories.length === 0) {<div class="small-empty">No seat categories yet. Add at least one.</div>}
+          <div class="price-list">@for(category of layout()!.categories; track category.id){<button type="button" (click)="editCategory(category)" [class.inactive]="!category.isActive"><span><strong>{{category.name}}</strong><small>{{category.code}} · {{category.isActive ? 'Active' : 'Inactive'}}</small></span><b>LKR {{category.price.toLocaleString()}}</b></button>}</div>
+          <div class="actions"><button class="btn btn--secondary" type="button" (click)="go('seating')">← Seating</button><button class="btn btn--primary" type="button" (click)="go('preview')" [disabled]="activeCategories().length === 0">Review & generate seats →</button></div>
+        </section>
+      </div>
+    }
+  }
+
+  @if (step === 'preview') {
+    @if (!layout() || enabledSections().length === 0 || activeCategories().length === 0) {
+      <div class="empty-state"><span class="badge badge--warning">Setup incomplete</span><h3>Finish seating and categories first.</h3><p>At least one enabled section and one active seat category are required.</p><div class="actions centered"><button class="btn btn--secondary" type="button" (click)="go('seating')">Seating</button><button class="btn btn--primary" type="button" (click)="go('categories')">Categories</button></div></div>
+    } @else {
+      <div class="review-grid">
+        <section class="card setup-card generate-card">
+          <span class="eyebrow">Seat generation</span><h2>Generate the actual seats for each section.</h2><p class="muted">Choose a section and its category. Repeat this step for additional sections.</p>
+          <div class="form-grid">
+            <div class="field"><label>Section</label><select class="select" [(ngModel)]="selectedSectionId" [disabled]="readOnly()">@for(section of enabledSections(); track section.id){<option [value]="section.id">{{section.name}} · {{section.rowCount}} × {{section.columnCount}}</option>}</select></div>
+            <div class="field"><label>Seat category</label><select class="select" [(ngModel)]="selectedCategoryId" [disabled]="readOnly()">@for(category of activeCategories(); track category.id){<option [value]="category.id">{{category.name}} · LKR {{category.price.toLocaleString()}}</option>}</select></div>
+            <div class="field"><label>Starting row label</label><input class="input" [(ngModel)]="startingRowLabel" [disabled]="readOnly()"></div>
+            <div class="field"><label>Starting seat number</label><input class="input" type="number" min="1" [(ngModel)]="startingSeatNumber" [disabled]="readOnly()"></div>
+            <div class="field"><label>Vertical aisle after column</label><input class="input" type="number" min="0" [(ngModel)]="aisleAfterColumn" [disabled]="readOnly()"><small>Use 0 for no aisle.</small></div>
+            <div class="field"><label>Blocked seats</label><input class="input" placeholder="A1, A2, B5" [(ngModel)]="blockedSeats" [disabled]="readOnly()"><small>Comma-separated seat positions.</small></div>
+            <div class="field span-2"><label>Accessible seats</label><input class="input" placeholder="A3, A4" [(ngModel)]="accessibleSeats" [disabled]="readOnly()"><small>Accessible seats are marked separately for customers.</small></div>
+          </div>
+          <button class="btn btn--primary full" type="button" (click)="generateSectionSeats()" [disabled]="saving() || readOnly()">{{ saving() ? 'Working…' : 'Generate / replace seats for this section' }}</button>
+          <div class="seat-count"><span>Current generated seats</span><strong>{{seats().length}}</strong></div>
+        </section>
+
+        <section class="card setup-card rental-card">
+          <span class="eyebrow">Venue approval</span><h2>Confirm the venue before publishing.</h2>
+          @if (currentRental(); as rental) {
+            <div class="rental-status"><span class="badge" [class.badge--success]="acceptedRental()" [class.badge--warning]="!acceptedRental()">{{ rentalStatusLabel(rental.status) }}</span><strong>Venue request</strong><small>{{rental.startAtUtc}} → {{rental.endAtUtc}}</small>@if(rental.ownerMessage){<p>{{rental.ownerMessage}}</p>}</div>
+            @if(!acceptedRental()){<button class="btn btn--secondary full" type="button" (click)="refreshRental()">Refresh approval status</button>}
+          } @else {
+            <p class="muted">Nvent requires the venue owner to accept the rental period before this event can be published.</p>
+            <div class="field"><label>Purpose</label><input class="input" [(ngModel)]="rentalPurpose"></div>
+            <div class="field"><label>Offer amount (LKR)</label><input class="input" type="number" min="0" [(ngModel)]="rentalOffer"></div>
+            <button class="btn btn--secondary full" type="button" (click)="requestRental()" [disabled]="saving()">Send venue approval request</button>
+          }
+          <hr>
+          <span class="eyebrow">Final review</span>
+          <div class="review-summary"><div><small>Stage</small><strong>{{stageLabel()}}</strong></div><div><small>Sections</small><strong>{{enabledSections().length}}</strong></div><div><small>Categories</small><strong>{{activeCategories().length}}</strong></div><div><small>Generated seats</small><strong>{{seats().length}}</strong></div></div>
+          <button class="btn btn--primary full" type="button" (click)="publishJourney()" [disabled]="saving() || readOnly() || seats().length === 0 || !acceptedRental()">{{ saving() ? 'Publishing…' : 'Publish seating & event →' }}</button>
+          @if(!acceptedRental()){<small class="publish-help">Publishing unlocks after the venue owner accepts the rental request.</small>}
+        </section>
+      </div>
+    }
+  }
+}
