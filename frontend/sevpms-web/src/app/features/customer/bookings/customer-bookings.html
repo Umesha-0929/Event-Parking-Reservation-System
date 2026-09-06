@@ -1,0 +1,25 @@
+<header class="page-head"><div><span class="eyebrow">My bookings</span><h1>Everything you reserved, in one place.</h1><p>Continue payment, open tickets, arrange parking or manage an existing booking.</p></div><a class="btn btn--primary" routerLink="/customer/browse-events">Explore events →</a></header>
+@if(error()){<div class="preview-note error-note" role="alert">{{error()}} <button class="text-action" type="button" (click)="load()">Retry</button></div>}
+@if(loading()){
+  <div class="booking-grid">@for(i of [1,2,3];track i){<article class="card booking-card"><div class="skeleton title"></div><div class="skeleton line"></div><div class="skeleton line short"></div></article>}</div>
+}@else if(items().length){
+  <div class="booking-grid">
+    @for(item of items();track id(item)){
+      <article class="card booking-card">
+        <div class="booking-top"><div><span class="badge" [class.badge--success]="status(item.booking.status)==='Confirmed'">{{status(item.booking.status)}}</span><h2>{{item.event?.title || item.event?.name || item.booking.eventName || 'Event booking'}}</h2></div><strong>{{item.booking.bookingNumber || item.booking.bookingReference || id(item)}}</strong></div>
+        <div class="facts"><span><small>Seats</small><b>{{item.booking.seatIds?.length || 0}}</b></span><span><small>Total</small><b>LKR {{item.booking.totalAmount || 0 | number:'1.0-2'}}</b></span><span><small>Event date</small><b>{{item.event?.startAtUtc || item.event?.startDateTime | date:'medium'}}</b></span></div>
+        <div class="actions">
+          @if(status(item.booking.status)==='Pending'){<a class="btn btn--primary" [routerLink]="['/customer/payment']" [queryParams]="{bookingId:id(item)}">Continue payment</a>}
+          @if(status(item.booking.status)==='Confirmed' || status(item.booking.status)==='Completed'){
+            <a class="btn btn--secondary" routerLink="/customer/tickets">View tickets</a>
+            <a class="btn btn--secondary" routerLink="/customer/parking" [queryParams]="{bookingId:id(item)}">Parking</a>
+            <a class="btn btn--secondary" routerLink="/customer/food" [queryParams]="{bookingId:id(item)}">Food</a>
+          }
+          @if(canCancel(item)){<button class="text-action danger" type="button" [disabled]="busyId()===id(item)" (click)="cancel(item)">{{busyId()===id(item)?'Cancelling…':'Cancel booking'}}</button>}
+        </div>
+      </article>
+    }
+  </div>
+}@else{
+  <section class="empty-state"><span class="badge badge--muted">No bookings</span><h3>Your next experience starts with an event.</h3><p>Browse published events, select your seats and your bookings will appear here.</p><a class="btn btn--primary" routerLink="/customer/browse-events">Browse Events</a></section>
+}
