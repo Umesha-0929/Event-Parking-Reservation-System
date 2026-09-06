@@ -144,6 +144,13 @@ public sealed class VenueRentalService(
         await rentalRepository.SaveChangesAsync(
             cancellationToken);
 
+        await notificationService.CreateAsync(
+            venue.OwnerUserId,
+            "New venue rental request",
+            $"A new rental request for {venue.Name} is waiting for your review.",
+            "VenueRental",
+            cancellationToken);
+
         return Map(rental);
     }
 
