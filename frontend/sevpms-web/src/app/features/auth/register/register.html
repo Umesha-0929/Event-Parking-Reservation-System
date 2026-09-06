@@ -1,0 +1,106 @@
+<section class="login-page">
+  <div class="login-media">
+    <video data-motion-media autoplay muted loop playsinline poster="/assets/images/conference-poster.jpg">
+      <source src="/assets/videos/conference-story.mp4" type="video/mp4">
+    </video>
+    <div class="login-media__veil"></div>
+    <div class="login-media__copy">
+      <a routerLink="/"><img src="/assets/brand/nvent-logo-horizontal.png" alt="Nvent"></a>
+      <span>Create your Nvent account</span>
+      <h1>Start with the role that matches your journey.</h1>
+      <p>Create a Customer, Event Organizer or Venue Owner account and start using your Nvent workspace.</p>
+    </div>
+  </div>
+
+  <div class="login-panel">
+    <div class="login-card">
+      <a class="mobile-logo" routerLink="/"><img src="/assets/brand/nvent-logo-horizontal.png" alt="Nvent"></a>
+      <span class="eyebrow">Create account</span>
+      <h2>Join Nvent</h2>
+      <p>Create your account once, then Nvent will open the workspace for your selected role.</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="firstName">First name</label>
+            <input class="input" id="firstName" formControlName="firstName" autocomplete="given-name">
+            @if (form.controls.firstName.touched && form.controls.firstName.invalid) {
+              <span class="error">First name is required.</span>
+            }
+          </div>
+          <div class="field">
+            <label for="lastName">Last name</label>
+            <input class="input" id="lastName" formControlName="lastName" autocomplete="family-name">
+            @if (form.controls.lastName.touched && form.controls.lastName.invalid) {
+              <span class="error">Last name is required.</span>
+            }
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="registerEmail">Email</label>
+          <input class="input" id="registerEmail" type="email" formControlName="email" autocomplete="email" placeholder="name@example.com">
+          @if (form.controls.email.touched && form.controls.email.invalid) {
+            <span class="error">Enter a valid email address.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="registerPassword">Password</label>
+          <div class="password-field">
+            <input
+              class="input"
+              id="registerPassword"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="new-password"
+              placeholder="Minimum 8 characters">
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="togglePassword()"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+              [attr.title]="showPassword() ? 'Hide password' : 'Show password'">
+              @if (showPassword()) {
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 10.7a2 2 0 0 0 2.7 2.7M9.9 4.3A10.7 10.7 0 0 1 12 4c5.1 0 8.5 4.2 9.5 6-.5.9-1.5 2.3-3 3.6M6.2 6.2C4.3 7.5 3.1 9.2 2.5 10c1 1.8 4.4 6 9.5 6 1.2 0 2.3-.2 3.3-.6"/></svg>
+              } @else {
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.8"/></svg>
+              }
+            </button>
+          </div>
+          @if (form.controls.password.touched && form.controls.password.invalid) {
+            <span class="error">Password must contain at least 8 characters.</span>
+          }
+        </div>
+
+        <div class="field">
+          <label for="phoneNumber">Phone (optional)</label>
+          <input class="input" id="phoneNumber" formControlName="phoneNumber" autocomplete="tel">
+        </div>
+
+        <div class="field">
+          <label for="role">Account type</label>
+          <select class="select" id="role" formControlName="role">
+            <option [ngValue]="0">Customer</option>
+            <option [ngValue]="1">Event Organizer</option>
+            <option [ngValue]="2">Venue Owner</option>
+          </select>
+          <small class="field-help">Admin accounts cannot be created through public registration.</small>
+        </div>
+
+        @if (error()) {
+          <div class="preview-note error-note" role="alert">{{ error() }}</div>
+        }
+
+        <button class="btn btn--primary submit" type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Creating account…' : 'Create account →' }}
+        </button>
+      </form>
+
+      <div class="signup-panel signup-panel--compact">
+        <span>Already registered?</span>
+        <a routerLink="/login">Sign in →</a>
+      </div>
+    </div>
+  </div>
+</section>
