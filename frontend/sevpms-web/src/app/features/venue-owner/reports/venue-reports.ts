@@ -1,0 +1,5 @@
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { DomainApiService } from '../../../core/services/domain-api.service';
+import { httpErrorMessage } from '../../../core/utils/http-error';
+@Component({selector:'app-venue-reports',templateUrl:'./venue-reports.html',styleUrl:'./venue-reports.scss'})
+export class VenueReportsComponent implements OnInit{private readonly domain=inject(DomainApiService);readonly data=signal<Record<string,unknown>>({});readonly loading=signal(true);readonly error=signal('');ngOnInit():void{this.load();}load():void{this.loading.set(true);this.error.set('');this.domain.venueOwnerReport().subscribe({next:v=>{this.data.set((v??{}) as Record<string,unknown>);this.loading.set(false);},error:e=>{this.loading.set(false);this.error.set(httpErrorMessage(e,'Venue performance could not be loaded.'));}});}n(k:string):number{return Number(this.data()[k]??0);}money(k:string):string{return `LKR ${this.n(k).toLocaleString(undefined,{maximumFractionDigits:2})}`;}}
