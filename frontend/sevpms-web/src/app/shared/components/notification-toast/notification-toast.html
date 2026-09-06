@@ -1,0 +1,12 @@
+@if (center.toast(); as item) {
+  <aside class="notification-toast" role="status" aria-live="polite">
+    <div class="notification-toast__icon" aria-hidden="true">◉</div>
+    <div class="notification-toast__copy">
+      <span>{{ item.type || 'Nvent update' }}</span>
+      <strong>{{ item.title || 'New notification' }}</strong>
+      @if (item.message) { <p>{{ item.message }}</p> }
+      <a [routerLink]="session.notificationsRoute()" (click)="center.dismissToast()">View notifications</a>
+    </div>
+    <button type="button" aria-label="Dismiss notification" (click)="center.dismissToast()">×</button>
+  </aside>
+}

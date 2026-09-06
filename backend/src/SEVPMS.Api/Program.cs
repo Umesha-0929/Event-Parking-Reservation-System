@@ -132,6 +132,12 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(
         AuthorizationPolicies.AdminOnly,
         policy => policy.RequireRole(UserRole.Admin.ToString()));
+
+    options.AddPolicy(
+        AuthorizationPolicies.ParkingManager,
+        policy => policy.RequireRole(
+            UserRole.Admin.ToString(),
+            UserRole.VenueOwner.ToString()));
 });
 
 builder.Services.AddInfrastructure(builder.Configuration);

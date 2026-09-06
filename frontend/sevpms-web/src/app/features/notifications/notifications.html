@@ -1,0 +1,18 @@
+<header class="page-head"><div><span class="eyebrow">Notifications</span><h1>Important updates, all in one place.</h1><p>Rental requests, bookings, tickets, parking and event updates appear here as they happen.</p></div><button class="btn btn--secondary" type="button" (click)="load()">Refresh</button></header>
+@if(error()){<div class="preview-note error-note" role="alert">{{error()}}</div>}
+<section class="card notice-tools"><label><span>⌕</span><input [(ngModel)]="query" placeholder="Search notifications" aria-label="Search notifications"></label><select [(ngModel)]="state" aria-label="Notification state"><option>All</option><option>Unread</option><option>Read</option></select></section>
+@if(loading()){
+  <div class="notice-list">@for(i of [1,2,3,4];track i){<article class="card notice skeleton"></article>}</div>
+}@else if(filtered().length){
+  <div class="notice-list">
+    @for(item of filtered();track id(item)){
+      <article class="card notice" [class.notice--unread]="!item.isRead">
+        <div class="notice__icon">{{item.isRead?'✓':'●'}}</div>
+        <div class="notice__body"><div class="notice__meta"><span class="badge">{{item.type || 'Update'}}</span><time>{{when(item.createdAtUtc)}}</time></div><h2>{{item.title || 'Nvent update'}}</h2><p>{{item.message}}</p></div>
+        @if(!item.isRead){<button class="text-action" type="button" [disabled]="busyId()===id(item)" (click)="markRead(item)">{{busyId()===id(item)?'Saving…':'Mark read'}}</button>}
+      </article>
+    }
+  </div>
+}@else{
+  <section class="empty-state"><span class="badge badge--muted">All caught up</span><h3>No matching notifications.</h3><p>New updates will appear here automatically.</p></section>
+}

@@ -1,0 +1,3 @@
+import { Component, OnInit, inject } from '@angular/core';import { RouterLink } from '@angular/router';import { SeoService } from '../../../core/services/seo.service';import { RevealOnScrollDirective } from '../../../shared/directives/reveal-on-scroll.directive';
+@Component({selector:'app-not-found',imports:[RouterLink, RevealOnScrollDirective],templateUrl:'./not-found.html',styleUrl:'./not-found.scss'})
+export class NotFoundComponent implements OnInit{private readonly seo=inject(SeoService);ngOnInit():void{this.seo.setPage('404 | Page not found','The requested Nvent page could not be found.');}}

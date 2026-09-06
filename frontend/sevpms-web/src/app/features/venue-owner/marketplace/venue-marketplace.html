@@ -1,0 +1,80 @@
+
+<header class="page-head">
+  <div><span class="eyebrow">Venue Marketplace</span><h1>Present each venue professionally.</h1><p>Manage facilities, media, rates and reusable venue-layout templates that organizers and customers can discover.</p></div>
+  <a class="btn btn--secondary" routerLink="/venue-owner/venues">My Venues</a>
+</header>
+
+@if(error()){<div class="notice error" role="alert">{{error()}}</div>}
+@if(success()){<div class="notice">{{success()}}</div>}
+
+<section class="card toolbar">
+  <div class="field"><label for="venue">Venue</label><select id="venue" class="select" [(ngModel)]="selectedVenueId" (ngModelChange)="load()">
+    @for(v of venues(); track id(v)){<option [value]="id(v)">{{v.name}}</option>}
+  </select></div>
+  @if(selectedVenueId){<a class="btn btn--secondary" [routerLink]="['/venue-owner/venues', selectedVenueId, 'edit']">Edit venue details</a>}
+</section>
+
+@if(!selectedVenueId){
+  <section class="empty-state"><h3>Register a venue first</h3><p>Marketplace tools become available once your account owns an active venue.</p><a class="btn btn--primary" routerLink="/venue-owner/venues/new">Register Venue</a></section>
+}@else if(loading()){
+  <section class="card panel"><div class="skeleton" style="height:180px"></div></section>
+}@else{
+  <div class="split">
+    <section>
+      <article class="card panel">
+        <h2>Facilities</h2>
+        <div class="check-grid">
+          @for(f of facilities(); track f.facilityId){
+            <label class="check"><input type="checkbox" [checked]="selectedFacilityIds.has(f.facilityId)" (change)="toggleFacility(f.facilityId, $any($event.target).checked)"><span><strong>{{f.name}}</strong><br><small class="muted">{{f.category}}</small></span></label>
+          }
+        </div>
+        @if(!facilities().length){<p class="muted">No facility options are available yet. An administrator can add facility options.</p>}
+        <div class="actions" style="margin-top:16px"><button class="btn btn--primary" type="button" (click)="saveFacilities()" [disabled]="saving()">Save facilities</button></div>
+      </article>
+
+      <article class="card panel">
+        <h2>Media gallery</h2>
+        <div class="form-grid">
+          <div class="field span-2"><label>Image or video URL</label><input class="input" [(ngModel)]="mediaUrl" placeholder="https://..."></div>
+          <div class="field"><label>Type</label><select class="select" [(ngModel)]="mediaType"><option>Photo</option><option>Video</option><option>360</option></select></div>
+          <div class="field"><label>Display order</label><input class="input" type="number" [(ngModel)]="mediaSortOrder"></div>
+        </div>
+        <div class="actions" style="margin-top:16px"><button class="btn btn--primary" type="button" (click)="addMedia()" [disabled]="saving() || !mediaUrl.trim()">Add media</button></div>
+        <div class="divider"></div>
+        <div class="list">@for(item of marketplace()?.media ?? []; track item.venueMediaId){<div class="list-item"><strong>{{item.type}}</strong><p>{{item.url}}</p><span class="chip">Order {{item.sortOrder}}</span></div>}@empty{<p class="muted">No media has been added yet.</p>}</div>
+      </article>
+
+      <article class="card panel">
+        <h2>Venue rates</h2>
+        <div class="grid-3">
+          <div class="field"><label>Rate type</label><select class="select" [(ngModel)]="rateType"><option>Hourly</option><option>Daily</option><option>Event</option><option>Package</option></select></div>
+          <div class="field"><label>Amount</label><input class="input" type="number" min="0" [(ngModel)]="rateAmount"></div>
+          <div class="field"><label>Currency</label><input class="input" [(ngModel)]="rateCurrency"></div>
+          <div class="field"><label>Valid from</label><input class="input" type="datetime-local" [(ngModel)]="rateFrom"></div>
+          <div class="field"><label>Valid to</label><input class="input" type="datetime-local" [(ngModel)]="rateTo"></div>
+        </div>
+        <div class="actions" style="margin-top:16px"><button class="btn btn--primary" type="button" (click)="addRate()" [disabled]="saving()">Add rate</button></div>
+        <div class="divider"></div>
+        <div class="list">@for(rate of marketplace()?.rates ?? []; track rate.venueRateId){<div class="list-item"><div class="list-item__top"><div><h3>{{rate.rateType}}</h3><p>{{rate.currency}} {{rate.amount | number:'1.0-2'}}</p></div><span class="chip">{{rate.validFromUtc ? (rate.validFromUtc | date:'mediumDate') : 'Current'}}</span></div></div>}@empty{<p class="muted">No marketplace rates yet.</p>}</div>
+      </article>
+    </section>
+
+    <aside>
+      <article class="card panel">
+        <h2>Venue alignment template</h2>
+        <p class="muted">Save a reusable high-level room alignment. Event-specific seat configuration still happens in the organizer seating workflow.</p>
+        <div class="field"><label>Template name</label><input class="input" [(ngModel)]="layoutName"></div>
+        <div class="grid-3" style="margin-top:12px">
+          <div class="field"><label>Rows</label><input class="input" type="number" min="1" [(ngModel)]="layoutRows"></div>
+          <div class="field"><label>Columns</label><input class="input" type="number" min="1" [(ngModel)]="layoutColumns"></div>
+          <div class="field"><label>Aisle every</label><input class="input" type="number" min="0" [(ngModel)]="layoutAisleEvery"></div>
+        </div>
+        <div class="field" style="margin-top:12px"><label>Alignment</label><select class="select" [(ngModel)]="layoutAlignment"><option>Centered</option><option>Left aligned</option><option>Right aligned</option><option>Split aisle</option><option>Curved</option></select></div>
+        <div class="field" style="margin-top:12px"><label>Version</label><input class="input" type="number" min="1" [(ngModel)]="layoutVersion"></div>
+        <button class="btn btn--primary" style="margin-top:14px" type="button" (click)="addLayoutTemplate()" [disabled]="saving()">Save template</button>
+        <div class="divider"></div>
+        <div class="list">@for(layout of marketplace()?.layoutTemplates ?? []; track layout.venueLayoutTemplateId){<div class="list-item"><strong>{{layout.name}} · v{{layout.version}}</strong><p>{{layoutSummary(layout.layoutJson)}}</p></div>}@empty{<p class="muted">No saved layout templates.</p>}</div>
+      </article>
+    </aside>
+  </div>
+}

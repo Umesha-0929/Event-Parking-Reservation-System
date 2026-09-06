@@ -1,0 +1,27 @@
+<header class="owner-head">
+  <div><span class="eyebrow">Venue Owner Dashboard</span><h1>Manage spaces that make events possible.</h1><p>Keep venue details, availability, parking and rental requests organized in one place.</p></div>
+  <a class="btn btn--primary" routerLink="/venue-owner/venues/new">Register Venue →</a>
+</header>
+
+@if(error()){<div class="owner-alert" role="alert">{{error()}} <button type="button" (click)="load()">Retry</button></div>}
+
+<section class="owner-kpis" [attr.aria-busy]="loading()">
+  <article class="card"><span>Owned venues</span><strong>{{loading()?'—':venues().length}}</strong><small>Venues registered to your account</small></article>
+  <article class="card"><span>Active venues</span><strong>{{loading()?'—':activeCount()}}</strong><small>Visible to organizer venue selection</small></article>
+  <article class="card"><span>Total capacity</span><strong>{{loading()?'—':totalCapacity().toLocaleString()}}</strong><small>Across owned venue records</small></article>
+  <article class="card"><span>Incoming rentals</span><strong>{{loading()?'—':rentalCount()}}</strong><small>Venue rental requests</small></article>
+</section>
+
+<section class="owner-grid">
+  <div class="card owner-venues">
+    <div class="section-head"><div><span class="eyebrow">Your venues</span><h2>Recently registered spaces</h2></div><a class="text-link" routerLink="/venue-owner/venues">Manage all →</a></div>
+    @if(loading()){
+      <div class="skeleton-list">@for(i of [1,2,3];track i){<div class="skeleton"></div>}</div>
+    }@else if(venues().length){
+      <div class="venue-list">@for(venue of venues().slice(0,4);track venueId(venue)){<a [routerLink]="['/venue-owner/venues',venueId(venue),'edit']"><span><strong>{{venue.name}}</strong><small>{{venue.city || 'City not set'}} · Capacity {{venue.capacity || 0}}</small></span><b>{{venue.isActive===false?'Inactive':'Active'}}</b></a>}</div>
+    }@else{
+      <div class="empty-owner"><span class="badge badge--muted">No venues yet</span><h3>Register your first venue.</h3><p>Once active, it can appear in organizer venue selection.</p><a class="btn btn--secondary" routerLink="/venue-owner/venues/new">Register Venue</a></div>
+    }
+  </div>
+  <aside class="card owner-next"><span class="eyebrow">Venue workflow</span><h2>Start here</h2><ol><li><b>1</b><span><strong>Register venue</strong><small>Add address, capacity and contact details.</small></span></li><li><b>2</b><span><strong>Keep it active</strong><small>Active venues are available to the platform.</small></span></li><li><b>3</b><span><strong>Manage rentals</strong><small>Review organizer rental activity.</small></span></li></ol></aside>
+</section>

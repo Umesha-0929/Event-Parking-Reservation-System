@@ -1,0 +1,40 @@
+<header class="topbar" [class.topbar--scrolled]="scrolled()">
+  <div class="scroll-progress" [style.transform]="'scaleX(' + scrollProgress() + ')'" aria-hidden="true"></div>
+  <div class="container nav-row">
+    <a class="brand" routerLink="/" aria-label="Nvent home" (click)="closeMenu()"><img src="/assets/brand/nvent-logo-horizontal.png" alt="Nvent"></a>
+    <button class="menu-toggle" type="button" aria-label="Toggle navigation" [attr.aria-expanded]="menuOpen()" (click)="toggleMenu()">☰</button>
+    <nav class="main-nav" [class.main-nav--open]="menuOpen()" aria-label="Primary navigation">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeMenu()">Home</a>
+      <a routerLink="/events" routerLinkActive="active" (click)="closeMenu()">Events</a>
+      <a routerLink="/venues" routerLinkActive="active" (click)="closeMenu()">Venues</a>
+      <a routerLink="/services" routerLinkActive="active" (click)="closeMenu()">Services</a>
+      <a routerLink="/resources" routerLinkActive="active" (click)="closeMenu()">Resources</a>
+      <a routerLink="/about" routerLinkActive="active" (click)="closeMenu()">About Us</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="icon-action" routerLink="/events" aria-label="Search events">⌕</a>
+      @if (session.isAuthenticated()) {
+        <a class="icon-action public-notification" [routerLink]="session.notificationsRoute()" aria-label="Notifications">◉
+          @if (notifications.unreadCount() > 0) { <span>{{ notifications.unreadCount() > 99 ? '99+' : notifications.unreadCount() }}</span> }
+        </a>
+        <a class="login-link" [routerLink]="session.routeForRole()">Dashboard</a>
+        <span class="account-chip" [title]="session.user()?.email || 'Signed in'">{{ session.user()?.displayName || session.user()?.email || 'Account' }}</span>
+        <button class="logout-btn" type="button" [disabled]="loggingOut()" (click)="logout()" aria-label="Log out of Nvent"><span class="logout-icon" aria-hidden="true">↪</span><span class="logout-label">{{ loggingOut() ? 'Logging out…' : 'Logout' }}</span></button>
+        @if (session.role() === 'EventOrganizer') { <a class="btn btn--primary host-cta" routerLink="/organizer/create-event">Create Event <span aria-hidden="true">↗</span></a> }
+      } @else {
+        <a class="login-link" routerLink="/login">Login</a><a class="signup-link" routerLink="/register">Sign Up</a><a class="btn btn--primary host-cta" routerLink="/register">Host Event <span aria-hidden="true">↗</span></a>
+      }
+    </div>
+  </div>
+</header>
+<main><router-outlet /></main>
+<footer class="footer">
+  <div class="container footer-grid">
+    <div class="footer-brand"><img src="/assets/brand/nvent-logo-reversed.png" alt="Nvent"><p>Discover, host and manage memorable event experiences with Nvent.</p></div>
+    <div><strong>Explore</strong><a routerLink="/events">Events</a><a routerLink="/venues">Venues</a><a routerLink="/services">Services</a></div>
+    <div><strong>Support</strong><a routerLink="/resources">Resources</a><a routerLink="/privacy">Privacy Policy</a><a routerLink="/terms">Terms</a></div>
+    <div><strong>For teams</strong><a routerLink="/organizer/dashboard">Organizer</a><a routerLink="/admin/dashboard">Admin</a>@if (session.isAuthenticated()) {<a [routerLink]="session.routeForRole()">My Dashboard</a>} @else {<a routerLink="/login">Account</a>}</div>
+  </div>
+  <div class="container footer-bottom"><span>© {{ year }} Nvent</span></div>
+</footer>
+<app-cookie-banner />

@@ -1,0 +1,81 @@
+<header class="category-head">
+  <div>
+    <span class="eyebrow">Admin / Event Categories</span>
+    <h1>Control the categories organizers can use.</h1>
+    <p>Active categories appear automatically when organizers create an event.</p>
+  </div>
+  <span class="badge">Admin only</span>
+</header>
+
+<div class="category-layout">
+  <form class="card category-form" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-title">
+      <div>
+        <span class="eyebrow">{{ editingId() ? 'Edit category' : 'New category' }}</span>
+        <h2>{{ editingId() ? 'Update event category' : 'Add event category' }}</h2>
+      </div>
+      @if(editingId()){<button class="text-action" type="button" (click)="cancelEdit()">Cancel edit</button>}
+    </div>
+
+    @if(error()){<div class="form-message form-message--error" role="alert">{{error()}}</div>}
+    @if(success()){<div class="form-message form-message--success" role="status">{{success()}}</div>}
+
+    <div class="field">
+      <label for="category-name">Category name</label>
+      <input class="input" id="category-name" formControlName="name" placeholder="e.g. Concert">
+      @if(form.controls.name.touched && form.controls.name.invalid){<span class="error">Enter a category name.</span>}
+    </div>
+
+    <div class="field">
+      <label for="category-code">Code</label>
+      <input class="input" id="category-code" formControlName="code" placeholder="e.g. CONCERT">
+      <span class="hint">Letters, numbers, hyphens and underscores only. It will be saved in uppercase.</span>
+      @if(form.controls.code.touched && form.controls.code.invalid){<span class="error">Enter a valid category code.</span>}
+    </div>
+
+    <label class="active-toggle">
+      <input type="checkbox" formControlName="isActive">
+      <span><strong>Active</strong><small>Active categories are available to event organizers.</small></span>
+    </label>
+
+    <button class="btn btn--primary submit" type="submit" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : (editingId() ? 'Save changes' : 'Create category') }}
+    </button>
+  </form>
+
+  <section class="card category-list">
+    <div class="list-head">
+      <div><span class="eyebrow">Category management</span><h2>Event categories</h2></div>
+      <button class="btn btn--secondary" type="button" (click)="load()" [disabled]="loading()">Refresh</button>
+    </div>
+
+    @if(loading()){
+      <div class="category-skeleton" aria-busy="true">@for(i of [1,2,3,4];track i){<div class="skeleton"></div>}</div>
+    }@else if(categories().length){
+      <div class="category-table-wrap">
+        <table class="category-table">
+          <thead><tr><th>Name</th><th>Code</th><th>Status</th><th class="actions-heading">Actions</th></tr></thead>
+          <tbody>
+            @for(item of categories();track item.eventCategoryId){
+              <tr>
+                <td><strong>{{item.name}}</strong></td>
+                <td><code>{{item.code}}</code></td>
+                <td><span class="status" [class.status--inactive]="!item.isActive">{{item.isActive ? 'Active' : 'Inactive'}}</span></td>
+                <td class="row-actions">
+                  <button class="text-action" type="button" (click)="edit(item)">Edit</button>
+                  @if(item.isActive){
+                    <button class="text-action danger" type="button" (click)="deactivate(item)" [disabled]="actionId()===item.eventCategoryId">{{actionId()===item.eventCategoryId?'Working…':'Deactivate'}}</button>
+                  }@else{
+                    <button class="text-action" type="button" (click)="activate(item)" [disabled]="actionId()===item.eventCategoryId">{{actionId()===item.eventCategoryId?'Working…':'Activate'}}</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }@else{
+      <div class="empty-state category-empty"><span class="badge badge--muted">No categories</span><h3>Create the first event category.</h3><p>Once an active category exists, Event Organizers will see it in the Create Event form.</p></div>
+    }
+  </section>
+</div>

@@ -1,15 +1,19 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SEVPMS.Api.Authorization;
 using SEVPMS.Application.Features.Parking.DTOs;
 using SEVPMS.Application.Features.Parking.Interfaces;
+using SEVPMS.Application.Interfaces.Repositories;
 
 namespace SEVPMS.Api.Controllers;
 
 [ApiController]
 [Route("api/parking")]
 public sealed class ParkingController(
-    IParkingService service) : ControllerBase
+    IParkingService service,
+    IParkingRepository parkingRepository,
+    IVenueRepository venueRepository) : ControllerBase
 {
     [HttpGet("venues/{venueId:guid}/zones")]
     public async Task<ActionResult<IReadOnlyList<ParkingZoneDto>>> GetZonesByVenue(
@@ -53,11 +57,16 @@ public sealed class ParkingController(
     }
 
     [HttpPost("zones")]
-    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+    [Authorize(Policy = AuthorizationPolicies.ParkingManager)]
     public async Task<ActionResult<ParkingZoneDto>> CreateZone(
         UpsertParkingZoneRequest request,
         CancellationToken cancellationToken)
     {
+        if (!await CanManageVenueAsync(request.VenueId, cancellationToken))
+        {
+            return Forbid();
+        }
+
         try
         {
             var zone = await service.CreateZoneAsync(
@@ -83,12 +92,27 @@ public sealed class ParkingController(
     }
 
     [HttpPut("zones/{parkingZoneId:guid}")]
-    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+    [Authorize(Policy = AuthorizationPolicies.ParkingManager)]
     public async Task<ActionResult<ParkingZoneDto>> UpdateZone(
         Guid parkingZoneId,
         UpsertParkingZoneRequest request,
         CancellationToken cancellationToken)
     {
+        var existingZone = await parkingRepository.GetZoneByIdAsync(
+            parkingZoneId,
+            cancellationToken);
+
+        if (existingZone is null)
+        {
+            return NotFound();
+        }
+
+        if (!await CanManageVenueAsync(existingZone.VenueId, cancellationToken) ||
+            !await CanManageVenueAsync(request.VenueId, cancellationToken))
+        {
+            return Forbid();
+        }
+
         try
         {
             var zone = await service.UpdateZoneAsync(
@@ -113,11 +137,25 @@ public sealed class ParkingController(
     }
 
     [HttpDelete("zones/{parkingZoneId:guid}")]
-    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+    [Authorize(Policy = AuthorizationPolicies.ParkingManager)]
     public async Task<IActionResult> DeleteZone(
         Guid parkingZoneId,
         CancellationToken cancellationToken)
     {
+        var existingZone = await parkingRepository.GetZoneByIdAsync(
+            parkingZoneId,
+            cancellationToken);
+
+        if (existingZone is null)
+        {
+            return NotFound();
+        }
+
+        if (!await CanManageVenueAsync(existingZone.VenueId, cancellationToken))
+        {
+            return Forbid();
+        }
+
         try
         {
             var deleted = await service.DeleteZoneAsync(
@@ -142,11 +180,25 @@ public sealed class ParkingController(
     }
 
     [HttpPost("slots")]
-    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+    [Authorize(Policy = AuthorizationPolicies.ParkingManager)]
     public async Task<ActionResult<ParkingSlotDto>> CreateSlot(
         UpsertParkingSlotRequest request,
         CancellationToken cancellationToken)
     {
+        var zone = await parkingRepository.GetZoneByIdAsync(
+            request.ParkingZoneId,
+            cancellationToken);
+
+        if (zone is null)
+        {
+            return NotFound();
+        }
+
+        if (!await CanManageVenueAsync(zone.VenueId, cancellationToken))
+        {
+            return Forbid();
+        }
+
         try
         {
             var slot = await service.CreateSlotAsync(
@@ -184,12 +236,38 @@ public sealed class ParkingController(
     }
 
     [HttpPut("slots/{parkingSlotId:guid}")]
-    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+    [Authorize(Policy = AuthorizationPolicies.ParkingManager)]
     public async Task<ActionResult<ParkingSlotDto>> UpdateSlot(
         Guid parkingSlotId,
         UpsertParkingSlotRequest request,
         CancellationToken cancellationToken)
     {
+        var existingSlot = await parkingRepository.GetSlotByIdAsync(
+            parkingSlotId,
+            cancellationToken);
+        if (existingSlot is null)
+        {
+            return NotFound();
+        }
+
+        var existingZone = await parkingRepository.GetZoneByIdAsync(
+            existingSlot.ParkingZoneId,
+            cancellationToken);
+        var requestedZone = await parkingRepository.GetZoneByIdAsync(
+            request.ParkingZoneId,
+            cancellationToken);
+
+        if (existingZone is null || requestedZone is null)
+        {
+            return NotFound();
+        }
+
+        if (!await CanManageVenueAsync(existingZone.VenueId, cancellationToken) ||
+            !await CanManageVenueAsync(requestedZone.VenueId, cancellationToken))
+        {
+            return Forbid();
+        }
+
         try
         {
             var slot = await service.UpdateSlotAsync(
@@ -222,11 +300,32 @@ public sealed class ParkingController(
     }
 
     [HttpDelete("slots/{parkingSlotId:guid}")]
-    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+    [Authorize(Policy = AuthorizationPolicies.ParkingManager)]
     public async Task<IActionResult> DeleteSlot(
         Guid parkingSlotId,
         CancellationToken cancellationToken)
     {
+        var existingSlot = await parkingRepository.GetSlotByIdAsync(
+            parkingSlotId,
+            cancellationToken);
+        if (existingSlot is null)
+        {
+            return NotFound();
+        }
+
+        var zone = await parkingRepository.GetZoneByIdAsync(
+            existingSlot.ParkingZoneId,
+            cancellationToken);
+        if (zone is null)
+        {
+            return NotFound();
+        }
+
+        if (!await CanManageVenueAsync(zone.VenueId, cancellationToken))
+        {
+            return Forbid();
+        }
+
         try
         {
             var deleted = await service.DeleteSlotAsync(
@@ -249,4 +348,30 @@ public sealed class ParkingController(
                 });
         }
     }
+
+    private async Task<bool> CanManageVenueAsync(
+        Guid venueId,
+        CancellationToken cancellationToken)
+    {
+        if (User.IsInRole("Admin"))
+        {
+            return true;
+        }
+
+        if (!User.IsInRole("VenueOwner") ||
+            !Guid.TryParse(
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                out var userId))
+        {
+            return false;
+        }
+
+        var venue = await venueRepository.GetByIdAsync(
+            venueId,
+            cancellationToken);
+
+        return venue is not null &&
+               venue.OwnerUserId == userId;
+    }
+
 }

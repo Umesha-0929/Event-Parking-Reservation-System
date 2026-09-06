@@ -1,0 +1,33 @@
+<header class="events-head">
+  <div>
+    <span class="eyebrow">Organizer events</span>
+    <h1>Your events and setup progress.</h1>
+    <p>Create a draft, then continue through stage, seating, categories and final review without losing the event you are working on.</p>
+  </div>
+  <a class="btn btn--primary" routerLink="/organizer/create-event">Create event →</a>
+</header>
+
+@if (error()) {
+  <div class="state state--error" role="alert"><strong>We couldn't load your events.</strong><span>{{ error() }}</span><button type="button" (click)="load()">Retry</button></div>
+} @else if (loading()) {
+  <div class="event-grid">@for (item of [1,2,3]; track item) {<div class="card event-card skeleton"></div>}</div>
+} @else if (events().length === 0) {
+  <div class="empty-state"><span class="badge badge--muted">No events yet</span><h3>Create your first event draft.</h3><p>Once the draft is saved, Nvent will guide you through the complete setup journey.</p><a class="btn btn--primary" routerLink="/organizer/create-event">Create event</a></div>
+} @else {
+  <div class="event-grid">
+    @for (event of events(); track id(event)) {
+      <article class="card event-card">
+        <div class="event-card__top"><span class="badge" [class.badge--success]="status(event) === 'Published'" [class.badge--warning]="status(event) === 'Draft'" [class.badge--danger]="status(event) === 'Cancelled'" [class.badge--muted]="status(event) === 'Completed'">{{ status(event) }}</span><small>{{ event.category || event.categoryName || 'Event' }}</small></div>
+        <h2>{{ event.title || event.name || 'Untitled event' }}</h2>
+        <p>{{ when(event.startAtUtc || event.startDateTime) }}</p>
+        <div class="event-card__actions">
+          <a [routerLink]="['/organizer/events', id(event), 'stage']">Stage</a>
+          <a [routerLink]="['/organizer/events', id(event), 'seating']">Seating</a>
+          <a [routerLink]="['/organizer/events', id(event), 'categories']">Categories</a>
+          <a class="primary" [routerLink]="['/organizer/events', id(event), 'preview']">Review →</a>
+          @if(status(event) !== 'Cancelled' && status(event) !== 'Completed'){<button class="danger-action" type="button" [disabled]="busyId()===id(event)" (click)="cancel(event)">{{busyId()===id(event)?'Cancelling…':'Cancel'}}</button>}
+        </div>
+      </article>
+    }
+  </div>
+}

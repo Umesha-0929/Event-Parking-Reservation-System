@@ -1,0 +1,24 @@
+<header class="venues-head"><div><span class="eyebrow">Venue Owner / My Venues</span><h1>Own the venue record from registration onward.</h1><p>Create and maintain venue information using the authenticated Venue Owner API.</p></div><a class="btn btn--primary" routerLink="/venue-owner/venues/new">Register Venue →</a></header>
+@if(error()){<div class="venue-alert" role="alert">{{error()}} <button type="button" (click)="load()">Retry</button></div>}
+@if(loading()){
+  <section class="venue-cards" aria-busy="true">@for(i of [1,2,3];track i){<article class="card venue-skeleton"><div class="skeleton"></div><div class="skeleton small"></div></article>}</section>
+}@else if(venues().length){
+  <section class="venue-cards">
+    @for(venue of venues();track venueId(venue)){
+      <article class="card venue-card" [class.inactive]="venue.isActive===false">
+        <div class="venue-card__top"><span class="status">{{venue.isActive===false?'Inactive':'Active'}}</span><span class="capacity">Capacity {{venue.capacity || 0}}</span></div>
+        <h2>{{venue.name}}</h2><p>{{venue.description || 'No description added yet.'}}</p>
+        <dl><div><dt>Location</dt><dd>{{venue.city || '—'}}, {{venue.district || venue.country || '—'}}</dd></div><div><dt>Address</dt><dd>{{venue.addressLine1 || '—'}}</dd></div><div><dt>Contact</dt><dd>{{venue.contactEmail || venue.contactPhone || '—'}}</dd></div></dl>
+        <div class="venue-actions">
+          <a class="btn btn--secondary" [routerLink]="['/venue-owner/venues',venueId(venue),'edit']">Edit venue</a>
+          <a class="btn btn--secondary" routerLink="/venue-owner/marketplace" [queryParams]="{venueId:venueId(venue)}">Marketplace</a>
+          <a class="btn btn--secondary" routerLink="/venue-owner/availability" [queryParams]="{venueId:venueId(venue)}">Availability</a>
+          <a class="btn btn--secondary" routerLink="/venue-owner/parking" [queryParams]="{venueId:venueId(venue)}">Parking</a>
+          @if(venue.isActive!==false){<button class="text-danger" type="button" (click)="deactivate(venue)" [disabled]="actionId()===venueId(venue)">{{actionId()===venueId(venue)?'Working…':'Deactivate'}}</button>}
+        </div>
+      </article>
+    }
+  </section>
+}@else{
+  <section class="card venue-empty"><span class="badge badge--muted">No venues</span><h2>Register your first venue.</h2><p>An active venue becomes available to the platform and can be selected by organizers when creating events.</p><a class="btn btn--primary" routerLink="/venue-owner/venues/new">Register Venue →</a></section>
+}
