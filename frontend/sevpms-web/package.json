@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --proxy-config proxy.conf.json",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
@@ -32,9 +32,14 @@
     "@angular/router": "^20.3.0",
     "@angular/ssr": "^20.3.36",
     "@microsoft/signalr": "^10.0.11",
+    "@photo-sphere-viewer/core": "^5.15.1",
+    "@types/qrcode": "^1.5.6",
     "@types/three": "^0.185.4",
+    "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
     "express": "^5.1.0",
     "gsap": "^3.15.0",
+    "qrcode": "^1.5.4",
     "rxjs": "~7.8.0",
     "three": "^0.185.1",
     "tslib": "^2.3.0"
