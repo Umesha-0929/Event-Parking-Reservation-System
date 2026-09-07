@@ -15,12 +15,36 @@ public sealed class AuthController(
 {
     [AllowAnonymous]
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponse>> Register(
+    public async Task<ActionResult<RegistrationPendingResponse>> Register(
         [FromBody] RegisterRequest request,
         CancellationToken cancellationToken)
         => StatusCode(
             StatusCodes.Status201Created,
-            await authService.RegisterAsync(request, cancellationToken));
+            await authService.RegisterAsync(
+                request,
+                cancellationToken));
+    
+    [AllowAnonymous]
+    [HttpPost("verify-email-otp")]
+    public async Task<ActionResult<EmailVerificationResponse>>
+        VerifyEmailOtp(
+            [FromBody] VerifyEmailOtpRequest request,
+            CancellationToken cancellationToken)
+        => Ok(
+            await authService.VerifyEmailOtpAsync(
+                request,
+                cancellationToken));
+
+    [AllowAnonymous]
+    [HttpPost("resend-email-otp")]
+    public async Task<ActionResult<RegistrationPendingResponse>>
+        ResendEmailOtp(
+            [FromBody] ResendEmailOtpRequest request,
+            CancellationToken cancellationToken)
+        => Ok(
+            await authService.ResendEmailOtpAsync(
+                request,
+                cancellationToken));
 
     [AllowAnonymous]
     [HttpPost("login")]
