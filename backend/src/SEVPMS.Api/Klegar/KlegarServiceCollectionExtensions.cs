@@ -1,4 +1,4 @@
-﻿using SEVPMS.Application.Features.Seats.Interfaces;
+using SEVPMS.Application.Features.Seats.Interfaces;
 using SEVPMS.Application.Features.Seats.Services;
 using SEVPMS.Application.Features.Tickets.Interfaces;
 using SEVPMS.Application.Features.Tickets.Services;
@@ -19,6 +19,7 @@ public static class KlegarServiceCollectionExtensions
         services.AddSingleton<ITicketQrTokenService, HmacTicketQrTokenService>();
         services.AddScoped<KlegarRealtimeNotifier>(); services.AddScoped<ISeatRealtimeNotifier>(sp => sp.GetRequiredService<KlegarRealtimeNotifier>()); services.AddScoped<ITicketRealtimeNotifier>(sp => sp.GetRequiredService<KlegarRealtimeNotifier>());
         services.AddScoped<RequestUserResolver>();
+        services.AddScoped<KlegarAuthorizationService>();
         return services;
     }
 }
