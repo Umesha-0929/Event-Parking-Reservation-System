@@ -33,6 +33,25 @@ public sealed class AdminUserService(
             .ToList();
     }
 
+    public async Task<IReadOnlyList<AdminUserResponse>> GetUsersPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+        => (await userRepository.GetPageAsync(page, pageSize, cancellationToken))
+            .Select(user => new AdminUserResponse
+            {
+                UserId = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                Role = user.Role,
+                Status = user.Status,
+                CreatedAtUtc = user.CreatedAtUtc,
+                LastLoginAtUtc = user.LastLoginAtUtc
+            })
+            .ToArray();
+
     public async Task<AdminUserResponse> GetUserByIdAsync(
         Guid userId,
         CancellationToken cancellationToken = default)

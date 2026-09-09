@@ -18,6 +18,7 @@ public sealed class ParkingSlotConfiguration
             .IsRequired();
 
         builder.Property(slot => slot.SlotCode)
+            .HasMaxLength(40)
             .IsRequired();
 
         builder.Property(slot => slot.X)
@@ -32,6 +33,7 @@ public sealed class ParkingSlotConfiguration
             .IsRequired();
 
         builder.Property(slot => slot.Status)
+            .HasMaxLength(30)
             .IsRequired();
 
         builder.Property(slot => slot.UpdatedAtUtc)

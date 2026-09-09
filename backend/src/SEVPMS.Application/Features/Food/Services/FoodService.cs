@@ -123,22 +123,36 @@ public sealed class FoodService(
                 customerUserId,
                 cancellationToken);
 
-        var result = new List<FoodOrderDto>();
+        var orderIds = orders.Select(order => order.Id).ToArray();
+        var itemsByOrder = await foodRepository.GetOrderItemsByOrderIdsAsync(
+            orderIds,
+            cancellationToken);
 
-        foreach (var order in orders)
-        {
-            var items =
-                await foodRepository.GetOrderItemsAsync(
-                    order.Id,
-                    cancellationToken);
+        return orders
+            .Select(order => MapOrder(
+                order,
+                itemsByOrder.TryGetValue(order.Id, out var items)
+                    ? items
+                    : Array.Empty<FoodOrderItem>()))
+            .ToArray();
+    }
 
-            result.Add(
-                MapOrder(
-                    order,
-                    items));
-        }
-
-        return result;
+    public async Task<IReadOnlyList<FoodOrderDto>> GetOrdersByCustomerPageAsync(
+        Guid customerUserId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var orders = await foodRepository.GetOrdersByCustomerPageAsync(
+            customerUserId, page, pageSize, cancellationToken);
+        var orderIds = orders.Select(order => order.Id).ToArray();
+        var itemsByOrder = await foodRepository.GetOrderItemsByOrderIdsAsync(
+            orderIds, cancellationToken);
+        return orders.Select(order => MapOrder(
+            order,
+            itemsByOrder.TryGetValue(order.Id, out var items)
+                ? items
+                : Array.Empty<FoodOrderItem>())).ToArray();
     }
 
     public async Task<IReadOnlyList<FoodOrderStatusHistoryDto>>

@@ -1,12 +1,67 @@
 using System.Data;
 using Microsoft.EntityFrameworkCore;
+using SEVPMS.Application.Common.Paging;
 using SEVPMS.Application.Features.Tickets.Interfaces;
 using SEVPMS.Domain.Entities.Tickets;
 using SEVPMS.Domain.Enums;
+using SEVPMS.Domain.Entities.Bookings;
+using SEVPMS.Domain.Entities.Events;
+using SEVPMS.Domain.Entities.Venues;
+using SEVPMS.Domain.Entities.Seats;
 namespace SEVPMS.Infrastructure.Persistence.Repositories.Tickets;
 public sealed class EfTicketRepository(SEVPMSDbContext db) : ITicketRepository
 {
     public async Task<IReadOnlyList<Ticket>> GetByBookingAsync(Guid bookingId, CancellationToken cancellationToken = default) => await db.Set<Ticket>().AsNoTracking().Where(t => t.BookingId == bookingId).OrderBy(t => t.TicketNo).ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<CustomerTicketSummaryRow>> GetForCustomerAsync(
+        Guid customerUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var query =
+            from ticket in db.Set<Ticket>().AsNoTracking()
+            join booking in db.Set<Booking>().AsNoTracking() on ticket.BookingId equals booking.Id
+            join eventEntity in db.Set<Event>().AsNoTracking() on ticket.EventId equals eventEntity.Id
+            join venue in db.Set<Venue>().AsNoTracking() on eventEntity.VenueId equals venue.Id
+            join seatEntity in db.Set<Seat>().AsNoTracking() on ticket.SeatId equals (Guid?)seatEntity.Id into seatJoin
+            from seat in seatJoin.DefaultIfEmpty()
+            where booking.CustomerUserId == customerUserId
+            orderby ticket.IssuedAtUtc descending
+            select new CustomerTicketSummaryRow(
+                ticket,
+                booking.BookingNumber,
+                eventEntity.Title,
+                venue.Name,
+                seat == null ? null : seat.RowLabel,
+                seat == null ? null : seat.SeatNumber,
+                seat != null && seat.IsAccessible);
+
+        return await query.ToListAsync(cancellationToken);
+    }
+    public async Task<IReadOnlyList<CustomerTicketSummaryRow>> GetForCustomerPageAsync(
+        Guid customerUserId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (_, size, skip) = PagingRules.Normalize(page, pageSize);
+        var query =
+            from ticket in db.Set<Ticket>().AsNoTracking()
+            join booking in db.Set<Booking>().AsNoTracking() on ticket.BookingId equals booking.Id
+            join eventEntity in db.Set<Event>().AsNoTracking() on ticket.EventId equals eventEntity.Id
+            join venue in db.Set<Venue>().AsNoTracking() on eventEntity.VenueId equals venue.Id
+            join seatEntity in db.Set<Seat>().AsNoTracking() on ticket.SeatId equals (Guid?)seatEntity.Id into seatJoin
+            from seat in seatJoin.DefaultIfEmpty()
+            where booking.CustomerUserId == customerUserId
+            orderby ticket.IssuedAtUtc descending
+            select new CustomerTicketSummaryRow(
+                ticket, booking.BookingNumber, eventEntity.Title, venue.Name,
+                seat == null ? null : seat.RowLabel,
+                seat == null ? null : seat.SeatNumber,
+                seat != null && seat.IsAccessible);
+
+        return await query.Skip(skip).Take(size).ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Ticket>> AddIfBookingHasNoneAsync(Guid bookingId, IReadOnlyCollection<Ticket> tickets, CancellationToken cancellationToken = default)
     {
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);

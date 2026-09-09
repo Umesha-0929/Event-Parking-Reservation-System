@@ -1,143 +1,130 @@
-using SEVPMS.Api.Klegar;
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using SEVPMS.Api.Authorization;
+using SEVPMS.Api.Bootstrap;
+using SEVPMS.Api.Klegar;
 using SEVPMS.Api.Middleware;
+using SEVPMS.Domain.Enums;
 using SEVPMS.Infrastructure;
 using SEVPMS.Realtime;
 using SEVPMS.Realtime.Hubs;
-using Microsoft.OpenApi.Models;
-using SEVPMS.Api.Authorization;
-using SEVPMS.Domain.Enums;
-using SEVPMS.Api.Bootstrap;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
 
-const string AngularDevCorsPolicy = "AngularDev";
+const string FrontendCorsPolicy = "Frontend";
+var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+var allowedOrigins = configuredOrigins.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+if (allowedOrigins.Length == 0 && builder.Environment.IsDevelopment())
+{
+    allowedOrigins = ["http://localhost:4200", "http://localhost:4201", "http://localhost:4202"];
+}
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(
-        AngularDevCorsPolicy,
-        policy =>
-        {
-            policy
-                .WithOrigins(
-                    "http://localhost:4200",
-                    "http://localhost:4201",
-                    "http://localhost:4202")
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-        });
+    options.AddPolicy(FrontendCorsPolicy, policy =>
+    {
+        if (allowedOrigins.Length == 0)
+            throw new InvalidOperationException("Cors:AllowedOrigins must be configured outside Development.");
+
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        var key = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            key,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 120,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
+    options.AddFixedWindowLimiter("sensitive", limiter =>
+    {
+        limiter.PermitLimit = 20;
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.QueueLimit = 0;
+        limiter.AutoReplenishment = true;
+    });
+});
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.AddSecurityDefinition(
-        "Bearer",
-        new OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization", Type = SecuritySchemeType.Http, Scheme = "bearer",
+        BearerFormat = "JWT", In = ParameterLocation.Header,
+        Description = "Enter your JWT access token."
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
         {
-            Name = "Authorization",
-            Type = SecuritySchemeType.Http,
-            Scheme = "bearer",
-            BearerFormat = "JWT",
-            In = ParameterLocation.Header,
-            Description = "Enter your JWT access token."
-        });
-
-    options.AddSecurityRequirement(
-        new OpenApiSecurityRequirement
-        {
-            {
-                new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "Bearer"
-                    }
-                },
-                Array.Empty<string>()
-            }
-        });
+            new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } },
+            Array.Empty<string>()
+        }
+    });
 });
 
-var jwtIssuer =
-    builder.Configuration["Jwt:Issuer"]
-    ?? throw new InvalidOperationException("JWT issuer is not configured.");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT issuer is not configured.");
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT audience is not configured.");
+var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT signing key is not configured.");
 
-var jwtAudience =
-    builder.Configuration["Jwt:Audience"]
-    ?? throw new InvalidOperationException("JWT audience is not configured.");
-
-var jwtKey =
-    builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("JWT signing key is not configured.");
-
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters =
-            new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidIssuer = jwtIssuer,
-                ValidateAudience = true,
-                ValidAudience = jwtAudience,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey =
-                    new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtKey)),
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.FromSeconds(30)
-            };
-
-        options.Events = new JwtBearerEvents
+        ValidateIssuer = true, ValidIssuer = jwtIssuer,
+        ValidateAudience = true, ValidAudience = jwtAudience,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ValidateLifetime = true, ClockSkew = TimeSpan.FromSeconds(30)
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
         {
-            OnMessageReceived = context =>
-            {
-                var accessToken = context.Request.Query["access_token"];
-                var path = context.HttpContext.Request.Path;
-
-                if (!string.IsNullOrWhiteSpace(accessToken) &&
-                    (path.StartsWithSegments("/hubs/notifications") ||
-                     path.StartsWithSegments("/hubs/events")))
-                {
-                    context.Token = accessToken;
-                }
-
-                return Task.CompletedTask;
-            }
-        };
-    });
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrWhiteSpace(accessToken) &&
+                (path.StartsWithSegments("/hubs/notifications") || path.StartsWithSegments("/hubs/events")))
+                context.Token = accessToken;
+            return Task.CompletedTask;
+        }
+    };
+});
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy(
-        AuthorizationPolicies.CustomerOnly,
-        policy => policy.RequireRole(UserRole.Customer.ToString()));
-
-    options.AddPolicy(
-        AuthorizationPolicies.EventOrganizerOnly,
-        policy => policy.RequireRole(UserRole.EventOrganizer.ToString()));
-
-    options.AddPolicy(
-        AuthorizationPolicies.VenueOwnerOnly,
-        policy => policy.RequireRole(UserRole.VenueOwner.ToString()));
-
-    options.AddPolicy(
-        AuthorizationPolicies.AdminOnly,
-        policy => policy.RequireRole(UserRole.Admin.ToString()));
-
-    options.AddPolicy(
-        AuthorizationPolicies.ParkingManager,
-        policy => policy.RequireRole(
-            UserRole.Admin.ToString(),
-            UserRole.VenueOwner.ToString()));
+    options.AddPolicy(AuthorizationPolicies.CustomerOnly, p => p.RequireRole(UserRole.Customer.ToString()));
+    options.AddPolicy(AuthorizationPolicies.EventOrganizerOnly, p => p.RequireRole(UserRole.EventOrganizer.ToString()));
+    options.AddPolicy(AuthorizationPolicies.VenueOwnerOnly, p => p.RequireRole(UserRole.VenueOwner.ToString()));
+    options.AddPolicy(AuthorizationPolicies.AdminOnly, p => p.RequireRole(UserRole.Admin.ToString()));
+    options.AddPolicy(AuthorizationPolicies.ParkingManager,
+        p => p.RequireRole(UserRole.Admin.ToString(), UserRole.VenueOwner.ToString()));
 });
 
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -145,6 +132,9 @@ builder.Services.AddRealtime();
 builder.Services.AddKlegarBackend();
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
+if (!app.Environment.IsDevelopment()) app.UseHsts();
 
 if (app.Environment.IsDevelopment())
 {
@@ -155,10 +145,25 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-
 app.UseHttpsRedirection();
-app.UseCors(AngularDevCorsPolicy);
 
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        var headers = context.Response.Headers;
+        headers["X-Content-Type-Options"] = "nosniff";
+        headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+        headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(self)";
+        headers["X-Frame-Options"] = "DENY";
+        headers["Content-Security-Policy"] = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https: wss: ws:; form-action 'self' https://sandbox.payhere.lk https://www.payhere.lk";
+        return Task.CompletedTask;
+    });
+    await next();
+});
+
+app.UseCors(FrontendCorsPolicy);
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseMiddleware<AuditLoggingMiddleware>();
 app.UseAuthorization();

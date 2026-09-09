@@ -233,6 +233,16 @@ public sealed class ReceiptAdminRetryTests
                     : Array.Empty<Receipt>());
         }
 
+        public Task<IReadOnlyList<Receipt>> GetRecentAsync(
+            int take = 100,
+            CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<Receipt> result = take > 0
+                ? new[] { receipt }
+                : Array.Empty<Receipt>();
+            return Task.FromResult(result);
+        }
+
         public Task AddAsync(
             Receipt value,
             CancellationToken cancellationToken = default)

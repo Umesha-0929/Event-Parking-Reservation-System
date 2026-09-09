@@ -42,4 +42,12 @@ public sealed class EventCategoriesController(IEventCategoryService service) : C
         await service.DeactivateAsync(id, cancellationToken);
         return NoContent();
     }
+
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+    [HttpDelete("{id:guid}/permanent")]
+    public async Task<IActionResult> DeletePermanent(Guid id, CancellationToken cancellationToken)
+    {
+        try { await service.DeleteAsync(id, cancellationToken); return NoContent(); }
+        catch (InvalidOperationException ex) { return Conflict(new { message = ex.Message }); }
+    }
 }

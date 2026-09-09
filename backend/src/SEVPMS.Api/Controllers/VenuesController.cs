@@ -18,10 +18,14 @@ public sealed class VenuesController(
     public async Task<
         ActionResult<IReadOnlyList<VenueResponse>>>
         GetActiveVenues(
+            [FromQuery] int page,
+            [FromQuery] int pageSize,
             CancellationToken cancellationToken)
     {
         var venues =
-            await venueService.GetActiveVenuesAsync(
+            await venueService.GetActiveVenuesPageAsync(
+                page == 0 ? 1 : page,
+                pageSize == 0 ? 50 : pageSize,
                 cancellationToken);
 
         return Ok(venues);
@@ -48,6 +52,8 @@ public sealed class VenuesController(
     public async Task<
         ActionResult<IReadOnlyList<VenueResponse>>>
         GetMyVenues(
+            [FromQuery] int page,
+            [FromQuery] int pageSize,
             CancellationToken cancellationToken)
     {
         if (!TryGetCurrentUserId(out var userId))
@@ -56,8 +62,10 @@ public sealed class VenuesController(
         }
 
         var venues =
-            await venueService.GetMyVenuesAsync(
+            await venueService.GetMyVenuesPageAsync(
                 userId,
+                page == 0 ? 1 : page,
+                pageSize == 0 ? 50 : pageSize,
                 cancellationToken);
 
         return Ok(venues);
@@ -131,6 +139,16 @@ public sealed class VenuesController(
 
         return NoContent();
     }
+
+    [Authorize(Policy = AuthorizationPolicies.VenueOwnerOnly)]
+    [HttpDelete("{id:guid}/permanent")]
+    public async Task<IActionResult> DeletePermanent(Guid id, CancellationToken cancellationToken)
+    {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+        try { await venueService.DeletePermanentAsync(userId, id, cancellationToken); return NoContent(); }
+        catch (InvalidOperationException ex) { return Conflict(new { message = ex.Message }); }
+    }
+
 
     private bool TryGetCurrentUserId(
         out Guid userId)

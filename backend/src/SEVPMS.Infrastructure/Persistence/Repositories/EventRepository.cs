@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SEVPMS.Application.Common.Paging;
 using SEVPMS.Application.Features.Events.DTOs;
 using SEVPMS.Application.Interfaces.Repositories;
 using SEVPMS.Domain.Entities.Events;
@@ -79,8 +80,12 @@ public sealed class EventRepository(
                 x.StartAtUtc < endUtc);
         }
 
+        var (_, pageSize, skip) = PagingRules.Normalize(request.Page, request.PageSize);
+
         return await query
             .OrderBy(x => x.StartAtUtc)
+            .Skip(skip)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
     }
 

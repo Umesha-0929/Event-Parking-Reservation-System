@@ -7,7 +7,7 @@
 @if(loading()){
   <section class="table-wrap ws-table" aria-busy="true"><div class="workspace-skeleton">@for(i of [1,2,3,4];track i){<div class="skeleton"></div>}</div></section>
 }@else if(filteredRows().length){
-  <section class="table-wrap ws-table"><table class="data-table"><thead><tr>@for(column of config.columns;track column){<th>{{column}}</th>}</tr></thead><tbody>@for(row of filteredRows();track $index;let rowIndex=$index){<tr>@for(cell of row;track $index){<td>{{cell}}</td>}@if(pageKey==='notifications' && row[2]==='Unread'){<td><button class="text-action" type="button" (click)="markRead(rowIndex)">Mark read</button></td>}</tr>}</tbody></table></section>
+  <section class="table-wrap ws-table"><table class="data-table"><caption class="sr-only">Workspace records</caption><thead><tr>@for(column of config.columns;track column){<th>{{column}}</th>}</tr></thead><tbody>@for(row of filteredRows();track $index;let rowIndex=$index){<tr>@for(cell of row;track $index){<td>{{cell}}</td>}@if(pageKey==='notifications' && row[2]==='Unread'){<td><button class="text-action" type="button" (click)="markRead(rowIndex)">Mark read</button></td>}</tr>}</tbody></table></section>
 }@else{
   <section class="empty-state ws-empty"><span class="badge badge--muted">No records</span><h3>{{config.emptyTitle}}</h3><p>{{config.emptyCopy}}</p>@if(config.action&&config.actionPath){<a class="btn btn--secondary" [routerLink]="config.actionPath">{{config.action}}</a>}</section>
 }

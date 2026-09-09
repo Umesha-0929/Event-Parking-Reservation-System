@@ -32,19 +32,30 @@
         <div class="stage-grid">
           @for (stage of stages; track stage.value) {
             <label class="stage-option" [class.selected]="stageType === stage.value">
-              <input type="radio" name="stageType" [value]="stage.value" [(ngModel)]="stageType" [disabled]="readOnly()">
+              <input aria-label="Stage type" type="radio" name="stageType" [value]="stage.value" [(ngModel)]="stageType" [disabled]="readOnly()">
               <span class="stage-icon" [class.round]="stage.value === 6" [class.thrust]="stage.value === 4" [class.traverse]="stage.value === 5"></span>
               <strong>{{ stage.label }}</strong><small>{{ stage.help }}</small>
             </label>
           }
         </div>
         <div class="form-grid compact">
-          <div class="field"><label>Planned rows</label><input class="input" type="number" min="1" max="30" [(ngModel)]="rows" [disabled]="readOnly()"></div>
-          <div class="field"><label>Planned columns</label><input class="input" type="number" min="1" max="40" [(ngModel)]="columns" [disabled]="readOnly()"></div>
+          <div class="field"><label>Planned rows</label><input aria-label="Rows" class="input" type="number" min="1" max="30" [(ngModel)]="rows" [disabled]="readOnly()"></div>
+          <div class="field"><label>Planned columns</label><input aria-label="Columns" class="input" type="number" min="1" max="40" [(ngModel)]="columns" [disabled]="readOnly()"></div>
         </div>
         <div class="actions"><a class="btn btn--secondary" routerLink="/organizer/events">Cancel</a><button class="btn btn--primary" type="button" (click)="saveStage()" [disabled]="saving() || readOnly()">{{ saving() ? 'Saving…' : 'Save stage & continue →' }}</button></div>
       </section>
-      <aside class="card preview-card"><span class="eyebrow">Live preview</span><h2>{{ stageLabel() }}</h2><div class="mini-stage" [class.round]="stageType === 6" [class.thrust]="stageType === 4" [class.traverse]="stageType === 5">Stage</div><div class="mini-seats" [style.grid-template-columns]="'repeat(' + (columns > 16 ? 16 : columns) + ', 1fr)'">@for (seat of previewSeatIndexes(); track seat) {<i></i>}</div><p>Preview is simplified here. Detailed sections and accessibility are configured next.</p></aside>
+      <aside class="card preview-card">
+  <span class="eyebrow">Live stage blueprint</span><h2>{{ stageLabel() }}</h2>
+  <div [class]="'stage-blueprint stage-blueprint--' + stageType">
+    <div class="blueprint-stage">Stage</div>
+    <div class="audience audience--top">Audience</div>
+    <div class="audience audience--right">Audience</div>
+    <div class="audience audience--bottom">Audience</div>
+    <div class="audience audience--left">Audience</div>
+    <div class="audience-fan fan-1"></div><div class="audience-fan fan-2"></div><div class="audience-fan fan-3"></div><div class="audience-ring"></div>
+  </div>
+  <p>Newly generated seats automatically follow this stage blueprint. Seat Tools can still be used for drag-and-drop fine tuning before publishing.</p>
+</aside>
     </div>
   }
 
@@ -56,18 +67,18 @@
         <section class="card setup-card">
           <span class="eyebrow">Seating layout</span><h2>Set the overall grid, then add one or more seating sections.</h2>
           <div class="form-grid compact">
-            <div class="field"><label>Overall rows</label><input class="input" type="number" min="1" max="30" [(ngModel)]="rows" [disabled]="readOnly()"></div>
-            <div class="field"><label>Overall columns</label><input class="input" type="number" min="1" max="40" [(ngModel)]="columns" [disabled]="readOnly()"></div>
+            <div class="field"><label>Overall rows</label><input aria-label="Rows" class="input" type="number" min="1" max="30" [(ngModel)]="rows" [disabled]="readOnly()"></div>
+            <div class="field"><label>Overall columns</label><input aria-label="Columns" class="input" type="number" min="1" max="40" [(ngModel)]="columns" [disabled]="readOnly()"></div>
           </div>
           <button class="btn btn--secondary full" type="button" (click)="updateGrid()" [disabled]="saving() || readOnly()">Update overall grid</button>
           <hr>
           <div class="section-title"><div><h3>{{ editingSectionId ? 'Edit section' : 'Add seating section' }}</h3><p>Examples: Main Floor, Balcony, VIP Left.</p></div>@if(editingSectionId){<button type="button" (click)="resetSectionForm()">New section</button>}</div>
           <div class="form-grid">
-            <div class="field"><label>Section name</label><input class="input" [(ngModel)]="sectionName" [disabled]="readOnly()"></div>
-            <div class="field"><label>Section code</label><input class="input" [(ngModel)]="sectionCode" [disabled]="readOnly()"></div>
-            <div class="field"><label>Rows</label><input class="input" type="number" min="1" [max]="rows" [(ngModel)]="sectionRows" [disabled]="readOnly()"></div>
-            <div class="field"><label>Columns</label><input class="input" type="number" min="1" [max]="columns" [(ngModel)]="sectionColumns" [disabled]="readOnly()"></div>
-            <label class="check span-2"><input type="checkbox" [(ngModel)]="sectionAccessible" [disabled]="readOnly()"><span>Make every seat in this section accessible</span></label>
+            <div class="field"><label>Section name</label><input aria-label="Section name" class="input" [(ngModel)]="sectionName" [disabled]="readOnly()"></div>
+            <div class="field"><label>Section code</label><input aria-label="Section code" class="input" [(ngModel)]="sectionCode" [disabled]="readOnly()"></div>
+            <div class="field"><label>Rows</label><input aria-label="Section rows" class="input" type="number" min="1" [max]="rows" [(ngModel)]="sectionRows" [disabled]="readOnly()"></div>
+            <div class="field"><label>Columns</label><input aria-label="Section columns" class="input" type="number" min="1" [max]="columns" [(ngModel)]="sectionColumns" [disabled]="readOnly()"></div>
+            <label class="check span-2"><input aria-label="Section accessible" type="checkbox" [(ngModel)]="sectionAccessible" [disabled]="readOnly()"><span>Make every seat in this section accessible</span></label>
           </div>
           <button class="btn btn--primary full" type="button" (click)="saveSection()" [disabled]="saving() || readOnly()">{{ editingSectionId ? 'Save section changes' : 'Add section' }}</button>
         </section>
@@ -90,10 +101,10 @@
         <section class="card setup-card">
           <span class="eyebrow">Seat categories & pricing</span><h2>{{ editingCategoryId ? 'Edit category' : 'Add a price category' }}</h2><p class="muted">Create the choices customers will understand during seat selection.</p>
           <div class="form-grid">
-            <div class="field"><label>Category name</label><input class="input" placeholder="VIP" [(ngModel)]="categoryName" [disabled]="readOnly()"></div>
-            <div class="field"><label>Code</label><input class="input" placeholder="VIP" [(ngModel)]="categoryCode" [disabled]="readOnly()"></div>
-            <div class="field span-2"><label>Price (LKR)</label><input class="input" type="number" min="0" [(ngModel)]="categoryPrice" [disabled]="readOnly()"></div>
-            <label class="check span-2"><input type="checkbox" [(ngModel)]="categoryActive" [disabled]="readOnly()"><span>Available for seat assignment</span></label>
+            <div class="field"><label>Category name</label><input aria-label="VIP" class="input" placeholder="VIP" [(ngModel)]="categoryName" [disabled]="readOnly()"></div>
+            <div class="field"><label>Code</label><input aria-label="VIP" class="input" placeholder="VIP" [(ngModel)]="categoryCode" [disabled]="readOnly()"></div>
+            <div class="field span-2"><label>Price (LKR)</label><input aria-label="Category price" class="input" type="number" min="0" [(ngModel)]="categoryPrice" [disabled]="readOnly()"></div>
+            <label class="check span-2"><input aria-label="Category active" type="checkbox" [(ngModel)]="categoryActive" [disabled]="readOnly()"><span>Available for seat assignment</span></label>
           </div>
           <div class="actions"><button class="btn btn--secondary" type="button" (click)="resetCategoryForm()" [disabled]="readOnly()">Clear</button><button class="btn btn--primary" type="button" (click)="saveCategory()" [disabled]="saving() || readOnly()">{{ editingCategoryId ? 'Save category' : 'Add category' }}</button></div>
         </section>
@@ -115,13 +126,13 @@
         <section class="card setup-card generate-card">
           <span class="eyebrow">Seat generation</span><h2>Generate the actual seats for each section.</h2><p class="muted">Choose a section and its category. Repeat this step for additional sections.</p>
           <div class="form-grid">
-            <div class="field"><label>Section</label><select class="select" [(ngModel)]="selectedSectionId" [disabled]="readOnly()">@for(section of enabledSections(); track section.id){<option [value]="section.id">{{section.name}} · {{section.rowCount}} × {{section.columnCount}}</option>}</select></div>
-            <div class="field"><label>Seat category</label><select class="select" [(ngModel)]="selectedCategoryId" [disabled]="readOnly()">@for(category of activeCategories(); track category.id){<option [value]="category.id">{{category.name}} · LKR {{category.price.toLocaleString()}}</option>}</select></div>
-            <div class="field"><label>Starting row label</label><input class="input" [(ngModel)]="startingRowLabel" [disabled]="readOnly()"></div>
-            <div class="field"><label>Starting seat number</label><input class="input" type="number" min="1" [(ngModel)]="startingSeatNumber" [disabled]="readOnly()"></div>
-            <div class="field"><label>Vertical aisle after column</label><input class="input" type="number" min="0" [(ngModel)]="aisleAfterColumn" [disabled]="readOnly()"><small>Use 0 for no aisle.</small></div>
-            <div class="field"><label>Blocked seats</label><input class="input" placeholder="A1, A2, B5" [(ngModel)]="blockedSeats" [disabled]="readOnly()"><small>Comma-separated seat positions.</small></div>
-            <div class="field span-2"><label>Accessible seats</label><input class="input" placeholder="A3, A4" [(ngModel)]="accessibleSeats" [disabled]="readOnly()"><small>Accessible seats are marked separately for customers.</small></div>
+            <div class="field"><label>Section</label><select aria-label="Selected section" class="select" [(ngModel)]="selectedSectionId" [disabled]="readOnly()">@for(section of enabledSections(); track section.id){<option [value]="section.id">{{section.name}} · {{section.rowCount}} × {{section.columnCount}}</option>}</select></div>
+            <div class="field"><label>Seat category</label><select aria-label="Selected category" class="select" [(ngModel)]="selectedCategoryId" [disabled]="readOnly()">@for(category of activeCategories(); track category.id){<option [value]="category.id">{{category.name}} · LKR {{category.price.toLocaleString()}}</option>}</select></div>
+            <div class="field"><label>Starting row label</label><input aria-label="Starting row label" class="input" [(ngModel)]="startingRowLabel" [disabled]="readOnly()"></div>
+            <div class="field"><label>Starting seat number</label><input aria-label="Starting seat number" class="input" type="number" min="1" [(ngModel)]="startingSeatNumber" [disabled]="readOnly()"></div>
+            <div class="field"><label>Vertical aisle after column</label><input aria-label="Aisle after column" class="input" type="number" min="0" [(ngModel)]="aisleAfterColumn" [disabled]="readOnly()"><small>Use 0 for no aisle.</small></div>
+            <div class="field"><label>Blocked seats</label><input aria-label="A1, A2, B5" class="input" placeholder="A1, A2, B5" [(ngModel)]="blockedSeats" [disabled]="readOnly()"><small>Comma-separated seat positions.</small></div>
+            <div class="field span-2"><label>Accessible seats</label><input aria-label="A3, A4" class="input" placeholder="A3, A4" [(ngModel)]="accessibleSeats" [disabled]="readOnly()"><small>Accessible seats are marked separately for customers.</small></div>
           </div>
           <button class="btn btn--primary full" type="button" (click)="generateSectionSeats()" [disabled]="saving() || readOnly()">{{ saving() ? 'Working…' : 'Generate / replace seats for this section' }}</button>
           <div class="seat-count"><span>Current generated seats</span><strong>{{seats().length}}</strong></div>
@@ -134,13 +145,14 @@
             @if(!acceptedRental()){<button class="btn btn--secondary full" type="button" (click)="refreshRental()">Refresh approval status</button>}
           } @else {
             <p class="muted">Nvent requires the venue owner to accept the rental period before this event can be published.</p>
-            <div class="field"><label>Purpose</label><input class="input" [(ngModel)]="rentalPurpose"></div>
-            <div class="field"><label>Offer amount (LKR)</label><input class="input" type="number" min="0" [(ngModel)]="rentalOffer"></div>
+            <div class="field"><label>Purpose</label><input aria-label="Rental purpose" class="input" [(ngModel)]="rentalPurpose"></div>
+            <div class="field"><label>Offer amount (LKR)</label><input aria-label="Rental offer" class="input" type="number" min="0" [(ngModel)]="rentalOffer"></div>
             <button class="btn btn--secondary full" type="button" (click)="requestRental()" [disabled]="saving()">Send venue approval request</button>
           }
           <hr>
           <span class="eyebrow">Final review</span>
           <div class="review-summary"><div><small>Stage</small><strong>{{stageLabel()}}</strong></div><div><small>Sections</small><strong>{{enabledSections().length}}</strong></div><div><small>Categories</small><strong>{{activeCategories().length}}</strong></div><div><small>Generated seats</small><strong>{{seats().length}}</strong></div></div>
+          <a class="btn btn--secondary full" [routerLink]="['/organizer/events', eventId, 'seat-tools']">Adjust seats &amp; apply stage pattern / 360&deg; views &rarr;</a>
           <button class="btn btn--primary full" type="button" (click)="publishJourney()" [disabled]="saving() || readOnly() || seats().length === 0 || !acceptedRental()">{{ saving() ? 'Publishing…' : 'Publish seating & event →' }}</button>
           @if(!acceptedRental()){<small class="publish-help">Publishing unlocks after the venue owner accepts the rental request.</small>}
         </section>

@@ -1,124 +1,50 @@
-
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import { VenueFacilityDto, VenueMarketplaceDto, VenueSummary } from '../../../core/models/api.models';
+import { VenueFacilityDto, VenueLayoutTemplateDto, VenueMarketplaceDto, VenueMediaDto, VenueRateDto, VenueSummary } from '../../../core/models/api.models';
 import { DomainApiService } from '../../../core/services/domain-api.service';
 import { httpErrorMessage } from '../../../core/utils/http-error';
+import { NavIconComponent } from '../../../shared/components/nav-icon/nav-icon';
+import { MediaDropzoneComponent } from '../../../shared/components/media-dropzone/media-dropzone';
+import { UploadedLocalMedia } from '../../../core/services/local-media.service';
 
-@Component({
-  selector: 'app-venue-marketplace',
-  imports: [CommonModule, FormsModule, RouterLink],
-  templateUrl: './venue-marketplace.html',
-  styleUrl: './venue-marketplace.scss',
-})
-export class VenueMarketplaceComponent implements OnInit {
-  private readonly domain = inject(DomainApiService);
-  private readonly route = inject(ActivatedRoute);
+@Component({selector:'app-venue-marketplace',imports:[CommonModule,FormsModule,RouterLink,NavIconComponent,MediaDropzoneComponent],templateUrl:'./venue-marketplace.html',styleUrl:'./venue-marketplace.scss'})
+export class VenueMarketplaceComponent implements OnInit{
+  private readonly domain=inject(DomainApiService);private readonly route=inject(ActivatedRoute);
+  readonly venues=signal<VenueSummary[]>([]);readonly facilities=signal<VenueFacilityDto[]>([]);readonly marketplace=signal<VenueMarketplaceDto|null>(null);readonly loading=signal(true);readonly saving=signal(false);readonly error=signal('');readonly success=signal('');
+  selectedVenueId='';selectedFacilityIds=new Set<string>();
+  mediaUrl='';mediaType='Photo';mediaSortOrder=0;editingMediaId='';
+  rateType='Hourly';rateAmount=0;rateCurrency='LKR';rateFromDate='';rateFromTime='';rateToDate='';rateToTime='';editingRateId='';
+  layoutName='Standard layout';layoutVersion=1;layoutRows=8;layoutColumns=12;layoutAisleEvery=6;layoutAlignment='Centered';editingLayoutId='';
 
-  readonly venues = signal<VenueSummary[]>([]);
-  readonly facilities = signal<VenueFacilityDto[]>([]);
-  readonly marketplace = signal<VenueMarketplaceDto | null>(null);
-  readonly loading = signal(true);
-  readonly saving = signal(false);
-  readonly error = signal('');
-  readonly success = signal('');
-  selectedVenueId = '';
-  selectedFacilityIds = new Set<string>();
+  ngOnInit():void{this.domain.myVenues().subscribe({next:(venues)=>{this.venues.set(venues.filter(v=>v.isActive!==false));const q=this.route.snapshot.queryParamMap.get('venueId');this.selectedVenueId=(q&&venues.some(v=>this.id(v)===q))?q:this.id(venues[0]);if(this.selectedVenueId)this.load();else this.loading.set(false);},error:e=>{this.loading.set(false);this.error.set(httpErrorMessage(e,'Your venues could not be loaded.'));}});}
+  id(v?:VenueSummary):string{return v?.venueId??v?.id??'';}
+  load():void{if(!this.selectedVenueId)return;this.loading.set(true);this.error.set('');forkJoin({marketplace:this.domain.venueMarketplace(this.selectedVenueId),facilities:this.domain.venueFacilities()}).subscribe({next:({marketplace,facilities})=>{this.marketplace.set(marketplace);this.facilities.set(facilities.filter(x=>x.isActive));this.selectedFacilityIds=new Set(marketplace.facilities.map(x=>x.facilityId));this.loading.set(false);},error:e=>{this.loading.set(false);this.error.set(httpErrorMessage(e,'Marketplace details could not be loaded.'));}});}
+  toggleFacility(id:string,checked:boolean):void{if(checked)this.selectedFacilityIds.add(id);else this.selectedFacilityIds.delete(id);}
+  saveFacilities():void{if(!this.selectedVenueId||this.saving())return;this.saving.set(true);this.error.set('');this.success.set('');this.domain.setVenueFacilities(this.selectedVenueId,[...this.selectedFacilityIds]).subscribe({next:()=>{this.saving.set(false);this.success.set('Facilities updated.');this.load();},error:e=>{this.saving.set(false);this.error.set(httpErrorMessage(e,'Facilities could not be saved.'));}});}
+  onMediaUploaded(media:UploadedLocalMedia):void{this.mediaUrl=media.url;this.mediaType=media.type==='Video'?'Video':'Photo';this.success.set('Media uploaded. Choose display order, then click Add media to attach it to this venue.');}
+  addMedia():void{if(!this.selectedVenueId||!this.mediaUrl.trim()||this.saving())return;this.saving.set(true);this.error.set('');this.success.set('');const body={url:this.mediaUrl.trim(),type:this.mediaType,sortOrder:Number(this.mediaSortOrder)||0};const request=this.editingMediaId?this.domain.updateVenueMedia(this.selectedVenueId,this.editingMediaId,body):this.domain.addVenueMedia(this.selectedVenueId,body);request.subscribe({next:()=>{const edited=!!this.editingMediaId;this.editingMediaId='';this.mediaUrl='';this.mediaSortOrder=0;this.saving.set(false);this.success.set(edited?'Media updated.':'Media added. The lowest display-order photo is used as the venue cover image.');this.load();},error:e=>{this.saving.set(false);this.error.set(httpErrorMessage(e,'Media could not be saved.'));}});}
+  editMedia(item:VenueMediaDto):void{this.editingMediaId=item.venueMediaId;this.mediaUrl=item.url;this.mediaType=item.type;this.mediaSortOrder=item.sortOrder;}
+  cancelMediaEdit():void{this.editingMediaId='';this.mediaUrl='';this.mediaSortOrder=0;}
+  deleteMedia(item:VenueMediaDto):void{if(!this.selectedVenueId||this.saving()||!confirm('Remove this venue media item?'))return;this.saving.set(true);this.domain.deleteVenueMedia(this.selectedVenueId,item.venueMediaId).subscribe({next:()=>{this.saving.set(false);this.success.set('Media removed.');this.load();},error:e=>{this.saving.set(false);this.error.set(httpErrorMessage(e,'Media could not be removed.'));}});}
+  moveMedia(item:VenueMediaDto,delta:number):void{if(!this.selectedVenueId||this.saving())return;const body={url:item.url,type:item.type,sortOrder:Number(item.sortOrder||0)+delta};this.saving.set(true);this.domain.updateVenueMedia(this.selectedVenueId,item.venueMediaId,body).subscribe({next:()=>{this.saving.set(false);this.load();},error:e=>{this.saving.set(false);this.error.set(httpErrorMessage(e,'Media order could not be updated.'));}});}
+  sortedMedia():VenueMediaDto[]{return [...(this.marketplace()?.media??[])].sort((a,b)=>Number(a.sortOrder??0)-Number(b.sortOrder??0));}
+  isCover(item:VenueMediaDto):boolean{const photos=this.sortedMedia().filter(x=>x.type?.toLowerCase()==='photo'||/\.(png|jpe?g|webp|gif)(\?|$)/i.test(x.url??''));return photos[0]?.venueMediaId===item.venueMediaId;}
+  isImage(item:VenueMediaDto):boolean{return item.type?.toLowerCase()==='photo'||/\.(png|jpe?g|webp|gif)(\?|$)/i.test(item.url??'');}
 
-  mediaUrl = ''; mediaType = 'Photo'; mediaSortOrder = 0;
-  rateType = 'Hourly'; rateAmount = 0; rateCurrency = 'LKR'; rateFrom = ''; rateTo = '';
-  layoutName = 'Standard layout'; layoutVersion = 1; layoutRows = 8; layoutColumns = 12; layoutAisleEvery = 6; layoutAlignment = 'Centered';
-
-  ngOnInit(): void {
-    this.domain.myVenues().subscribe({
-      next: (venues) => {
-        this.venues.set(venues.filter(v => v.isActive !== false));
-        const fromQuery = this.route.snapshot.queryParamMap.get('venueId');
-        this.selectedVenueId = (fromQuery && venues.some(v => this.id(v) === fromQuery)) ? fromQuery : this.id(venues[0]);
-        if (this.selectedVenueId) this.load();
-        else this.loading.set(false);
-      },
-      error: (e) => { this.loading.set(false); this.error.set(httpErrorMessage(e, 'Your venues could not be loaded.')); }
-    });
-  }
-
-  id(v?: VenueSummary): string { return v?.venueId ?? v?.id ?? ''; }
-
-  load(): void {
-    if (!this.selectedVenueId) return;
-    this.loading.set(true); this.error.set(''); this.success.set('');
-    forkJoin({
-      marketplace: this.domain.venueMarketplace(this.selectedVenueId),
-      facilities: this.domain.venueFacilities(),
-    }).subscribe({
-      next: ({marketplace, facilities}) => {
-        this.marketplace.set(marketplace);
-        this.facilities.set(facilities.filter(x => x.isActive));
-        this.selectedFacilityIds = new Set(marketplace.facilities.map(x => x.facilityId));
-        this.loading.set(false);
-      },
-      error: (e) => { this.loading.set(false); this.error.set(httpErrorMessage(e, 'Marketplace details could not be loaded.')); }
-    });
-  }
-
-  toggleFacility(id: string, checked: boolean): void {
-    if (checked) this.selectedFacilityIds.add(id); else this.selectedFacilityIds.delete(id);
-  }
-
-  saveFacilities(): void {
-    if (!this.selectedVenueId || this.saving()) return;
-    this.saving.set(true); this.error.set(''); this.success.set('');
-    this.domain.setVenueFacilities(this.selectedVenueId, [...this.selectedFacilityIds]).subscribe({
-      next: () => { this.saving.set(false); this.success.set('Facilities updated.'); this.load(); },
-      error: (e) => { this.saving.set(false); this.error.set(httpErrorMessage(e, 'Facilities could not be saved.')); }
-    });
-  }
-
-  addMedia(): void {
-    if (!this.selectedVenueId || !this.mediaUrl.trim() || this.saving()) return;
-    this.saving.set(true); this.error.set('');
-    this.domain.addVenueMedia(this.selectedVenueId, {url:this.mediaUrl.trim(), type:this.mediaType, sortOrder:Number(this.mediaSortOrder)||0}).subscribe({
-      next: () => { this.mediaUrl=''; this.saving.set(false); this.success.set('Media added.'); this.load(); },
-      error: e => { this.saving.set(false); this.error.set(httpErrorMessage(e, 'Media could not be added.')); }
-    });
-  }
-
-  addRate(): void {
-    if (!this.selectedVenueId || this.rateAmount < 0 || this.saving()) return;
-    this.saving.set(true); this.error.set('');
-    this.domain.addVenueRate(this.selectedVenueId, {
-      rateType:this.rateType, amount:Number(this.rateAmount), currency:this.rateCurrency || 'LKR',
-      validFromUtc:this.rateFrom ? new Date(this.rateFrom).toISOString() : null,
-      validToUtc:this.rateTo ? new Date(this.rateTo).toISOString() : null
-    }).subscribe({
-      next: () => { this.saving.set(false); this.success.set('Rate added.'); this.load(); },
-      error: e => { this.saving.set(false); this.error.set(httpErrorMessage(e, 'Rate could not be added.')); }
-    });
-  }
-
-  addLayoutTemplate(): void {
-    if (!this.selectedVenueId || !this.layoutName.trim() || this.layoutRows < 1 || this.layoutColumns < 1 || this.saving()) return;
-    const layoutJson = JSON.stringify({
-      alignment: this.layoutAlignment,
-      rows: Number(this.layoutRows),
-      columns: Number(this.layoutColumns),
-      aisleEvery: Number(this.layoutAisleEvery),
-      source: 'venue-owner'
-    });
-    this.saving.set(true); this.error.set('');
-    this.domain.addVenueLayoutTemplate(this.selectedVenueId, {name:this.layoutName.trim(), version:Number(this.layoutVersion)||1, layoutJson}).subscribe({
-      next: () => { this.saving.set(false); this.success.set('Layout template saved.'); this.load(); },
-      error: e => { this.saving.set(false); this.error.set(httpErrorMessage(e, 'Layout template could not be saved.')); }
-    });
-  }
-
-  layoutSummary(json: string): string {
-    try {
-      const x = JSON.parse(json) as Record<string, unknown>;
-      return `${x['alignment'] ?? 'Custom'} · ${x['rows'] ?? '?'} rows × ${x['columns'] ?? '?'} columns`;
-    } catch { return 'Custom layout metadata'; }
-  }
+  rateRangeInvalid():boolean{const from=this.toDate(this.rateFromDate,this.rateFromTime);const to=this.toDate(this.rateToDate,this.rateToTime);return !!from&&!!to&&to.getTime()<=from.getTime();}
+  addRate():void{if(!this.selectedVenueId||this.rateAmount<0||this.saving())return;if(this.rateRangeInvalid()){this.error.set('Valid to must be later than Valid from.');return;}this.saving.set(true);this.error.set('');this.success.set('');const from=this.toDate(this.rateFromDate,this.rateFromTime);const to=this.toDate(this.rateToDate,this.rateToTime);const body={rateType:this.rateType,amount:Number(this.rateAmount),currency:this.rateCurrency||'LKR',validFromUtc:from?.toISOString()??null,validToUtc:to?.toISOString()??null};const request=this.editingRateId?this.domain.updateVenueRate(this.selectedVenueId,this.editingRateId,body):this.domain.addVenueRate(this.selectedVenueId,body);request.subscribe({next:()=>{const edited=!!this.editingRateId;this.editingRateId='';this.saving.set(false);this.success.set(edited?'Rate updated.':'Rate added.');this.rateFromDate='';this.rateFromTime='';this.rateToDate='';this.rateToTime='';this.load();},error:e=>{this.saving.set(false);this.error.set(httpErrorMessage(e,'Rate could not be saved.'));}});}
+  editRate(rate:VenueRateDto):void{this.editingRateId=rate.venueRateId;this.rateType=rate.rateType;this.rateAmount=rate.amount;this.rateCurrency=rate.currency;[this.rateFromDate,this.rateFromTime]=this.dateParts(rate.validFromUtc);[this.rateToDate,this.rateToTime]=this.dateParts(rate.validToUtc);}
+  cancelRateEdit():void{this.editingRateId='';this.rateFromDate='';this.rateFromTime='';this.rateToDate='';this.rateToTime='';}
+  deleteRate(rate:VenueRateDto):void{if(!this.selectedVenueId||this.saving()||!confirm('Remove this venue rate?'))return;this.saving.set(true);this.domain.deleteVenueRate(this.selectedVenueId,rate.venueRateId).subscribe({next:()=>{this.saving.set(false);this.success.set('Rate removed.');this.load();},error:e=>{this.saving.set(false);this.error.set(httpErrorMessage(e,'Rate could not be removed.'));}});}
+  addLayoutTemplate():void{if(!this.selectedVenueId||!this.layoutName.trim()||this.layoutRows<1||this.layoutColumns<1||this.saving())return;const layoutJson=JSON.stringify({alignment:this.layoutAlignment,rows:Number(this.layoutRows),columns:Number(this.layoutColumns),aisleEvery:Number(this.layoutAisleEvery),source:'venue-owner'});this.saving.set(true);this.error.set('');const body={name:this.layoutName.trim(),version:Number(this.layoutVersion)||1,layoutJson};const request=this.editingLayoutId?this.domain.updateVenueLayoutTemplate(this.selectedVenueId,this.editingLayoutId,body):this.domain.addVenueLayoutTemplate(this.selectedVenueId,body);request.subscribe({next:()=>{const edited=!!this.editingLayoutId;this.editingLayoutId='';this.saving.set(false);this.success.set(edited?'Layout template updated.':'Layout template saved.');this.load();},error:e=>{this.saving.set(false);this.error.set(httpErrorMessage(e,'Layout template could not be saved.'));}});}
+  editLayout(layout:VenueLayoutTemplateDto):void{this.editingLayoutId=layout.venueLayoutTemplateId;this.layoutName=layout.name;this.layoutVersion=layout.version;try{const x=JSON.parse(layout.layoutJson) as Record<string,unknown>;this.layoutAlignment=String(x['alignment']??'Centered');this.layoutRows=Number(x['rows']??8);this.layoutColumns=Number(x['columns']??12);this.layoutAisleEvery=Number(x['aisleEvery']??0);}catch{this.layoutAlignment='Centered';}}
+  cancelLayoutEdit():void{this.editingLayoutId='';}
+  deleteLayout(layout:VenueLayoutTemplateDto):void{if(!this.selectedVenueId||this.saving()||!confirm('Remove this layout template?'))return;this.saving.set(true);this.domain.deleteVenueLayoutTemplate(this.selectedVenueId,layout.venueLayoutTemplateId).subscribe({next:()=>{this.saving.set(false);this.success.set('Layout template removed.');this.load();},error:e=>{this.saving.set(false);this.error.set(httpErrorMessage(e,'Layout template could not be removed.'));}});}
+  layoutSummary(json:string):string{try{const x=JSON.parse(json) as Record<string,unknown>;return `${x['alignment']??'Custom'} · ${x['rows']??'?'} rows × ${x['columns']??'?'} columns`;}catch{return 'Custom layout metadata';}}
+  ratePeriod(rate:VenueRateDto):string{const from=rate.validFromUtc?new Date(rate.validFromUtc):null;const to=rate.validToUtc?new Date(rate.validToUtc):null;const fmt=(d:Date)=>new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}).format(d);if(from&&to)return `${fmt(from)} → ${fmt(to)}`;if(from)return `From ${fmt(from)}`;if(to)return `Until ${fmt(to)}`;return 'Current rate';}
+  private dateParts(value?:string|null):[string,string]{if(!value)return['',''];const d=new Date(value);if(Number.isNaN(d.getTime()))return['',''];const pad=(n:number)=>String(n).padStart(2,'0');return[`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,`${pad(d.getHours())}:${pad(d.getMinutes())}`];}
+  private toDate(dateValue:string,timeValue:string):Date|null{if(!dateValue)return null;const date=new Date(`${dateValue}T${timeValue||'00:00'}`);return Number.isNaN(date.getTime())?null:date;}
 }

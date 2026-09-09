@@ -1,80 +1,9 @@
-
-<header class="page-head">
-  <div><span class="eyebrow">Venue Marketplace</span><h1>Present each venue professionally.</h1><p>Manage facilities, media, rates and reusable venue-layout templates that organizers and customers can discover.</p></div>
-  <a class="btn btn--secondary" routerLink="/venue-owner/venues">My Venues</a>
-</header>
-
-@if(error()){<div class="notice error" role="alert">{{error()}}</div>}
-@if(success()){<div class="notice">{{success()}}</div>}
-
-<section class="card toolbar">
-  <div class="field"><label for="venue">Venue</label><select id="venue" class="select" [(ngModel)]="selectedVenueId" (ngModelChange)="load()">
-    @for(v of venues(); track id(v)){<option [value]="id(v)">{{v.name}}</option>}
-  </select></div>
-  @if(selectedVenueId){<a class="btn btn--secondary" [routerLink]="['/venue-owner/venues', selectedVenueId, 'edit']">Edit venue details</a>}
-</section>
-
-@if(!selectedVenueId){
-  <section class="empty-state"><h3>Register a venue first</h3><p>Marketplace tools become available once your account owns an active venue.</p><a class="btn btn--primary" routerLink="/venue-owner/venues/new">Register Venue</a></section>
-}@else if(loading()){
-  <section class="card panel"><div class="skeleton" style="height:180px"></div></section>
-}@else{
-  <div class="split">
-    <section>
-      <article class="card panel">
-        <h2>Facilities</h2>
-        <div class="check-grid">
-          @for(f of facilities(); track f.facilityId){
-            <label class="check"><input type="checkbox" [checked]="selectedFacilityIds.has(f.facilityId)" (change)="toggleFacility(f.facilityId, $any($event.target).checked)"><span><strong>{{f.name}}</strong><br><small class="muted">{{f.category}}</small></span></label>
-          }
-        </div>
-        @if(!facilities().length){<p class="muted">No facility options are available yet. An administrator can add facility options.</p>}
-        <div class="actions" style="margin-top:16px"><button class="btn btn--primary" type="button" (click)="saveFacilities()" [disabled]="saving()">Save facilities</button></div>
-      </article>
-
-      <article class="card panel">
-        <h2>Media gallery</h2>
-        <div class="form-grid">
-          <div class="field span-2"><label>Image or video URL</label><input class="input" [(ngModel)]="mediaUrl" placeholder="https://..."></div>
-          <div class="field"><label>Type</label><select class="select" [(ngModel)]="mediaType"><option>Photo</option><option>Video</option><option>360</option></select></div>
-          <div class="field"><label>Display order</label><input class="input" type="number" [(ngModel)]="mediaSortOrder"></div>
-        </div>
-        <div class="actions" style="margin-top:16px"><button class="btn btn--primary" type="button" (click)="addMedia()" [disabled]="saving() || !mediaUrl.trim()">Add media</button></div>
-        <div class="divider"></div>
-        <div class="list">@for(item of marketplace()?.media ?? []; track item.venueMediaId){<div class="list-item"><strong>{{item.type}}</strong><p>{{item.url}}</p><span class="chip">Order {{item.sortOrder}}</span></div>}@empty{<p class="muted">No media has been added yet.</p>}</div>
-      </article>
-
-      <article class="card panel">
-        <h2>Venue rates</h2>
-        <div class="grid-3">
-          <div class="field"><label>Rate type</label><select class="select" [(ngModel)]="rateType"><option>Hourly</option><option>Daily</option><option>Event</option><option>Package</option></select></div>
-          <div class="field"><label>Amount</label><input class="input" type="number" min="0" [(ngModel)]="rateAmount"></div>
-          <div class="field"><label>Currency</label><input class="input" [(ngModel)]="rateCurrency"></div>
-          <div class="field"><label>Valid from</label><input class="input" type="datetime-local" [(ngModel)]="rateFrom"></div>
-          <div class="field"><label>Valid to</label><input class="input" type="datetime-local" [(ngModel)]="rateTo"></div>
-        </div>
-        <div class="actions" style="margin-top:16px"><button class="btn btn--primary" type="button" (click)="addRate()" [disabled]="saving()">Add rate</button></div>
-        <div class="divider"></div>
-        <div class="list">@for(rate of marketplace()?.rates ?? []; track rate.venueRateId){<div class="list-item"><div class="list-item__top"><div><h3>{{rate.rateType}}</h3><p>{{rate.currency}} {{rate.amount | number:'1.0-2'}}</p></div><span class="chip">{{rate.validFromUtc ? (rate.validFromUtc | date:'mediumDate') : 'Current'}}</span></div></div>}@empty{<p class="muted">No marketplace rates yet.</p>}</div>
-      </article>
-    </section>
-
-    <aside>
-      <article class="card panel">
-        <h2>Venue alignment template</h2>
-        <p class="muted">Save a reusable high-level room alignment. Event-specific seat configuration still happens in the organizer seating workflow.</p>
-        <div class="field"><label>Template name</label><input class="input" [(ngModel)]="layoutName"></div>
-        <div class="grid-3" style="margin-top:12px">
-          <div class="field"><label>Rows</label><input class="input" type="number" min="1" [(ngModel)]="layoutRows"></div>
-          <div class="field"><label>Columns</label><input class="input" type="number" min="1" [(ngModel)]="layoutColumns"></div>
-          <div class="field"><label>Aisle every</label><input class="input" type="number" min="0" [(ngModel)]="layoutAisleEvery"></div>
-        </div>
-        <div class="field" style="margin-top:12px"><label>Alignment</label><select class="select" [(ngModel)]="layoutAlignment"><option>Centered</option><option>Left aligned</option><option>Right aligned</option><option>Split aisle</option><option>Curved</option></select></div>
-        <div class="field" style="margin-top:12px"><label>Version</label><input class="input" type="number" min="1" [(ngModel)]="layoutVersion"></div>
-        <button class="btn btn--primary" style="margin-top:14px" type="button" (click)="addLayoutTemplate()" [disabled]="saving()">Save template</button>
-        <div class="divider"></div>
-        <div class="list">@for(layout of marketplace()?.layoutTemplates ?? []; track layout.venueLayoutTemplateId){<div class="list-item"><strong>{{layout.name}} · v{{layout.version}}</strong><p>{{layoutSummary(layout.layoutJson)}}</p></div>}@empty{<p class="muted">No saved layout templates.</p>}</div>
-      </article>
-    </aside>
-  </div>
-}
+<header class="page-head"><div><span class="eyebrow">Venue Marketplace</span><h1>Present each venue professionally.</h1><p>Manage real venue media, facilities, prices and reusable layout templates. The cover photo shown to organizers and customers comes from the media you add here.</p></div><a class="btn btn--secondary" routerLink="/venue-owner/venues">My Venues</a></header>
+@if(error()){<div class="notice error" role="alert">{{error()}}</div>}@if(success()){<div class="notice">{{success()}}</div>}
+<section class="card toolbar"><div class="field"><label for="venue">Venue</label><select id="venue" class="select" [(ngModel)]="selectedVenueId" (ngModelChange)="load()">@for(v of venues();track id(v)){<option [value]="id(v)">{{v.name}}</option>}</select></div>@if(selectedVenueId){<a class="btn btn--secondary" [routerLink]="['/venue-owner/venues',selectedVenueId,'edit']">Edit venue details</a>}</section>
+@if(!selectedVenueId){<section class="empty-state"><h3>Register a venue first</h3><p>Marketplace tools become available once your account owns an active venue.</p><a class="btn btn--primary" routerLink="/venue-owner/venues/new">Register Venue</a></section>}@else if(loading()){<section class="card panel"><div class="skeleton" style="height:180px"></div></section>}@else{
+<div class="split"><section>
+<article class="card panel"><div class="panel-title"><div><span class="eyebrow">Venue presentation</span><h2>Media gallery</h2><p>The first photo by display order becomes the cover image across Browse Venues.</p></div><span class="media-count">{{sortedMedia().length}} media</span></div><app-media-dropzone category="venue-gallery" (uploaded)="onMediaUploaded($event)"/><div class="media-or">OR paste a direct image/video URL</div><div class="form-grid media-form"><div class="field span-2"><label>Image or video URL</label><input aria-label="https://.../my-venue.jpg" class="input" [(ngModel)]="mediaUrl" placeholder="https://.../my-venue.jpg"></div><div class="field"><label>Type</label><select aria-label="Media type" class="select" [(ngModel)]="mediaType"><option>Photo</option><option>Video</option><option>360</option></select></div><div class="field"><label>Display order</label><input aria-label="Media sort order" class="input" type="number" [(ngModel)]="mediaSortOrder"><small class="muted">Use a lower number for the cover photo.</small></div></div><div class="actions"><button class="btn btn--primary" type="button" (click)="addMedia()" [disabled]="saving()||!mediaUrl.trim()"><app-nav-icon name="plus-circle"/> {{editingMediaId?'Save media':'Add media'}}</button>@if(editingMediaId){<button class="btn btn--secondary" type="button" (click)="cancelMediaEdit()">Cancel edit</button>}</div><div class="divider"></div><div class="media-grid">@for(item of sortedMedia();track item.venueMediaId){<article class="media-card">@if(isImage(item)){<img [src]="item.url" [alt]="item.type+' venue media'">}@else{<div class="media-placeholder"><app-nav-icon name="market"/><span>{{item.type}}</span></div>}<div class="media-card__body"><div><strong>{{item.type}}</strong>@if(isCover(item)){<span class="cover-badge">Cover image</span>}</div><small>Display order {{item.sortOrder}}</small><a [href]="item.url" target="_blank" rel="noopener">Open media ↗</a><div class="manage-actions"><button type="button" (click)="editMedia(item)">Edit</button><button type="button" (click)="moveMedia(item,-1)" aria-label="Move media earlier">↑</button><button type="button" (click)="moveMedia(item,1)" aria-label="Move media later">↓</button><button type="button" class="danger-action" (click)="deleteMedia(item)">Remove</button></div></div></article>}@empty{<div class="empty-media"><app-nav-icon name="building"/><strong>No venue media yet</strong><p>Add a real venue photo. Until then the public UI shows a neutral placeholder — never a random stock venue.</p></div>}</div></article>
+<article class="card panel"><h2>Facilities</h2><div class="check-grid">@for(f of facilities();track f.facilityId){<label class="check"><input aria-label="Input field" type="checkbox" [checked]="selectedFacilityIds.has(f.facilityId)" (change)="toggleFacility(f.facilityId,$any($event.target).checked)"><span><strong>{{f.name}}</strong><br><small class="muted">{{f.category}}</small></span></label>}</div>@if(!facilities().length){<p class="muted">No facility options are available yet. An administrator can add facility options.</p>}<div class="actions"><button class="btn btn--primary" type="button" (click)="saveFacilities()" [disabled]="saving()">Save facilities</button></div></article>
+<article class="card panel"><div class="panel-title"><div><span class="eyebrow">Pricing</span><h2>Venue rates</h2><p>Set the pricing window with separate, readable date and time controls.</p></div></div><div class="grid-3"><div class="field"><label>Rate type</label><select aria-label="Rate type" class="select" [(ngModel)]="rateType"><option>Hourly</option><option>Daily</option><option>Event</option><option>Package</option></select></div><div class="field"><label>Amount</label><input aria-label="Rate amount" class="input" type="number" min="0" [(ngModel)]="rateAmount"></div><div class="field"><label>Currency</label><input aria-label="Rate currency" class="input" [(ngModel)]="rateCurrency"></div></div><div class="date-range"><div class="date-card"><div class="date-card__title"><app-nav-icon name="calendar"/><div><strong>Valid from</strong><span>Optional start date and time</span></div></div><div class="date-fields"><label><span>Date</span><input aria-label="Rate from date" class="input" type="date" [(ngModel)]="rateFromDate"></label><label><span>Time</span><input aria-label="Rate from time" class="input" type="time" [(ngModel)]="rateFromTime"></label></div></div><div class="range-arrow">→</div><div class="date-card"><div class="date-card__title"><app-nav-icon name="calendar"/><div><strong>Valid to</strong><span>Optional end date and time</span></div></div><div class="date-fields"><label><span>Date</span><input aria-label="Rate to date" class="input" type="date" [(ngModel)]="rateToDate"></label><label><span>Time</span><input aria-label="Rate to time" class="input" type="time" [(ngModel)]="rateToTime"></label></div></div></div>@if(rateRangeInvalid()){<div class="range-error">Valid to must be later than Valid from.</div>}<div class="actions"><button class="btn btn--primary" type="button" (click)="addRate()" [disabled]="saving()||rateRangeInvalid()">{{editingRateId?'Save rate':'Add rate'}}</button>@if(editingRateId){<button class="btn btn--secondary" type="button" (click)="cancelRateEdit()">Cancel edit</button>}</div><div class="divider"></div><div class="list">@for(rate of marketplace()?.rates??[];track rate.venueRateId){<div class="list-item rate-item"><div><span class="eyebrow">{{rate.rateType}}</span><h3>{{rate.currency}} {{rate.amount|number:'1.0-2'}}</h3><p>{{ratePeriod(rate)}}</p><div class="manage-actions"><button type="button" (click)="editRate(rate)">Edit</button><button type="button" class="danger-action" (click)="deleteRate(rate)">Remove</button></div></div></div>}@empty{<p class="muted">No marketplace rates yet.</p>}</div></article>
+</section><aside><article class="card panel sticky-panel"><h2>Venue alignment template</h2><p class="muted">Save a reusable high-level room alignment. Event-specific seat configuration still happens in the organizer seating workflow.</p><div class="field"><label>Template name</label><input aria-label="Layout name" class="input" [(ngModel)]="layoutName"></div><div class="grid-3 compact-grid"><div class="field"><label>Rows</label><input aria-label="Layout rows" class="input" type="number" min="1" [(ngModel)]="layoutRows"></div><div class="field"><label>Columns</label><input aria-label="Layout columns" class="input" type="number" min="1" [(ngModel)]="layoutColumns"></div><div class="field"><label>Aisle every</label><input aria-label="Layout aisle every" class="input" type="number" min="0" [(ngModel)]="layoutAisleEvery"></div></div><div class="field"><label>Alignment</label><select aria-label="Layout alignment" class="select" [(ngModel)]="layoutAlignment"><option>Centered</option><option>Left aligned</option><option>Right aligned</option><option>Split aisle</option><option>Curved</option></select></div><div class="field"><label>Version</label><input aria-label="Layout version" class="input" type="number" min="1" [(ngModel)]="layoutVersion"></div><div class="actions"><button class="btn btn--primary" type="button" (click)="addLayoutTemplate()" [disabled]="saving()">{{editingLayoutId?'Update template':'Save template'}}</button>@if(editingLayoutId){<button class="btn btn--secondary" type="button" (click)="cancelLayoutEdit()">Cancel edit</button>}</div><div class="divider"></div><div class="list">@for(layout of marketplace()?.layoutTemplates??[];track layout.venueLayoutTemplateId){<div class="list-item"><strong>{{layout.name}} · v{{layout.version}}</strong><p>{{layoutSummary(layout.layoutJson)}}</p><div class="manage-actions"><button type="button" (click)="editLayout(layout)">Edit</button><button type="button" class="danger-action" (click)="deleteLayout(layout)">Remove</button></div></div>}@empty{<p class="muted">No saved layout templates.</p>}</div></article></aside></div>}

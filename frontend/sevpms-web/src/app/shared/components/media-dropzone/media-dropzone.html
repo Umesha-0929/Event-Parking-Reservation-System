@@ -1,0 +1,6 @@
+<div class="dropzone" [class.dropzone--dragging]="dragging()" [class.dropzone--compact]="compact" tabindex="0" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+  <input aria-label="Choose file" #picker hidden type="file" [accept]="imageOnly?'image/*':'image/*,video/*'" (change)="onInput($event)">
+  <div class="drop-icon">＋</div><div><strong>{{busy()?'Uploading…':'Add from your device'}}</strong><span>Click, drag & drop, or paste {{imageOnly?'an image':'an image/video'}} here.</span></div>
+  <button class="drop-button" type="button" (click)="choose(picker)" [disabled]="busy()">{{busy()?'Uploading':'Browse files'}}</button>
+</div>
+@if(error()){<small class="drop-error">{{error()}}</small>}

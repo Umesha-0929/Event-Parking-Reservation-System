@@ -18,6 +18,7 @@ public sealed class ParkingNodeConfiguration
             .IsRequired();
 
         builder.Property(node => node.NodeCode)
+            .HasMaxLength(80)
             .IsRequired();
 
         builder.Property(node => node.X)
@@ -29,6 +30,7 @@ public sealed class ParkingNodeConfiguration
             .IsRequired();
 
         builder.Property(node => node.NodeType)
+            .HasMaxLength(40)
             .IsRequired();
     }
 }

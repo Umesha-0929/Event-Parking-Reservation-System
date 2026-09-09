@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Replace nvent.example.invalid with the real production domain before launch. -->
-  <url><loc>https://nvent.example.invalid/</loc></url>
-  <url><loc>https://nvent.example.invalid/events</loc></url>
-  <url><loc>https://nvent.example.invalid/venues</loc></url>
-  <url><loc>https://nvent.example.invalid/services</loc></url>
-  <url><loc>https://nvent.example.invalid/about</loc></url>
-</urlset>

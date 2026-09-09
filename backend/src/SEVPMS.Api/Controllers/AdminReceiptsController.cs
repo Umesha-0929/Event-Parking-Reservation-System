@@ -11,9 +11,16 @@ namespace SEVPMS.Api.Controllers;
 [Route("api/admin/receipts")]
 [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
 public sealed class AdminReceiptsController(
+    IReceiptService receiptService,
     IReceiptDeliveryService deliveryService)
     : ControllerBase
 {
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<ReceiptResponse>>> GetRecent(
+        [FromQuery] int take = 100,
+        CancellationToken cancellationToken = default)
+        => Ok(await receiptService.GetRecentAdminAsync(take, cancellationToken));
+
     [HttpGet("{id:guid}/deliveries")]
     public async Task<ActionResult<IReadOnlyList<ReceiptDeliveryResponse>>>
         GetDeliveries(

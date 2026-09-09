@@ -66,6 +66,8 @@ public sealed class FoodController : ControllerBase
     [HttpGet("orders")]
     [Authorize(Policy = AuthorizationPolicies.CustomerOnly)]
     public async Task<ActionResult<IReadOnlyList<FoodOrderDto>>> GetMyOrders(
+        [FromQuery] int page,
+        [FromQuery] int pageSize,
         CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))
@@ -73,7 +75,11 @@ public sealed class FoodController : ControllerBase
             return Unauthorized();
         }
 
-        var orders = await _foodService.GetOrdersByCustomerAsync(userId, cancellationToken);
+        var orders = await _foodService.GetOrdersByCustomerPageAsync(
+            userId,
+            page == 0 ? 1 : page,
+            pageSize == 0 ? 50 : pageSize,
+            cancellationToken);
         return Ok(orders);
     }
 

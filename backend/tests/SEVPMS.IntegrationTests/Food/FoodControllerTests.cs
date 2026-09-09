@@ -70,6 +70,8 @@ public sealed class FoodControllerTests
         var controller = CreateController(service);
 
         var result = await controller.GetMyOrders(
+            1,
+            50,
             CancellationToken.None);
 
         Assert.IsType<UnauthorizedResult>(result.Result);
@@ -103,6 +105,8 @@ public sealed class FoodControllerTests
             CreateController(service, userId);
 
         var result = await controller.GetMyOrders(
+            1,
+            50,
             CancellationToken.None);
 
         var okResult =

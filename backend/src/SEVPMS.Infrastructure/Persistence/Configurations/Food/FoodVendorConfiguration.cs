@@ -15,12 +15,15 @@ public sealed class FoodVendorConfiguration
         builder.HasKey(x => x.Id);
 
         builder.Property(x => x.Name)
+            .HasMaxLength(160)
             .IsRequired();
 
         builder.Property(x => x.Description)
+            .HasMaxLength(2000)
             .IsRequired();
 
         builder.Property(x => x.Status)
+            .HasMaxLength(40)
             .IsRequired();
 
         builder.HasIndex(x => x.OwnerUserId);

@@ -55,6 +55,17 @@ public sealed class EventCategoryService(IEventCategoryRepository repository) : 
         await repository.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var category = await repository.GetByIdAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException("Event category was not found.");
+        if (category.IsActive) throw new InvalidOperationException("Deactivate the category before deleting it permanently.");
+        if (await repository.IsUsedAsync(id, cancellationToken)) throw new InvalidOperationException("This category is already used by an event and must be kept for history.");
+        await repository.DeleteAsync(category, cancellationToken);
+        await repository.SaveChangesAsync(cancellationToken);
+    }
+
+
     private static void Validate(UpsertEventCategoryRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);

@@ -20,6 +20,15 @@ public sealed class ParkingService(
             .ToList();
     }
 
+    public async Task<IReadOnlyList<ParkingZoneDto>> GetZonesByVenuePageAsync(
+        Guid venueId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+        => (await repository.GetZonesByVenuePageAsync(venueId, page, pageSize, cancellationToken))
+            .Select(ToZoneDto)
+            .ToArray();
+
     public async Task<IReadOnlyList<ParkingSlotDto>> GetSlotsByZoneAsync(
         Guid parkingZoneId,
         CancellationToken cancellationToken = default)
@@ -32,6 +41,15 @@ public sealed class ParkingService(
             .Select(ToSlotDto)
             .ToList();
     }
+
+    public async Task<IReadOnlyList<ParkingSlotDto>> GetSlotsByZonePageAsync(
+        Guid parkingZoneId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+        => (await repository.GetSlotsByZonePageAsync(parkingZoneId, page, pageSize, cancellationToken))
+            .Select(ToSlotDto)
+            .ToArray();
 
     public async Task<ParkingSlotDto?> GetSlotByIdAsync(
         Guid parkingSlotId,
@@ -226,6 +244,54 @@ public sealed class ParkingService(
             cancellationToken);
 
         return ToSlotDto(slot);
+    }
+
+    public async Task<IReadOnlyList<ParkingSlotDto>> CreateSlotsBulkAsync(
+        IReadOnlyCollection<UpsertParkingSlotRequest> requests,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(requests);
+        if (requests.Count == 0) return Array.Empty<ParkingSlotDto>();
+        if (requests.Count > 500)
+            throw new ArgumentException("A maximum of 500 parking slots can be created in one request.");
+
+        foreach (var request in requests) ValidateSlotRequest(request);
+        var zoneId = requests.First().ParkingZoneId;
+        if (requests.Any(x => x.ParkingZoneId != zoneId))
+            throw new ArgumentException("All bulk parking slots must belong to the same zone.");
+
+        var zone = await repository.GetZoneByIdAsync(zoneId, cancellationToken)
+            ?? throw new KeyNotFoundException("Parking zone was not found.");
+        if (requests.Any(x => x.EventId.HasValue && zone.EventId.HasValue && x.EventId.Value != zone.EventId.Value))
+            throw new ArgumentException("One or more parking slot events do not match the parking zone event.");
+
+        var existing = await repository.GetSlotsByZoneAsync(zoneId, cancellationToken);
+        var usedCodes = new HashSet<string>(existing.Select(x => x.SlotCode), StringComparer.OrdinalIgnoreCase);
+        var created = new List<ParkingSlot>(requests.Count);
+
+        foreach (var request in requests)
+        {
+            var code = request.SlotCode.Trim();
+            if (!usedCodes.Add(code))
+                throw new InvalidOperationException($"Parking slot code '{code}' already exists in the selected zone or is duplicated in this request.");
+
+            var slot = new ParkingSlot
+            {
+                ParkingZoneId = request.ParkingZoneId,
+                EventId = request.EventId,
+                SlotCode = code,
+                X = request.X,
+                Y = request.Y,
+                IsAccessible = request.IsAccessible,
+                Status = NormalizeStatus(request.Status)
+            };
+            await repository.AddSlotAsync(slot, cancellationToken);
+            created.Add(slot);
+        }
+
+        // One SaveChanges call keeps the generated grid atomic under EF Core's transaction.
+        await repository.SaveChangesAsync(cancellationToken);
+        return created.Select(ToSlotDto).ToList();
     }
 
     public async Task<ParkingSlotDto> UpdateSlotAsync(

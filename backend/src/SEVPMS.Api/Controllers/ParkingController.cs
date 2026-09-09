@@ -13,15 +13,33 @@ namespace SEVPMS.Api.Controllers;
 public sealed class ParkingController(
     IParkingService service,
     IParkingRepository parkingRepository,
+    IParkingRouteRepository parkingRouteRepository,
     IVenueRepository venueRepository) : ControllerBase
 {
-    [HttpGet("venues/{venueId:guid}/zones")]
-    public async Task<ActionResult<IReadOnlyList<ParkingZoneDto>>> GetZonesByVenue(
+    [HttpGet("venues/{venueId:guid}/nodes")]
+    public async Task<ActionResult<IReadOnlyList<ParkingNodeDto>>> GetNodesByVenue(
         Guid venueId,
         CancellationToken cancellationToken)
     {
-        var zones = await service.GetZonesByVenueAsync(
+        var nodes = await parkingRouteRepository.GetNodesByVenueAsync(venueId, cancellationToken);
+        return Ok(nodes.OrderBy(x => x.NodeCode).Select(x => new ParkingNodeDto
+        {
+            Id = x.Id, VenueId = x.VenueId, LayoutId = x.LayoutId, NodeCode = x.NodeCode,
+            X = x.X, Y = x.Y, NodeType = x.NodeType
+        }).ToList());
+    }
+
+    [HttpGet("venues/{venueId:guid}/zones")]
+    public async Task<ActionResult<IReadOnlyList<ParkingZoneDto>>> GetZonesByVenue(
+        Guid venueId,
+        [FromQuery] int page,
+        [FromQuery] int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var zones = await service.GetZonesByVenuePageAsync(
             venueId,
+            page == 0 ? 1 : page,
+            pageSize == 0 ? 50 : pageSize,
             cancellationToken);
 
         return Ok(zones);
@@ -30,10 +48,14 @@ public sealed class ParkingController(
     [HttpGet("zones/{parkingZoneId:guid}/slots")]
     public async Task<ActionResult<IReadOnlyList<ParkingSlotDto>>> GetSlotsByZone(
         Guid parkingZoneId,
+        [FromQuery] int page,
+        [FromQuery] int pageSize,
         CancellationToken cancellationToken)
     {
-        var slots = await service.GetSlotsByZoneAsync(
+        var slots = await service.GetSlotsByZonePageAsync(
             parkingZoneId,
+            page == 0 ? 1 : page,
+            pageSize == 0 ? 100 : pageSize,
             cancellationToken);
 
         return Ok(slots);
@@ -177,6 +199,30 @@ public sealed class ParkingController(
                     error = exception.Message
                 });
         }
+    }
+
+    [HttpPost("slots/bulk")]
+    [Authorize(Policy = AuthorizationPolicies.ParkingManager)]
+    public async Task<ActionResult<IReadOnlyList<ParkingSlotDto>>> CreateSlotsBulk(
+        BulkCreateParkingSlotsRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request.Slots.Count == 0) return Ok(Array.Empty<ParkingSlotDto>());
+        var zoneId = request.Slots[0].ParkingZoneId;
+        if (request.Slots.Any(x => x.ParkingZoneId != zoneId))
+            return BadRequest(new { error = "All bulk parking slots must belong to the same zone." });
+
+        var zone = await parkingRepository.GetZoneByIdAsync(zoneId, cancellationToken);
+        if (zone is null) return NotFound();
+        if (!await CanManageVenueAsync(zone.VenueId, cancellationToken)) return Forbid();
+
+        try
+        {
+            return Ok(await service.CreateSlotsBulkAsync(request.Slots, cancellationToken));
+        }
+        catch (ArgumentException exception) { return BadRequest(new { error = exception.Message }); }
+        catch (InvalidOperationException exception) { return Conflict(new { error = exception.Message }); }
+        catch (KeyNotFoundException) { return NotFound(); }
     }
 
     [HttpPost("slots")]

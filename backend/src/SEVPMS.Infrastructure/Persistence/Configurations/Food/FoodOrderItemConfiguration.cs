@@ -21,6 +21,7 @@ public sealed class FoodOrderItemConfiguration
             .IsRequired();
 
         builder.Property(x => x.ItemNameSnapshot)
+            .HasMaxLength(200)
             .IsRequired();
 
         builder.Property(x => x.UnitPrice)

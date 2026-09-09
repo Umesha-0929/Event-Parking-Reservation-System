@@ -1,17 +1,20 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { NavItem, UserRole } from '../../core/models/nvent.models';
 import { AuthService } from '../../core/services/auth.service';
 import { NotificationCenterService } from '../../core/services/notification-center.service';
 import { SessionService } from '../../core/services/session.service';
+import { NavIconComponent } from '../../shared/components/nav-icon/nav-icon';
 
 @Component({
   selector: 'app-workspace-layout',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, NavIconComponent],
   templateUrl: './workspace-layout.html',
   styleUrl: './workspace-layout.scss',
 })
 export class WorkspaceLayoutComponent {
+  @ViewChild('workspaceMenuButton') private menuButton?: ElementRef<HTMLButtonElement>;
+  @ViewChild('workspaceSidebar') private sidebar?: ElementRef<HTMLElement>;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
@@ -23,35 +26,35 @@ export class WorkspaceLayoutComponent {
 
   readonly menus: Record<'customer' | 'organizer' | 'venue-owner' | 'admin', NavItem[]> = {
     customer: [
-      { label: 'Dashboard', path: '/customer/dashboard', icon: '⌂' }, { label: 'Browse Events', path: '/customer/browse-events', icon: '◇' },
-      { label: 'Browse Venues', path: '/customer/browse-venues', icon: '▦' }, { label: 'My Bookings', path: '/customer/bookings', icon: '✓' },
-      { label: 'My Tickets', path: '/customer/tickets', icon: '▤' }, { label: 'Parking', path: '/customer/parking', icon: 'P' },
-      { label: 'Food', path: '/customer/food', icon: '◌' }, { label: 'Place Finder', path: '/customer/places', icon: '⌖' },
-      { label: 'Notifications', path: '/customer/notifications', icon: '◉' }, { label: 'Profile', path: '/customer/profile', icon: '○' },
-      { label: 'Settings', path: '/customer/settings', icon: '⚙' },
+      { label: 'Dashboard', path: '/customer/dashboard', icon: 'home' }, { label: 'Browse Events', path: '/customer/browse-events', icon: 'calendar' },
+      { label: 'Browse Venues', path: '/customer/browse-venues', icon: 'building' }, { label: 'My Bookings', path: '/customer/bookings', icon: 'check' }, { label: 'Smart Services', path: '/customer/services', icon: 'check' },
+      { label: 'My Tickets', path: '/customer/tickets', icon: 'ticket' }, { label: 'Parking', path: '/customer/parking', icon: 'parking' },
+      { label: 'Food', path: '/customer/food', icon: 'food' }, { label: 'Place Finder', path: '/customer/places', icon: 'pin' },
+      { label: 'Notifications', path: '/customer/notifications', icon: 'bell' }, { label: 'Profile', path: '/customer/profile', icon: 'user' },
+      { label: 'Settings', path: '/customer/settings', icon: 'settings' },
     ],
     organizer: [
-      { label: 'Dashboard', path: '/organizer/dashboard', icon: '⌂' }, { label: 'Events', path: '/organizer/events', icon: '◇' },
-      { label: 'Create Event', path: '/organizer/create-event', icon: '+' }, { label: 'Venues', path: '/organizer/venues', icon: '▦' },
-      { label: 'Seating Layout', path: '/organizer/seating', icon: '▥' }, { label: 'Seat Categories', path: '/organizer/categories', icon: '◫' },
-      { label: 'Analytics & Finance', path: '/organizer/reports', icon: '⌁' },
-      { label: 'Notifications', path: '/organizer/notifications', icon: '◉' }, { label: 'Settings', path: '/organizer/settings', icon: '⚙' },
+      { label: 'Dashboard', path: '/organizer/dashboard', icon: 'home' }, { label: 'Events', path: '/organizer/events', icon: 'calendar' },
+      { label: 'Create Event', path: '/organizer/create-event', icon: 'plus-circle' }, { label: 'Venues', path: '/organizer/venues', icon: 'building' },
+      { label: 'Event Seating', path: '/organizer/events', icon: 'seat' },
+      { label: 'QR Check-in', path: '/organizer/qr-checkin', icon: 'qr' }, { label: 'Payment QR', path: '/organizer/payment-qr', icon: 'qr' }, { label: 'Venue Payments', path: '/organizer/venue-payments', icon: 'market' }, { label: 'Payment Reviews', path: '/organizer/payment-reviews', icon: 'check' }, { label: 'Analytics & Finance', path: '/organizer/reports', icon: 'chart' },
+      { label: 'Notifications', path: '/organizer/notifications', icon: 'bell' }, { label: 'Settings', path: '/organizer/settings', icon: 'settings' },
     ],
     'venue-owner': [
-      { label: 'Dashboard', path: '/venue-owner/dashboard', icon: '⌂' }, { label: 'My Venues', path: '/venue-owner/venues', icon: '▦' },
-      { label: 'Register Venue', path: '/venue-owner/venues/new', icon: '+' }, { label: 'Marketplace', path: '/venue-owner/marketplace', icon: '◇' },
-      { label: 'Rentals', path: '/venue-owner/rentals', icon: '✓' }, { label: 'Availability', path: '/venue-owner/availability', icon: '◷' },
-      { label: 'Parking', path: '/venue-owner/parking', icon: 'P' }, { label: 'Reports', path: '/venue-owner/reports', icon: '⌁' },
-      { label: 'Notifications', path: '/venue-owner/notifications', icon: '◉' }, { label: 'Settings', path: '/venue-owner/settings', icon: '⚙' },
+      { label: 'Dashboard', path: '/venue-owner/dashboard', icon: 'home' }, { label: 'My Venues', path: '/venue-owner/venues', icon: 'building' },
+      { label: 'Register Venue', path: '/venue-owner/venues/new', icon: 'plus-circle' }, { label: 'Marketplace', path: '/venue-owner/marketplace', icon: 'market' },
+      { label: 'Rentals', path: '/venue-owner/rentals', icon: 'check' }, { label: 'Availability', path: '/venue-owner/availability', icon: 'clock' },
+      { label: 'Parking', path: '/venue-owner/parking', icon: 'parking' }, { label: 'Payment QR', path: '/venue-owner/payment-qr', icon: 'qr' }, { label: 'Reports', path: '/venue-owner/reports', icon: 'chart' },
+      { label: 'Notifications', path: '/venue-owner/notifications', icon: 'bell' }, { label: 'Settings', path: '/venue-owner/settings', icon: 'settings' },
     ],
     admin: [
-      { label: 'Dashboard', path: '/admin/dashboard', icon: '⌂' }, { label: 'Events', path: '/admin/events', icon: '◇' },
-      { label: 'Event Categories', path: '/admin/event-categories', icon: '☷' }, { label: 'Venue Facilities', path: '/admin/venue-facilities', icon: '◫' },
-      { label: 'Venues', path: '/admin/venues', icon: '▦' }, { label: 'Nearby Places', path: '/admin/nearby-places', icon: '⌖' },
-      { label: 'Users', path: '/admin/users', icon: '○' }, { label: 'QR Check-in', path: '/admin/qr-checkin', icon: '⌗' },
-      { label: 'Reports', path: '/admin/reports', icon: '⌁' }, { label: 'Audit Logs', path: '/admin/audit-logs', icon: '☷' },
-      { label: 'Operations', path: '/admin/operations', icon: '◉' },
-      { label: 'Notifications', path: '/admin/notifications', icon: '◉' }, { label: 'Settings', path: '/admin/settings', icon: '⚙' },
+      { label: 'Dashboard', path: '/admin/dashboard', icon: 'home' }, { label: 'Events', path: '/admin/events', icon: 'calendar' },
+      { label: 'Event Categories', path: '/admin/event-categories', icon: 'list' }, { label: 'Venue Facilities', path: '/admin/venue-facilities', icon: 'tag' },
+      { label: 'Venues', path: '/admin/venues', icon: 'building' }, { label: 'Nearby Places', path: '/admin/nearby-places', icon: 'pin' },
+      { label: 'Users', path: '/admin/users', icon: 'users' }, { label: 'Payment Reviews', path: '/admin/payments', icon: 'check' }, { label: 'QR Check-in', path: '/admin/qr-checkin', icon: 'qr' },
+      { label: 'Reports', path: '/admin/reports', icon: 'chart' }, { label: 'Audit Logs', path: '/admin/audit-logs', icon: 'audit' }, { label: 'Receipt Delivery', path: '/admin/receipt-delivery', icon: 'audit' },
+      { label: 'Operations', path: '/admin/operations', icon: 'operations' },
+      { label: 'Notifications', path: '/admin/notifications', icon: 'bell' }, { label: 'Settings', path: '/admin/settings', icon: 'settings' },
     ],
   };
 
@@ -69,8 +72,46 @@ export class WorkspaceLayoutComponent {
     return '/customer/profile';
   }
   get isFocusedFlow(): boolean { return this.router.url.includes('/customer/seats') || this.router.url.includes('/customer/payment'); }
-  toggle(): void { this.mobileOpen.update((value) => !value); }
-  close(): void { this.mobileOpen.set(false); }
+  toggle(): void {
+    const opening = !this.mobileOpen();
+    this.mobileOpen.set(opening);
+    if (opening && typeof document !== 'undefined') queueMicrotask(() => this.focusFirstSidebarItem());
+  }
+
+  close(restoreFocus = false): void {
+    const wasOpen = this.mobileOpen();
+    this.mobileOpen.set(false);
+    if (restoreFocus && wasOpen && typeof document !== 'undefined') queueMicrotask(() => this.menuButton?.nativeElement.focus());
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onDocumentKeydown(event: KeyboardEvent): void {
+    if (!this.mobileOpen() || typeof document === 'undefined') return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.close(true);
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = this.sidebarFocusableElements();
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  private focusFirstSidebarItem(): void { this.sidebarFocusableElements()[0]?.focus(); }
+  private sidebarFocusableElements(): HTMLElement[] {
+    const root = this.sidebar?.nativeElement;
+    if (!root) return [];
+    return Array.from(root.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+  }
   logout(): void {
     this.auth.logout().subscribe({
       next: () => void this.router.navigateByUrl('/'),

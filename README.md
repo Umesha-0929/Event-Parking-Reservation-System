@@ -1,61 +1,29 @@
-# SEVPMS - Smart Event, Venue & Parking Management Platform
+# SEVPMS / Nvent
 
-Student-friendly **N-tier / layered architecture starter** for the SEVPMS team project.
+Smart Event, Venue & Parking Management Platform implemented with Angular, ASP.NET Core Web API, Entity Framework Core, SQL Server and SignalR.
 
-## Technology baseline
+## Repository structure
 
-- Frontend: Angular + TypeScript + Angular HttpClient
-- Backend: ASP.NET Core Web API
-- Data access: Entity Framework Core
-- Database: SQL Server
-- Realtime: ASP.NET Core SignalR
+- `frontend/sevpms-web` - Angular customer, organizer, venue-owner and admin application.
+- `backend/src/SEVPMS.Api` - HTTP API, authentication, authorization, middleware and SignalR hosting.
+- `backend/src/SEVPMS.Application` - use cases, DTOs, validation and interfaces.
+- `backend/src/SEVPMS.Domain` - domain entities and enums.
+- `backend/src/SEVPMS.Infrastructure` - EF Core, repositories and external providers.
+- `backend/src/SEVPMS.Realtime` - realtime contracts and dispatching.
+- `backend/tests` - backend unit/integration tests.
 
-## Backend layers
+## Local validation
 
-```text
-SEVPMS.Domain
-      ↑
-SEVPMS.Application
-   ↑            ↑
-Infrastructure  Realtime
-      \        /
-       SEVPMS.Api
-```
+From the repository root run `VALIDATE_SEVPMS_FINAL.cmd`. It restores, builds and tests the backend, verifies/applies EF migrations, performs a clean frontend install, creates the Angular production build and runs frontend tests.
 
-### Responsibilities
+## Local application URLs
 
-- **Domain**: core entities, enums, value objects and domain rules.
-- **Application**: use cases, DTOs, interfaces, validation and application-level logic.
-- **Infrastructure**: EF Core, SQL Server, repositories and external-provider implementations.
-- **Realtime**: SignalR hubs, dispatchers, group names and event contracts.
-- **Api**: HTTP entry point, controllers, middleware, authorization and configuration.
+The development API is configured around `http://localhost:5090`. Angular development normally runs on `http://localhost:4200`. Production SSR can proxy `/api` and `/hubs` to the backend by setting `BACKEND_ORIGIN`.
 
-## Team ownership guide
+## Configuration and secrets
 
-- **Abimanju**: shared/core backend - auth, users, events, venues/rentals, booking core, payments, receipts, notifications, SignalR infrastructure, admin/shared APIs.
-- **Klegar**: Angular frontend + seat/ticket backend domain.
-- **Nidhushiya**: vehicles, parking, parking recommendation/navigation, food and place finder backend.
-- **Yumesha**: Team Lead + major Angular frontend/integration work.
+Do not store production credentials in source control. Configure SQL Server, JWT signing, SMTP, PayHere and ticket QR signing through environment-specific configuration, environment variables or user-secrets. Production startup validates security-sensitive configuration.
 
-## First setup
+## Main platform journeys
 
-Open a terminal at the repository root:
-
-```powershell
-cd backend
-dotnet restore
-dotnet build SEVPMS.sln
-dotnet run --project src/SEVPMS.Api/SEVPMS.Api.csproj
-```
-
-Then open the API URL shown by the terminal. A starter health endpoint is available at:
-
-```text
-GET /api/health
-```
-
-## Important
-
-This ZIP is a **basement/starter**, not the completed application. It intentionally avoids putting fake business logic into every feature. Feature folders are reserved so each team member can implement their owned module without reorganizing the solution later.
-
-The starter targets **.NET 8** as an implementation assumption for the generated project files. If your mentor/team freezes a different .NET version, change `TargetFramework` and package versions together before starting feature work.
+The application includes authentication/email verification, event and venue management, organizer-configured seating and seat views, booking/ticket/QR check-in, venue marketplace/rentals, parking, food/place services, payments/receipts, notifications and administrative workspaces.

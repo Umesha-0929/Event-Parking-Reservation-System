@@ -26,6 +26,25 @@ public sealed class TicketService(ITicketRepository repository, ITicketQrTokenSe
     }
 
     public async Task<IReadOnlyList<TicketDto>> GetForBookingAsync(Guid bookingId, CancellationToken cancellationToken = default) => (await repository.GetByBookingAsync(bookingId, cancellationToken)).Select(Map).ToArray();
+
+    public async Task<IReadOnlyList<CustomerTicketSummaryDto>> GetMineAsync(
+        Guid customerUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await repository.GetForCustomerAsync(customerUserId, cancellationToken);
+        return rows.Select(MapCustomerSummary).ToArray();
+    }
+    public async Task<IReadOnlyList<CustomerTicketSummaryDto>> GetMinePageAsync(
+        Guid customerUserId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = await repository.GetForCustomerPageAsync(
+            customerUserId, page, pageSize, cancellationToken);
+        return rows.Select(MapCustomerSummary).ToArray();
+    }
+
     public async Task<TicketDto?> GetByTicketNoAsync(string ticketNo, CancellationToken cancellationToken = default)
     {
         var t = await repository.GetByTicketNoAsync(ticketNo.Trim(), cancellationToken);
@@ -46,6 +65,25 @@ public sealed class TicketService(ITicketRepository repository, ITicketQrTokenSe
     }
 
     public Task<bool> CancelAsync(string ticketNo, CancellationToken cancellationToken = default) => repository.CancelAsync(ticketNo.Trim(), timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
+
+
+    private CustomerTicketSummaryDto MapCustomerSummary(CustomerTicketSummaryRow row)
+        => new(
+            row.Ticket.Id,
+            row.Ticket.TicketNo,
+            row.Ticket.BookingId,
+            row.BookingNumber,
+            row.Ticket.EventId,
+            row.EventName,
+            row.VenueName,
+            row.Ticket.SeatId,
+            row.RowLabel,
+            row.SeatNumber,
+            row.Ticket.Status.ToString(),
+            row.Ticket.IssuedAtUtc,
+            row.Ticket.CheckedInAtUtc,
+            row.IsAccessible,
+            qrTokens.CreatePayload(row.Ticket.Id));
 
     private TicketDto Map(Ticket t) => new(t.Id, t.TicketNo, t.BookingId, t.EventId, t.SeatId, t.Status.ToString(), t.IssuedAtUtc, qrTokens.CreatePayload(t.Id));
     private static string NewTicketNo(DateTime now) => $"TKT-{now:yyyyMMdd}-{Convert.ToHexString(RandomNumberGenerator.GetBytes(4))}";

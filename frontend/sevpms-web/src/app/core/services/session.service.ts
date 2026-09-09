@@ -1,37 +1,36 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { AuthResponse, AuthTokens, AuthUser, BackendRole, BackendRoleValue } from '../models/api.models';
 
-const TOKEN_KEY = 'nvent.accessToken';
-const REFRESH_KEY = 'nvent.refreshToken';
+const LEGACY_TOKEN_KEY = 'nvent.accessToken';
+const LEGACY_REFRESH_KEY = 'nvent.refreshToken';
 const USER_KEY = 'nvent.user';
 
 @Injectable({ providedIn: 'root' })
 export class SessionService {
-  private readonly accessTokenSignal = signal<string | null>(this.readStorage(TOKEN_KEY));
-  private readonly refreshTokenSignal = signal<string | null>(this.readStorage(REFRESH_KEY));
+  // Access tokens live only in memory. Refresh tokens are Secure/HttpOnly cookies
+  // and are deliberately never exposed to JavaScript.
+  private readonly accessTokenSignal = signal<string | null>(null);
   private readonly userSignal = signal<AuthUser | null>(this.readUser());
 
   readonly user = this.userSignal.asReadonly();
   readonly isAuthenticated = computed(() => !!this.accessTokenSignal());
-  readonly hasSession = computed(() => !!this.accessTokenSignal() || !!this.refreshTokenSignal() || !!this.userSignal());
+  readonly hasSession = computed(() => !!this.accessTokenSignal() || !!this.userSignal());
   readonly role = computed<BackendRole | null>(() => this.userSignal()?.role ?? this.readRoleFromToken(this.accessTokenSignal()));
 
+  constructor() {
+    // Remove credentials written by older builds.
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(LEGACY_TOKEN_KEY);
+      localStorage.removeItem(LEGACY_REFRESH_KEY);
+      localStorage.removeItem(USER_KEY);
+    }
+  }
+
   accessToken(): string | null { return this.accessTokenSignal(); }
-  refreshToken(): string | null { return this.refreshTokenSignal(); }
 
   saveAuth(response: AuthResponse): void {
     const accessToken = response.accessToken ?? response.token ?? null;
-    const refreshToken = response.refreshToken ?? this.refreshTokenSignal();
-
-    if (typeof localStorage !== 'undefined') {
-      if (accessToken) localStorage.setItem(TOKEN_KEY, accessToken);
-      else localStorage.removeItem(TOKEN_KEY);
-      if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
-      else localStorage.removeItem(REFRESH_KEY);
-    }
-
     this.accessTokenSignal.set(accessToken);
-    this.refreshTokenSignal.set(refreshToken);
 
     const role = this.normalizeRole(response.user?.role ?? response.role)
       ?? this.readRoleFromToken(accessToken)
@@ -46,7 +45,7 @@ export class SessionService {
       role,
     };
 
-    if (typeof localStorage !== 'undefined') localStorage.setItem(USER_KEY, JSON.stringify(user));
+    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(USER_KEY, JSON.stringify(user));
     this.userSignal.set(user);
   }
 
@@ -54,35 +53,22 @@ export class SessionService {
     const current = this.userSignal();
     if (!current) return;
     const user = { ...current, ...patch };
-    if (typeof localStorage !== 'undefined') localStorage.setItem(USER_KEY, JSON.stringify(user));
+    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(USER_KEY, JSON.stringify(user));
     this.userSignal.set(user);
   }
 
   updateTokens(tokens: Partial<AuthTokens>): void {
-    if (tokens.accessToken !== undefined) {
-      const token = tokens.accessToken || null;
-      if (typeof localStorage !== 'undefined') {
-        if (token) localStorage.setItem(TOKEN_KEY, token); else localStorage.removeItem(TOKEN_KEY);
-      }
-      this.accessTokenSignal.set(token);
-    }
-    if (tokens.refreshToken !== undefined) {
-      const token = tokens.refreshToken || null;
-      if (typeof localStorage !== 'undefined') {
-        if (token) localStorage.setItem(REFRESH_KEY, token); else localStorage.removeItem(REFRESH_KEY);
-      }
-      this.refreshTokenSignal.set(token);
-    }
+    if (tokens.accessToken !== undefined) this.accessTokenSignal.set(tokens.accessToken || null);
   }
 
   clear(): void {
+    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem(USER_KEY);
     if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(REFRESH_KEY);
+      localStorage.removeItem(LEGACY_TOKEN_KEY);
+      localStorage.removeItem(LEGACY_REFRESH_KEY);
       localStorage.removeItem(USER_KEY);
     }
     this.accessTokenSignal.set(null);
-    this.refreshTokenSignal.set(null);
     this.userSignal.set(null);
   }
 
@@ -110,13 +96,9 @@ export class SessionService {
     }
   }
 
-  private readStorage(key: string): string | null {
-    return typeof localStorage === 'undefined' ? null : localStorage.getItem(key);
-  }
-
   private readUser(): AuthUser | null {
-    if (typeof localStorage === 'undefined') return null;
-    try { return JSON.parse(localStorage.getItem(USER_KEY) ?? 'null') as AuthUser | null; }
+    if (typeof sessionStorage === 'undefined') return null;
+    try { return JSON.parse(sessionStorage.getItem(USER_KEY) ?? 'null') as AuthUser | null; }
     catch { return null; }
   }
 

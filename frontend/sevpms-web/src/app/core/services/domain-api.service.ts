@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
-import { AdminDashboardStatsDto, AuditLogDto, BackendSeatHoldResponse, BookingSummary, EventCategoryDto, EventRatingSummaryDto, EventReviewDto, EventSummary, FoodMenuItemDto, FoodOrderDto, FoodStallDto, NearbyPlaceDto, NotificationItem, ParkingReservationDto, ParkingSlotDto, ParkingZoneDto, PayHereCheckoutDto, PaymentResponseDto, PublishedSeatingLayoutDto, SavedVehicleDto, SeatApiModel, SeatCategoryDto, SeatSectionDto, SeatViewAssetDto, SeatingLayoutDto, TicketApiModel, UpsertEventCategoryRequest, UpsertParkingSlotRequest, UpsertParkingZoneRequest, UpsertVenueRequest, UserProfileDto, VenueAvailabilityDto, VenueFacilityDto, VenueMarketplaceDto, VenueMediaDto, VenueRateDto, VenueRentalDto, VenueSummary, VenueLayoutTemplateDto, WaitlistEntryDto } from '../models/api.models';
+import { CustomerTicketSummary, AdminDashboardStatsDto, AuditLogDto, BackendSeatHoldResponse, BookingSummary, EventCategoryDto, EventRatingSummaryDto, EventReviewDto, EventSummary, FoodMenuItemDto, FoodOrderDto, FoodStallDto, NearbyPlaceDto, NotificationItem, ParkingReservationDto, ParkingSlotDto, ParkingZoneDto, PayHereCheckoutDto, PaymentResponseDto, ManualPaymentReviewDto, PublishedSeatingLayoutDto, SavedVehicleDto, SeatApiModel, SeatCategoryDto, SeatSectionDto, SeatViewAssetDto, SeatingLayoutDto, TicketApiModel, UpsertEventCategoryRequest, UpsertParkingSlotRequest, UpsertParkingZoneRequest, UpsertVenueRequest, UserProfileDto, VenueAvailabilityDto, VenueFacilityDto, VenueMarketplaceDto, VenueMediaDto, VenueRateDto, VenueRentalDto, VenueSummary, VenueLayoutTemplateDto, WaitlistEntryDto } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
 export class DomainApiService {
@@ -12,7 +12,9 @@ export class DomainApiService {
   createEventCategory(body: UpsertEventCategoryRequest): Observable<EventCategoryDto> { return this.api.post<EventCategoryDto>('event-categories', body); }
   updateEventCategory(id: string, body: UpsertEventCategoryRequest): Observable<EventCategoryDto> { return this.api.put<EventCategoryDto>(`event-categories/${id}`, body); }
   deactivateEventCategory(id: string): Observable<void> { return this.api.delete<void>(`event-categories/${id}`); }
+  deleteEventCategoryPermanent(id: string): Observable<void> { return this.api.delete<void>(`event-categories/${id}/permanent`); }
   events(params?: Record<string, string | number | boolean | undefined>): Observable<EventSummary[]> { return this.api.get<EventSummary[]>('events', params); }
+  organizerEvents(): Observable<EventSummary[]> { return this.api.get<EventSummary[]>('events/mine'); }
   event(id: string): Observable<EventSummary> { return this.api.get<EventSummary>(`events/${id}`); }
   myEvents(): Observable<EventSummary[]> { return this.api.get<EventSummary[]>('events/mine'); }
   createEvent(body: unknown): Observable<EventSummary> { return this.api.post<EventSummary>('events', body); }
@@ -26,17 +28,28 @@ export class DomainApiService {
   createVenue(body: UpsertVenueRequest): Observable<VenueSummary> { return this.api.post<VenueSummary>('venues', body); }
   updateVenue(id: string, body: UpsertVenueRequest): Observable<VenueSummary> { return this.api.put<VenueSummary>(`venues/${id}`, body); }
   deactivateVenue(id: string): Observable<void> { return this.api.delete<void>(`venues/${id}`); }
+  deleteVenuePermanent(id: string): Observable<void> { return this.api.delete<void>(`venues/${id}/permanent`); }
 
 
   venueFacilities(): Observable<VenueFacilityDto[]> { return this.api.get<VenueFacilityDto[]>('venue-facilities'); }
+  adminVenueFacilities(): Observable<VenueFacilityDto[]> { return this.api.get<VenueFacilityDto[]>('venue-facilities/admin'); }
   createVenueFacility(body: { name: string; category: string; isActive: boolean }): Observable<VenueFacilityDto> { return this.api.post<VenueFacilityDto>('venue-facilities', body); }
   updateVenueFacility(id: string, body: { name: string; category: string; isActive: boolean }): Observable<VenueFacilityDto> { return this.api.put<VenueFacilityDto>(`venue-facilities/${id}`, body); }
+  deleteVenueFacilityPermanent(id: string): Observable<void> { return this.api.delete<void>(`venue-facilities/${id}/permanent`); }
   venueMarketplace(venueId: string): Observable<VenueMarketplaceDto> { return this.api.get<VenueMarketplaceDto>(`venues/${venueId}/marketplace`); }
   setVenueFacilities(venueId: string, facilityIds: string[]): Observable<void> { return this.api.put<void>(`venues/${venueId}/marketplace/facilities`, { facilityIds }); }
   addVenueMedia(venueId: string, body: { url: string; type: string; sortOrder: number }): Observable<VenueMediaDto> { return this.api.post<VenueMediaDto>(`venues/${venueId}/marketplace/media`, body); }
+  updateVenueMedia(venueId: string, id: string, body: { url: string; type: string; sortOrder: number }): Observable<VenueMediaDto> { return this.api.put<VenueMediaDto>(`venues/${venueId}/marketplace/media/${id}`, body); }
+  deleteVenueMedia(venueId: string, id: string): Observable<void> { return this.api.delete<void>(`venues/${venueId}/marketplace/media/${id}`); }
   addVenueRate(venueId: string, body: { rateType: string; amount: number; currency: string; validFromUtc?: string | null; validToUtc?: string | null }): Observable<VenueRateDto> { return this.api.post<VenueRateDto>(`venues/${venueId}/marketplace/rates`, body); }
+  updateVenueRate(venueId: string, id: string, body: { rateType: string; amount: number; currency: string; validFromUtc?: string | null; validToUtc?: string | null }): Observable<VenueRateDto> { return this.api.put<VenueRateDto>(`venues/${venueId}/marketplace/rates/${id}`, body); }
+  deleteVenueRate(venueId: string, id: string): Observable<void> { return this.api.delete<void>(`venues/${venueId}/marketplace/rates/${id}`); }
   addVenueAvailability(venueId: string, body: { startAtUtc: string; endAtUtc: string; type: number; notes?: string | null }): Observable<VenueAvailabilityDto> { return this.api.post<VenueAvailabilityDto>(`venues/${venueId}/marketplace/availability`, body); }
+  updateVenueAvailability(venueId: string, id: string, body: { startAtUtc: string; endAtUtc: string; type: number; notes?: string | null }): Observable<VenueAvailabilityDto> { return this.api.put<VenueAvailabilityDto>(`venues/${venueId}/marketplace/availability/${id}`, body); }
+  deleteVenueAvailability(venueId: string, id: string): Observable<void> { return this.api.delete<void>(`venues/${venueId}/marketplace/availability/${id}`); }
   addVenueLayoutTemplate(venueId: string, body: { name: string; version: number; layoutJson: string }): Observable<VenueLayoutTemplateDto> { return this.api.post<VenueLayoutTemplateDto>(`venues/${venueId}/marketplace/layout-templates`, body); }
+  updateVenueLayoutTemplate(venueId: string, id: string, body: { name: string; version: number; layoutJson: string }): Observable<VenueLayoutTemplateDto> { return this.api.put<VenueLayoutTemplateDto>(`venues/${venueId}/marketplace/layout-templates/${id}`, body); }
+  deleteVenueLayoutTemplate(venueId: string, id: string): Observable<void> { return this.api.delete<void>(`venues/${venueId}/marketplace/layout-templates/${id}`); }
 
   bookings(): Observable<BookingSummary[]> { return this.api.get<BookingSummary[]>('bookings'); }
   booking(id: string): Observable<BookingSummary> { return this.api.get<BookingSummary>(`bookings/${id}`); }
@@ -55,6 +68,9 @@ export class DomainApiService {
 
   notifications(): Observable<NotificationItem[]> { return this.api.get<NotificationItem[]>('notifications'); }
   markNotificationRead(id: string): Observable<unknown> { return this.api.put(`notifications/${id}/read`, {}); }
+  markAllNotificationsRead(): Observable<unknown> { return this.api.put('notifications/read-all', {}); }
+  deleteNotification(id: string): Observable<void> { return this.api.delete<void>(`notifications/${id}`); }
+  clearNotifications(): Observable<unknown> { return this.api.delete('notifications'); }
 
   seats(eventId: string): Observable<SeatApiModel[]> { return this.api.get<SeatApiModel[]>(`events/${eventId}/seats`); }
   holdSeats(eventId: string, body: { seatIds: string[]; existingHoldToken?: string | null }): Observable<BackendSeatHoldResponse> { return this.api.post<BackendSeatHoldResponse>(`events/${eventId}/seat-holds`, body); }
@@ -69,7 +85,7 @@ export class DomainApiService {
   publishLayout(eventId: string, body: unknown = {}): Observable<SeatingLayoutDto> { return this.api.put<SeatingLayoutDto>(`events/${eventId}/seating-layout/publish`, body); }
   seatView(eventId: string, seatId: string): Observable<SeatViewAssetDto> { return this.api.get<SeatViewAssetDto>(`events/${eventId}/seats/${seatId}/view`); }
 
-  ticketsForBooking(bookingId: string): Observable<TicketApiModel[]> { return this.api.get<TicketApiModel[]>(`bookings/${bookingId}/tickets`); }
+  myTickets(): Observable<CustomerTicketSummary[]> { return this.api.get<CustomerTicketSummary[]>('tickets/mine'); }
   ticket(ticketNo: string): Observable<TicketApiModel> { return this.api.get<TicketApiModel>(`tickets/${encodeURIComponent(ticketNo)}`); }
   issueTickets(bookingId: string, body: unknown = {}): Observable<TicketApiModel[]> { return this.api.post<TicketApiModel[]>(`bookings/${bookingId}/tickets/issue`, body); }
   scanTicket(eventId: string, body: unknown): Observable<unknown> { return this.api.post(`events/${eventId}/check-ins/scan`, body); }
@@ -77,6 +93,10 @@ export class DomainApiService {
   payments(): Observable<PaymentResponseDto[]> { return this.api.get<PaymentResponseDto[]>('payments'); }
   createPayment(body: { bookingId: string }): Observable<PaymentResponseDto> { return this.api.post<PaymentResponseDto>('payments', body); }
   payHereCheckout(id: string): Observable<PayHereCheckoutDto> { return this.api.post<PayHereCheckoutDto>(`payments/${id}/payhere-checkout`, {}); }
+  submitManualPaymentProof(id: string, body: { proofUrl: string; reference?: string | null }): Observable<PaymentResponseDto> { return this.api.post<PaymentResponseDto>(`payments/${id}/manual-proof`, body); }
+  manualPaymentReviews(): Observable<ManualPaymentReviewDto[]> { return this.api.get<ManualPaymentReviewDto[]>('payments/manual-review'); }
+  approveManualPayment(id: string): Observable<PaymentResponseDto> { return this.api.post<PaymentResponseDto>(`payments/${id}/manual-approve`, {}); }
+  rejectManualPayment(id: string): Observable<PaymentResponseDto> { return this.api.post<PaymentResponseDto>(`payments/${id}/manual-reject`, {}); }
   completePayment(id: string, body: unknown = {}): Observable<unknown> { return this.api.post(`payments/${id}/complete`, body); }
 
   vehicles(): Observable<SavedVehicleDto[]> { return this.api.get<SavedVehicleDto[]>('vehicles'); }
@@ -89,6 +109,7 @@ export class DomainApiService {
   updateParkingZone(id: string, body: UpsertParkingZoneRequest): Observable<ParkingZoneDto> { return this.api.put<ParkingZoneDto>(`parking/zones/${id}`, body); }
   deleteParkingZone(id: string): Observable<void> { return this.api.delete<void>(`parking/zones/${id}`); }
   createParkingSlot(body: UpsertParkingSlotRequest): Observable<ParkingSlotDto> { return this.api.post<ParkingSlotDto>('parking/slots', body); }
+  createParkingSlotsBulk(slots: UpsertParkingSlotRequest[]): Observable<ParkingSlotDto[]> { return this.api.post<ParkingSlotDto[]>('parking/slots/bulk', { slots }); }
   updateParkingSlot(id: string, body: UpsertParkingSlotRequest): Observable<ParkingSlotDto> { return this.api.put<ParkingSlotDto>(`parking/slots/${id}`, body); }
   deleteParkingSlot(id: string): Observable<void> { return this.api.delete<void>(`parking/slots/${id}`); }
   parkingRecommendation(body: unknown): Observable<unknown> { return this.api.post('parking/recommendations', body); }

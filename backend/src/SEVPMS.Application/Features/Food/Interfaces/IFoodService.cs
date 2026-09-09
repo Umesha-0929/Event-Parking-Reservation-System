@@ -21,6 +21,15 @@ public interface IFoodService
         Guid customerUserId,
         CancellationToken cancellationToken = default);
 
+    async Task<IReadOnlyList<FoodOrderDto>> GetOrdersByCustomerPageAsync(
+        Guid customerUserId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var all = await GetOrdersByCustomerAsync(customerUserId, cancellationToken);
+        var safePage = Math.Max(page, 1);
+        var safePageSize = Math.Clamp(pageSize, 1, 200);
+        return all.Skip((safePage - 1) * safePageSize).Take(safePageSize).ToArray();
+    }
+
     Task<IReadOnlyList<FoodOrderStatusHistoryDto>> GetOrderStatusHistoryAsync(
         Guid customerUserId,
         Guid foodOrderId,

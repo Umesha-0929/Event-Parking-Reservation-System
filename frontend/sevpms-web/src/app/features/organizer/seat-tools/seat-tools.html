@@ -1,0 +1,132 @@
+<header class="tools-head">
+  <div>
+    <span class="eyebrow">Organizer · Seat tools</span>
+    <h1>Shape the seating plan customers will actually see.</h1>
+    <p>Use the selected stage type to arrange generated seats, fine-tune individual positions and optionally attach real 360° views.</p>
+  </div>
+  <a class="btn btn--secondary" [routerLink]="['/organizer/events', eventId, 'preview']">← Back to event review</a>
+</header>
+
+@if (loading()) {
+  <div class="card loading-card"><span class="spinner"></span><strong>Loading generated seats…</strong></div>
+} @else if (error() && !layout()) {
+  <div class="empty-state"><span class="badge badge--danger">Unable to load</span><h3>Seat tools are unavailable.</h3><p>{{ error() }}</p><button class="btn btn--secondary" type="button" (click)="load()">Try again</button></div>
+} @else {
+  @if (notice()) {<div class="feedback feedback--success" role="status">{{ notice() }}</div>}
+  @if (error()) {<div class="feedback feedback--error" role="alert">{{ error() }}</div>}
+  @if (!editable()) {<div class="feedback">This seating layout is already published. The tools are shown in review mode and write actions are disabled.</div>}
+
+  <section class="tools-intro card">
+    <div><span class="eyebrow">Stage-specific arrangement</span><h2>{{ stageTypeName() }}</h2><p>Generated seats automatically follow the selected stage type. Use the reset button only if you want to restore the original stage pattern after manual adjustments.</p></div>
+    <div class="intro-actions">
+      <div class="intro-stats"><span><small>Generated seats</small><strong>{{ seats().length }}</strong></span><span><small>Sections</small><strong>{{ layout()?.sections?.length || 0 }}</strong></span></div>
+      <button class="btn btn--primary" type="button" (click)="applyStagePattern()" [disabled]="applyingPattern() || !editable() || !seats().length">{{ applyingPattern() ? 'Restoring stage pattern…' : 'Reset to ' + stageTypeName() + ' pattern' }}</button>
+    </div>
+  </section>
+
+  <div class="seat-tools-grid">
+    <section class="card map-card">
+      <div class="card-head">
+        <div><span class="eyebrow">2D customer layout</span><h2>Seat position preview</h2></div>
+        <label class="compact-field"><span>Section</span><select aria-label="Section filter" class="select" [(ngModel)]="sectionFilter" (ngModelChange)="selectSection($event)"><option value="">All sections</option>@for(section of layout()?.sections || []; track section.id){<option [value]="section.id">{{ section.name }}</option>}</select></label>
+      </div>
+
+      @if (!seats().length) {
+        <div class="small-empty"><strong>No generated seats yet.</strong><p>Return to Event Review and generate seats first.</p></div>
+      } @else {
+        <div class="legend"><span><i class="available"></i>Available</span><span><i class="held"></i>Held</span><span><i class="booked"></i>Booked</span><span><i class="unavailable"></i>Unavailable</span><span><i class="accessible"></i>Accessible</span></div>
+        <div class="map-viewport">
+          <div class="seat-canvas" [style.width.px]="layout()!.canvasWidth" [style.height.px]="layout()!.canvasHeight">
+            <div class="stage" [class]="'stage stage--' + stageClass()" [style.left]="stageStyle()['left']" [style.top]="stageStyle()['top']" [style.width]="stageStyle()['width']" [style.height]="stageStyle()['height']"><span>STAGE</span></div>
+            @for(seat of visibleSeats(); track seat.seatId){
+              <button type="button" class="seat" [class]="'seat seat--' + seatClass(seat)" [class.selected]="selectedSeatId() === seat.seatId" [class.accessible]="seat.isAccessible" [class.draggable]="canEditSeat(seat)" [class.locked]="isLockedSeat(seat)" [class.dragging]="draggingSeatId() === seat.seatId" [style.left]="seatStyle(seat)['left']" [style.top]="seatStyle(seat)['top']" [title]="sectionName(seat.sectionId) + ' · ' + seat.rowLabel + seat.seatNumber + ' · ' + stateLabel(seat.state)" (click)="seatClick(seat)" (pointerdown)="startDrag($event, seat)" (pointermove)="dragSeat($event, seat)" (pointerup)="endDrag($event)" (pointercancel)="endDrag($event)">
+                <span>{{ seat.rowLabel }}{{ seat.seatNumber }}</span>@if(seat.isAccessible){<b>♿</b>}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </section>
+
+    <aside class="card editor-card">
+      <span class="eyebrow">Seat adjustment</span>
+      @if (selectedSeat(); as seat) {
+        <h2>Seat {{ seat.rowLabel }}{{ seat.seatNumber }}</h2>
+        <p class="muted">{{ sectionName(seat.sectionId) }} · {{ stateLabel(seat.state) }}</p>
+        @if (isLockedSeat(seat)) {<div class="locked-note"><strong>{{ stateLabel(seat.state) }} seat protected</strong><p>Held and booked seats cannot be moved or changed.</p></div>}
+
+        <div class="position-help"><strong>Drag or move the seat live</strong><p>Drag the selected seat directly on the 2D map, type X/Y coordinates, or use the arrow controls. Save when the position looks right.</p></div>
+        <div class="form-grid compact">
+          <label class="field"><span>X position</span><input aria-label="Seat x" class="input" type="number" [(ngModel)]="seatX" (ngModelChange)="normalizePosition()" [disabled]="!canEditSeat(seat)"></label>
+          <label class="field"><span>Y position</span><input aria-label="Seat y" class="input" type="number" [(ngModel)]="seatY" (ngModelChange)="normalizePosition()" [disabled]="!canEditSeat(seat)"></label>
+        </div>
+
+        <div class="nudge-controls">
+          <label class="step-control"><span>Arrow step</span><select aria-label="Nudge step" class="select" [(ngModel)]="nudgeStep" [disabled]="!canEditSeat(seat)"><option [ngValue]="1">1 px</option><option [ngValue]="5">5 px</option><option [ngValue]="10">10 px</option></select></label>
+          <div class="nudge-grid" aria-label="Move selected seat">
+            <span></span><button type="button" (click)="nudge(0,-nudgeStep)" [disabled]="!canEditSeat(seat)" aria-label="Move seat up">↑</button><span></span>
+            <button type="button" (click)="nudge(-nudgeStep,0)" [disabled]="!canEditSeat(seat)" aria-label="Move seat left">←</button><div class="center">{{ nudgeStep }}px</div><button type="button" (click)="nudge(nudgeStep,0)" [disabled]="!canEditSeat(seat)" aria-label="Move seat right">→</button>
+            <span></span><button type="button" (click)="nudge(0,nudgeStep)" [disabled]="!canEditSeat(seat)" aria-label="Move seat down">↓</button><span></span>
+          </div>
+        </div>
+
+        <label class="field"><span>Availability</span><select aria-label="Seat status" class="select" [(ngModel)]="seatStatus" [disabled]="!canEditSeat(seat)"><option value="Available">Available</option><option value="Blocked">Unavailable</option></select></label>
+        <label class="check"><input aria-label="Seat accessible" type="checkbox" [(ngModel)]="seatAccessible" [disabled]="!canEditSeat(seat)"><span>Accessible seat</span></label>
+        <button class="btn btn--primary full" type="button" (click)="saveSelectedSeat()" [disabled]="savingSeat() || !canEditSeat(seat)">{{ savingSeat() ? 'Saving seat…' : 'Save seat position' }}</button>
+      } @else {
+        <div class="small-empty"><strong>Select a seat</strong><p>Click or drag a generated seat to adjust it.</p></div>
+      }
+    </aside>
+  </div>
+
+  <section class="view-section">
+    <div class="view-copy"><span class="eyebrow">Optional 360° seat view</span><h2>Add a real “View From This Seat” preview.</h2><p>Choose whether one panorama represents a whole section, a row, or a specific seat. If no real panorama exists, customers simply see “Seat view unavailable”.</p></div>
+    <div class="view-grid">
+      <section class="card view-form-card">
+        <div class="target-tabs" role="group" aria-label="Apply 360 view to">
+          <label [class.active]="viewLevel === 'section'"><input aria-label="View level" type="radio" name="viewLevel" value="section" [(ngModel)]="viewLevel" (ngModelChange)="onViewLevelChanged()">Section</label>
+          <label [class.active]="viewLevel === 'row'"><input aria-label="View level" type="radio" name="viewLevel" value="row" [(ngModel)]="viewLevel" (ngModelChange)="onViewLevelChanged()">Row</label>
+          <label [class.active]="viewLevel === 'seat'"><input aria-label="View level" type="radio" name="viewLevel" value="seat" [(ngModel)]="viewLevel" (ngModelChange)="onViewLevelChanged()">Seat</label>
+        </div>
+
+        <div class="form-grid">
+          <label class="field span-2"><span>Section</span><select aria-label="View section" class="select" [(ngModel)]="viewSectionId" (ngModelChange)="onViewSectionChanged()" [disabled]="!editable()">@for(section of layout()?.sections || []; track section.id){<option [value]="section.id">{{ section.name }}</option>}</select></label>
+          @if(viewLevel === 'row' || viewLevel === 'seat') {<label class="field"><span>Row</span><select aria-label="View row label" class="select" [(ngModel)]="viewRowLabel" (ngModelChange)="syncViewDefaults()" [disabled]="!editable()">@for(row of viewRows(); track row){<option [value]="row">{{ row }}</option>}</select></label>}
+          @if(viewLevel === 'seat') {<label class="field"><span>Seat</span><select aria-label="View seat" class="select" [(ngModel)]="viewSeatId" [disabled]="!editable()">@for(seat of viewSectionSeats(); track seat.seatId){@if(!viewRowLabel || seat.rowLabel === viewRowLabel){<option [value]="seat.seatId">{{ seat.rowLabel }}{{ seat.seatNumber }}</option>}}</select></label>}
+          <div class="span-2"><app-media-dropzone category="seat-360" [imageOnly]="true" [compact]="true" (uploaded)="onViewMediaUploaded($event)"/></div><label class="field span-2"><span>Or paste a 360° panorama URL</span><input aria-label="https://.../real-seat-panorama.jpg" class="input" [(ngModel)]="mediaUrl" placeholder="https://.../real-seat-panorama.jpg" [disabled]="!editable()"><small>Use a real equirectangular panorama image. No fake 360 media is generated.</small></label>
+        </div>
+
+        @if(viewLevel !== 'seat') {<label class="check"><input aria-label="Is representative" type="checkbox" [(ngModel)]="isRepresentative" [disabled]="!editable()"><span>Use this view for nearby seats in this {{ viewLevel }}</span></label>}
+
+        <details class="advanced-settings">
+          <summary>Advanced panorama settings</summary>
+          <div class="form-grid">
+            <label class="field"><span>Default yaw</span><input aria-label="Default yaw" class="input" type="number" [(ngModel)]="defaultYaw" [disabled]="!editable()"></label>
+            <label class="field"><span>Default pitch</span><input aria-label="Default pitch" class="input" type="number" [(ngModel)]="defaultPitch" [disabled]="!editable()"></label>
+            <label class="field"><span>Default FOV</span><input aria-label="Default fov" class="input" type="number" [(ngModel)]="defaultFov" [disabled]="!editable()"></label>
+            <label class="field"><span>Viewer type</span><input aria-label="Viewer type" class="input" [(ngModel)]="viewerType" [disabled]="!editable()"></label>
+          </div>
+        </details>
+
+        <div class="actions">
+          <button class="btn btn--secondary" type="button" (click)="previewEnteredMedia()" [disabled]="!mediaUrl.trim()">Preview panorama</button>
+          <button class="btn btn--primary" type="button" (click)="saveViewAsset()" [disabled]="savingView() || !editable()">{{ savingView() ? 'Saving…' : 'Save 360° view' }}</button>
+        </div>
+        <button class="btn btn--secondary full lookup-btn" type="button" (click)="verifySelectedSeatView()" [disabled]="checkingView()">{{ checkingView() ? 'Loading customer preview…' : 'Preview as customer' }}</button>
+        @if(viewLookupMessage()){<div class="lookup-note">{{ viewLookupMessage() }}</div>}
+      </section>
+
+      <aside class="card panorama-card">
+        <div class="panorama-head"><div><span class="eyebrow">Customer preview</span><h2>{{ targetLabel() }}</h2></div>@if(savedView()){<span class="badge badge--success">Saved</span>}</div>
+        @if(previewMedia()) {
+          <div class="panorama-shell"><app-seat-panorama [mediaUrl]="previewMedia()" [defaultYaw]="savedView()?.defaultYaw ?? defaultYaw" [defaultPitch]="savedView()?.defaultPitch ?? defaultPitch" /></div>
+        } @else {
+          <div class="panorama-empty"><span>360°</span><strong>No 360° preview available</strong><p>Add a real panorama if this venue has one. No image is fabricated when an event has no 360 media.</p></div>
+        }
+        @if(resolvedView(); as asset){<dl class="view-facts"><div><dt>View source</dt><dd>{{ asset.seatId ? 'Seat' : asset.rowLabel ? 'Row' : 'Section' }}</dd></div><div><dt>Shared nearby</dt><dd>{{ asset.isRepresentative ? 'Yes' : 'No' }}</dd></div></dl>}
+      </aside>
+    </div>
+  </section>
+
+  <footer class="tools-footer card"><div><strong>Finished with Seat Tools?</strong><p>Return to the existing Review step to complete venue approval and publish.</p></div><a class="btn btn--primary" [routerLink]="['/organizer/events', eventId, 'preview']">Return to Review →</a></footer>
+}

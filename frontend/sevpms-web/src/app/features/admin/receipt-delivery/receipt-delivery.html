@@ -1,0 +1,21 @@
+<section class="admin-receipts">
+  <header><span>Admin · receipt operations</span><h1>Receipt delivery diagnostics.</h1><p>Choose a recent receipt to inspect email/SMS delivery history and retry pending or failed attempts.</p></header>
+  @if (message()) { <div class="notice success" role="status">{{ message() }}</div> }
+  @if (error()) { <div class="notice error" role="alert">{{ error() }}</div> }
+  <article class="panel">
+    <div class="tool-row">
+      <label for="receipt-select"><span>Receipt</span></label>
+      <select id="receipt-select" [(ngModel)]="receiptId" (ngModelChange)="load()">
+        <option value="">Choose a receipt</option>
+        @for (receipt of receipts(); track receipt.receiptId) { <option [value]="receipt.receiptId">{{ receiptLabel(receipt) }}</option> }
+      </select>
+      <button type="button" class="secondary" (click)="refreshReceipts()" [disabled]="busy()">Refresh receipts</button>
+      <button type="button" class="secondary" (click)="retry()" [disabled]="busy() || !receiptId">Retry delivery</button>
+    </div>
+    <div class="delivery-grid">
+      @for (item of deliveries(); track item.receiptDeliveryId) {
+        <div class="delivery-card"><div><span class="channel">{{ item.channel }}</span><strong>{{ item.destinationMasked }}</strong></div><b [class.failed]="status(item.status) === 'Failed'">{{ status(item.status) }}</b><dl><div><dt>Attempts</dt><dd>{{ item.attemptCount }}</dd></div><div><dt>Last attempt</dt><dd>{{ date(item.lastAttemptAtUtc) }}</dd></div><div><dt>Sent</dt><dd>{{ date(item.sentAtUtc) }}</dd></div></dl>@if (item.lastError) { <p>{{ item.lastError }}</p> }</div>
+      } @empty { <div class="empty">Choose a receipt to inspect its delivery records.</div> }
+    </div>
+  </article>
+</section>

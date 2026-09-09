@@ -33,7 +33,11 @@ public sealed class FoodOrderConfiguration
             .IsRequired();
 
         builder.Property(x => x.FulfillmentType)
+            .HasMaxLength(40)
             .IsRequired();
+
+        builder.Property(x => x.SeatLabelSnapshot)
+            .HasMaxLength(120);
 
         builder.Property(x => x.Total)
             .HasColumnType("decimal(18,2)")

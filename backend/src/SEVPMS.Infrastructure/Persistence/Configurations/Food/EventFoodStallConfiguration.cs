@@ -21,6 +21,7 @@ public sealed class EventFoodStallConfiguration
             .IsRequired();
 
         builder.Property(x => x.StallName)
+            .HasMaxLength(160)
             .IsRequired();
 
         builder.Property(x => x.IsActive)

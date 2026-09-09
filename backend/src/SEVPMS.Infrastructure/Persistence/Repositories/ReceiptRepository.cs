@@ -19,6 +19,13 @@ public sealed class ReceiptRepository(SEVPMSDbContext dbContext) : IReceiptRepos
             .OrderByDescending(x => x.IssuedAtUtc)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Receipt>> GetRecentAsync(int take = 100, CancellationToken cancellationToken = default)
+        => await dbContext.Set<Receipt>()
+            .AsNoTracking()
+            .OrderByDescending(x => x.IssuedAtUtc)
+            .Take(Math.Clamp(take, 1, 250))
+            .ToListAsync(cancellationToken);
+
     public async Task AddAsync(Receipt receipt, CancellationToken cancellationToken = default)
         => await dbContext.Set<Receipt>().AddAsync(receipt, cancellationToken);
 

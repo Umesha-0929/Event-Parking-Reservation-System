@@ -21,6 +21,7 @@ export class LoginComponent implements OnInit {
 
   readonly submitting = signal(false);
   readonly error = signal('');
+  readonly success = signal('');
   readonly showPassword = signal(false);
 
   readonly form = new FormGroup({
@@ -36,12 +37,23 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {
     this.seo.setPage('Login | Nvent', 'Sign in to your Nvent account.');
+
+    const email = this.route.snapshot.queryParamMap.get('email');
+    if (email) this.form.controls.email.setValue(email);
+
+    if (this.route.snapshot.queryParamMap.get('verified') === '1') {
+      this.success.set('Email verified successfully. Sign in to continue to your workspace.');
+    }
   }
 
   togglePassword(): void {
     this.showPassword.update((value) => !value);
   }
 
+  verificationLink(): string {
+    const email = this.form.controls.email.value.trim();
+    return email ? `/verify-email?email=${encodeURIComponent(email)}` : '/verify-email';
+  }
 
   private canReturnTo(url: string): boolean {
     const role = this.session.role();
@@ -59,6 +71,7 @@ export class LoginComponent implements OnInit {
 
     this.submitting.set(true);
     this.error.set('');
+    this.success.set('');
 
     this.auth.login(this.form.getRawValue()).subscribe({
       next: () => {

@@ -1,3 +1,54 @@
-<header class="pay-head"><span class="eyebrow">Secure checkout</span><h1>Review clearly. Pay through the configured provider.</h1><p>Nvent keeps your booking total clear and opens the configured secure payment provider when you are ready.</p></header>
-@if(!bookingId){<div class="empty-state"><span class="badge badge--warning">Booking required</span><h3>Create a booking before payment.</h3><p>Seat selection creates a pending booking using the active hold token, then opens this checkout.</p><a class="btn btn--primary" routerLink="/events">Explore Events</a></div>}
-@else{<div class="pay-grid"><section class="card pay-form"><span class="eyebrow">Booking</span>@if(loading()&&!booking()){<div class="skeleton pay-skeleton"></div>}@if(booking()){<h2>{{booking()?.bookingNumber||bookingId}}</h2><div class="booking-facts"><span><small>Status</small><strong>{{booking()?.status}}</strong></span><span><small>Seats</small><strong>{{booking()?.seatIds?.length||'—'}}</strong></span><span><small>Total</small><strong>LKR {{booking()?.totalAmount||0}}</strong></span></div>}@if(error()){<div class="preview-note error-note" role="alert">{{error()}}</div>}@if(!payment()){<button class="btn btn--primary pay-button" type="button" (click)="startPayment()" [disabled]="loading()||!booking()">{{loading()?'Starting payment…':'Continue to payment provider →'}}</button>}@if(payment()){<div class="provider-created"><span class="badge badge--success">Payment created</span><h3>{{payment()?.currency}} {{payment()?.amount}}</h3><p>Provider: {{payment()?.provider||'PayHere when configured'}} · Payment ID {{payment()?.paymentId}}</p></div>}@if(checkout()){<div class="checkout-box"><strong>PayHere checkout is ready</strong><p>Order {{checkout()?.orderId}} · {{checkout()?.currency}} {{checkout()?.amount}}</p><a class="btn btn--primary" [href]="checkout()?.checkoutUrl" target="_blank" rel="noopener">Open secure checkout ↗</a><small>Nvent waits for the payment provider confirmation before marking the payment as complete.</small></div>}</section><aside class="card order-summary"><span class="eyebrow">Order summary</span><h2>Booking summary</h2><div class="summary-row"><span>Booking</span><strong>{{booking()?.bookingNumber||bookingId}}</strong></div><div class="summary-row"><span>Seats</span><strong>{{booking()?.seatIds?.length||'—'}}</strong></div><div class="summary-row"><span>Status</span><strong>{{booking()?.status??'Loading'}}</strong></div><div class="summary-total"><span>Total</span><strong>LKR {{booking()?.totalAmount||0}}</strong></div><p>Your final payment status updates after the payment provider confirms the transaction.</p></aside></div>}
+<header class="pay-head">
+  <span class="eyebrow">Payment</span><h1>Choose a verified payment path.</h1>
+  <p>Use PayHere when configured, or scan the Event Organizer's QR and submit proof for reconciliation.</p>
+</header>
+@if (!bookingId) {
+  <div class="empty-state"><h3>Create a booking before payment.</h3><a class="btn btn--primary" routerLink="/customer/browse-events">Explore Events</a></div>
+} @else {
+  <div class="pay-grid">
+    <section class="card pay-form">
+      @if (booking()) {
+        <span class="eyebrow">Booking</span><h2>{{ booking()?.bookingNumber || bookingId }}</h2>
+        <div class="booking-facts"><span><small>Status</small><strong>{{ statusText(booking()?.status) }}</strong></span><span><small>Seats</small><strong>{{ booking()?.seatIds?.length || '—' }}</strong></span><span><small>Total</small><strong>LKR {{ booking()?.totalAmount || 0 }}</strong></span></div>
+      }
+      @if (message()) { <div class="preview-note" role="status">{{ message() }}</div> }
+      @if (error()) { <div class="preview-note error-note" role="alert">{{ error() }}</div> }
+
+      <div class="qr-payment">
+        <div><span class="eyebrow">Organizer QR</span><h3>Scan, pay, then submit proof</h3><p>Tickets are issued only after the Event Organizer approves your payment proof.</p></div>
+        @if (organizerQr()) { <img [src]="organizerQr()" alt="Event Organizer payment QR"> }
+        @else { <div class="qr-empty"><strong>Organizer QR not added yet</strong><span>Use PayHere when available or contact the Organizer.</span></div> }
+      </div>
+
+      @if (organizerQr()) {
+        <div class="proof-box">
+          <label for="payment-proof"><span>Payment screenshot / proof</span></label>
+          <input id="payment-proof" type="file" accept="image/jpeg,image/png,image/webp,image/gif" (change)="onProofSelected($event)">
+          <label for="payment-reference"><span>Bank/reference number (optional)</span></label>
+          <input id="payment-reference" class="input" [(ngModel)]="proofReference" autocomplete="off" placeholder="Reference shown by your payment app">
+          <button class="btn btn--primary" type="button" (click)="submitProof()" [disabled]="loading() || !proofFile()">{{ loading() ? 'Submitting…' : 'Submit proof for approval' }}</button>
+        </div>
+      }
+
+      <details class="provider">
+        <summary>Pay securely with PayHere</summary>
+        <p>Nvent creates the signed checkout payload and submits the complete form directly to PayHere.</p>
+        @if (!checkout()) {
+          <button class="btn btn--secondary" type="button" (click)="startPayment()" [disabled]="loading() || !booking()">{{ loading() ? 'Preparing…' : 'Prepare PayHere checkout' }}</button>
+        }
+        @if (checkout()) {
+          <button class="btn btn--primary" type="button" (click)="submitPayHere()">Continue to PayHere →</button>
+        }
+      </details>
+    </section>
+
+    <aside class="card order-summary">
+      <span class="eyebrow">Order summary</span><h2>Booking summary</h2>
+      <div class="summary-row"><span>Event</span><strong>{{ event()?.title || event()?.name || 'Event' }}</strong></div>
+      <div class="summary-row"><span>Booking</span><strong>{{ booking()?.bookingNumber || bookingId }}</strong></div>
+      <div class="summary-row"><span>Seats</span><strong>{{ booking()?.seatIds?.length || '—' }}</strong></div>
+      <div class="summary-row"><span>Status</span><strong>{{ statusText(booking()?.status) }}</strong></div>
+      <div class="summary-total"><span>Total</span><strong>LKR {{ booking()?.totalAmount || 0 }}</strong></div>
+    </aside>
+  </div>
+}

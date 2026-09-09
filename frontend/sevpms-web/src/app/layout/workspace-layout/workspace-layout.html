@@ -1,31 +1,32 @@
 <div class="workspace">
-  <aside class="sidebar" [class.sidebar--open]="mobileOpen()">
-    <div class="sidebar__brand"><a routerLink="/"><img src="/assets/brand/nvent-logo-reversed.png" alt="Nvent"></a><button class="close" type="button" aria-label="Close menu" (click)="close()">×</button></div>
+  <aside #workspaceSidebar id="workspace-sidebar" class="sidebar" [class.sidebar--open]="mobileOpen()">
+    <div class="sidebar__brand"><a routerLink="/"><img src="/assets/brand/nvent-logo-reversed.png" alt="Nvent"></a><button class="close" type="button" aria-label="Close menu" (click)="close(true)"><app-nav-icon name="menu" /></button></div>
     <div class="role-chip">{{ roleLabel() }} workspace</div>
     <nav class="side-nav" [attr.aria-label]="roleLabel() + ' navigation'">
       @for (item of menu; track item.path) {
         <a [routerLink]="item.path" routerLinkActive="active" (click)="close()">
-          <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span><span>{{ item.label }}</span>
+          <span class="nav-icon" aria-hidden="true"><app-nav-icon [name]="item.icon || 'circle'" /></span><span>{{ item.label }}</span>
           @if (item.label === 'Notifications' && notifications.unreadCount() > 0) { <span class="side-count">{{ notifications.unreadCount() > 99 ? '99+' : notifications.unreadCount() }}</span> }
         </a>
       }
     </nav>
-    <div class="sidebar__footer"><div class="avatar">NV</div><div><strong>{{ session.user()?.displayName || session.user()?.email || 'Nvent account' }}</strong><span>{{ session.role() || roleLabel() }}</span></div><button type="button" class="logout" (click)="logout()" aria-label="Log out">↪</button></div>
+    <div class="sidebar__footer"><div class="avatar">NV</div><div><strong>{{ session.user()?.displayName || session.user()?.email || 'Nvent account' }}</strong><span>{{ session.role() || roleLabel() }}</span></div><button type="button" class="logout" (click)="logout()" aria-label="Log out"><app-nav-icon name="logout" /></button></div>
   </aside>
+  @if (mobileOpen()) { <button class="sidebar-backdrop" type="button" aria-label="Close workspace navigation" (click)="close(true)"></button> }
   <div class="workspace__main">
     <header class="workspace-topbar">
-      <button class="mobile-menu" type="button" aria-label="Open menu" (click)="toggle()">☰</button>
+      <button #workspaceMenuButton class="mobile-menu" type="button" aria-label="Open menu" aria-controls="workspace-sidebar" [attr.aria-expanded]="mobileOpen()" (click)="toggle()"><app-nav-icon name="menu" /></button>
       <div><span class="crumb">Nvent / {{ roleLabel() }}</span><strong>Welcome to your workspace</strong></div>
       <div class="top-actions">
-        <a class="circle" [routerLink]="searchPath" aria-label="Search">⌕</a>
+        <a class="circle" [routerLink]="searchPath" aria-label="Search"><app-nav-icon name="search" /></a>
         <a class="circle notification-action" [routerLink]="session.notificationsRoute()" aria-label="Notifications">
-          ◉
+          <app-nav-icon name="bell" />
           @if (notifications.unreadCount() > 0) { <span class="notification-count">{{ notifications.unreadCount() > 99 ? '99+' : notifications.unreadCount() }}</span> }
         </a>
         <a class="profile" [routerLink]="accountPath" title="Account settings"><span>NV</span><b>{{ session.user()?.displayName || 'Account' }}</b></a>
       </div>
     </header>
     <main class="workspace-content"><router-outlet /></main>
-    @if (role === 'customer' && !isFocusedFlow) {<nav class="mobile-bottom" aria-label="Customer quick navigation"><a routerLink="/customer/dashboard" routerLinkActive="active">⌂<span>Home</span></a><a routerLink="/customer/browse-events" routerLinkActive="active">◇<span>Events</span></a><a routerLink="/customer/browse-venues" routerLinkActive="active">▦<span>Venues</span></a><a routerLink="/customer/bookings" routerLinkActive="active">✓<span>Bookings</span></a><button type="button" (click)="toggle()">☰<span>Menu</span></button></nav>}
+    @if (role === 'customer' && !isFocusedFlow) {<nav class="mobile-bottom" aria-label="Customer quick navigation"><a routerLink="/customer/dashboard" routerLinkActive="active"><app-nav-icon name="home"/><span>Home</span></a><a routerLink="/customer/browse-events" routerLinkActive="active"><app-nav-icon name="calendar"/><span>Events</span></a><a routerLink="/customer/browse-venues" routerLinkActive="active"><app-nav-icon name="building"/><span>Venues</span></a><a routerLink="/customer/bookings" routerLinkActive="active"><app-nav-icon name="check"/><span>Bookings</span></a><button type="button" (click)="toggle()"><app-nav-icon name="menu"/><span>Menu</span></button></nav>}
   </div>
 </div>

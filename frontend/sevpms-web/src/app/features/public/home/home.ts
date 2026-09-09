@@ -8,6 +8,7 @@ import { MagicCardDirective } from '../../../shared/directives/magic-card.direct
 import { EcosystemMotionComponent } from '../../../shared/components/ecosystem-motion/ecosystem-motion';
 import { TubesBackgroundComponent } from '../../../shared/components/tubes-background/tubes-background';
 import { EndFlowComponent } from '../../../shared/components/end-flow/end-flow';
+import { LazyVideoDirective } from '../../../shared/directives/lazy-video.directive';
 
 @Component({
   selector: 'app-home',
@@ -18,6 +19,7 @@ import { EndFlowComponent } from '../../../shared/components/end-flow/end-flow';
     EcosystemMotionComponent,
     TubesBackgroundComponent,
     EndFlowComponent,
+    LazyVideoDirective,
   ],
   templateUrl: './home.html',
   styleUrl: './home.scss',

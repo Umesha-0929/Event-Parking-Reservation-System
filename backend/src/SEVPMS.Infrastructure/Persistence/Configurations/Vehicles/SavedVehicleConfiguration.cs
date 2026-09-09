@@ -17,12 +17,15 @@ public sealed class SavedVehicleConfiguration
             .IsRequired();
 
         builder.Property(vehicle => vehicle.Nickname)
+            .HasMaxLength(100)
             .IsRequired();
 
         builder.Property(vehicle => vehicle.RegistrationNo)
+            .HasMaxLength(40)
             .IsRequired();
 
         builder.Property(vehicle => vehicle.VehicleType)
+            .HasMaxLength(80)
             .IsRequired();
 
         builder.Property(vehicle => vehicle.IsDefault)

@@ -3,134 +3,15 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { EventCategoryDto, UpsertEventCategoryRequest } from '../../../core/models/api.models';
 import { DomainApiService } from '../../../core/services/domain-api.service';
 import { httpErrorMessage } from '../../../core/utils/http-error';
-
-@Component({
-  selector: 'app-event-categories',
-  imports: [ReactiveFormsModule],
-  templateUrl: './event-categories.html',
-  styleUrl: './event-categories.scss',
-})
-export class EventCategoriesComponent implements OnInit {
-  private readonly domain = inject(DomainApiService);
-
-  readonly categories = signal<EventCategoryDto[]>([]);
-  readonly loading = signal(true);
-  readonly saving = signal(false);
-  readonly actionId = signal<string | null>(null);
-  readonly error = signal('');
-  readonly success = signal('');
-  readonly editingId = signal<string | null>(null);
-
-  readonly form = new FormGroup({
-    name: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(100)] }),
-    code: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.maxLength(50), Validators.pattern(/^[A-Za-z0-9_-]+$/)] }),
-    isActive: new FormControl(true, { nonNullable: true }),
-  });
-
-  ngOnInit(): void { this.load(); }
-
-  load(): void {
-    this.loading.set(true);
-    this.error.set('');
-    this.domain.adminEventCategories().subscribe({
-      next: (items) => {
-        this.categories.set([...items].sort((a, b) => a.name.localeCompare(b.name)));
-        this.loading.set(false);
-      },
-      error: (error) => {
-        this.error.set(httpErrorMessage(error, 'Event categories could not be loaded.'));
-        this.loading.set(false);
-      },
-    });
-  }
-
-  submit(): void {
-    this.form.markAllAsTouched();
-    if (this.form.invalid || this.saving()) return;
-
-    const raw = this.form.getRawValue();
-    const body: UpsertEventCategoryRequest = {
-      name: raw.name.trim(),
-      code: raw.code.trim().toUpperCase(),
-      isActive: raw.isActive,
-    };
-
-    if (!body.name || !body.code) return;
-
-    this.saving.set(true);
-    this.error.set('');
-    this.success.set('');
-    const id = this.editingId();
-    const request = id
-      ? this.domain.updateEventCategory(id, body)
-      : this.domain.createEventCategory(body);
-
-    request.subscribe({
-      next: () => {
-        this.success.set(id ? 'Event category updated.' : 'Event category created.');
-        this.saving.set(false);
-        this.cancelEdit(false);
-        this.load();
-      },
-      error: (error) => {
-        this.error.set(httpErrorMessage(error, 'The event category could not be saved.'));
-        this.saving.set(false);
-      },
-    });
-  }
-
-  edit(item: EventCategoryDto): void {
-    this.editingId.set(item.eventCategoryId);
-    this.success.set('');
-    this.error.set('');
-    this.form.setValue({ name: item.name, code: item.code, isActive: item.isActive });
-    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  cancelEdit(clearMessages = true): void {
-    this.editingId.set(null);
-    this.form.reset({ name: '', code: '', isActive: true });
-    if (clearMessages) {
-      this.error.set('');
-      this.success.set('');
-    }
-  }
-
-  deactivate(item: EventCategoryDto): void {
-    if (this.actionId()) return;
-    if (typeof window !== 'undefined' && !window.confirm(`Deactivate “${item.name}”? Organizers will no longer be able to choose it for new events.`)) return;
-
-    this.actionId.set(item.eventCategoryId);
-    this.error.set('');
-    this.success.set('');
-    this.domain.deactivateEventCategory(item.eventCategoryId).subscribe({
-      next: () => {
-        this.actionId.set(null);
-        this.success.set('Event category deactivated.');
-        this.load();
-      },
-      error: (error) => {
-        this.actionId.set(null);
-        this.error.set(httpErrorMessage(error, 'The event category could not be deactivated.'));
-      },
-    });
-  }
-
-  activate(item: EventCategoryDto): void {
-    if (this.actionId()) return;
-    this.actionId.set(item.eventCategoryId);
-    this.error.set('');
-    this.success.set('');
-    this.domain.updateEventCategory(item.eventCategoryId, { name: item.name, code: item.code, isActive: true }).subscribe({
-      next: () => {
-        this.actionId.set(null);
-        this.success.set('Event category activated.');
-        this.load();
-      },
-      error: (error) => {
-        this.actionId.set(null);
-        this.error.set(httpErrorMessage(error, 'The event category could not be activated.'));
-      },
-    });
-  }
+@Component({selector:'app-event-categories',imports:[ReactiveFormsModule],templateUrl:'./event-categories.html',styleUrl:'./event-categories.scss'})
+export class EventCategoriesComponent implements OnInit{
+ private readonly domain=inject(DomainApiService);readonly categories=signal<EventCategoryDto[]>([]);readonly loading=signal(true);readonly saving=signal(false);readonly actionId=signal('');readonly error=signal('');readonly success=signal('');readonly editingId=signal<string|null>(null);
+ readonly form=new FormGroup({name:new FormControl('',{nonNullable:true,validators:[Validators.required,Validators.maxLength(100)]}),code:new FormControl('',{nonNullable:true,validators:[Validators.required,Validators.maxLength(50),Validators.pattern(/^[A-Za-z0-9_-]+$/)]}),isActive:new FormControl(true,{nonNullable:true})});
+ ngOnInit():void{this.load();} load():void{this.loading.set(true);this.domain.adminEventCategories().subscribe({next:x=>{this.categories.set([...x].sort((a,b)=>a.name.localeCompare(b.name)));this.loading.set(false);},error:e=>{this.loading.set(false);this.error.set(httpErrorMessage(e,'Event categories could not be loaded.'));}});}
+ submit():void{this.form.markAllAsTouched();if(this.form.invalid||this.saving())return;const r=this.form.getRawValue(),body:UpsertEventCategoryRequest={name:r.name.trim(),code:r.code.trim().toUpperCase(),isActive:r.isActive};this.saving.set(true);this.error.set('');const id=this.editingId();const req=id?this.domain.updateEventCategory(id,body):this.domain.createEventCategory(body);req.subscribe({next:()=>{this.saving.set(false);this.success.set(id?'Category updated.':'Category created.');this.cancelEdit(false);this.load();},error:e=>{this.saving.set(false);this.error.set(httpErrorMessage(e,'Category could not be saved.'));}});}
+ edit(x:EventCategoryDto):void{this.editingId.set(x.eventCategoryId);this.form.setValue({name:x.name,code:x.code,isActive:x.isActive});}
+ cancelEdit(clear=true):void{this.editingId.set(null);this.form.reset({name:'',code:'',isActive:true});if(clear){this.error.set('');this.success.set('');}}
+ deactivate(x:EventCategoryDto):void{if(this.actionId()||!confirm(`Deactivate “${x.name}”?`))return;this.actionId.set(x.eventCategoryId);this.domain.deactivateEventCategory(x.eventCategoryId).subscribe({next:()=>{this.actionId.set('');this.success.set('Category deactivated.');this.load();},error:e=>{this.actionId.set('');this.error.set(httpErrorMessage(e,'Category could not be deactivated.'));}});}
+ activate(x:EventCategoryDto):void{if(this.actionId())return;this.actionId.set(x.eventCategoryId);this.domain.updateEventCategory(x.eventCategoryId,{name:x.name,code:x.code,isActive:true}).subscribe({next:()=>{this.actionId.set('');this.success.set('Category activated.');this.load();},error:e=>{this.actionId.set('');this.error.set(httpErrorMessage(e,'Category could not be activated.'));}});}
+ remove(x:EventCategoryDto):void{if(x.isActive||this.actionId())return;if(!confirm(`Delete inactive category “${x.name}” permanently? This only works when no event uses it.`))return;this.actionId.set(x.eventCategoryId);this.domain.deleteEventCategoryPermanent(x.eventCategoryId).subscribe({next:()=>{this.actionId.set('');this.success.set('Unused category deleted permanently.');this.load();},error:e=>{this.actionId.set('');this.error.set(httpErrorMessage(e,'This category could not be permanently deleted.'));}});}
 }

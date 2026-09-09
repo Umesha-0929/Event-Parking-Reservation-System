@@ -3,7 +3,5 @@ export const environment = {
   apiBaseUrl: '/api',
   notificationHubUrl: '/hubs/notifications',
   eventHubUrl: '/hubs/events',
-  analyticsProvider: '',
-  analyticsTrackingId: '',
   canonicalBaseUrl: '',
 };

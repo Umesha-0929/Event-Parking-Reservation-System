@@ -127,3 +127,5 @@ button { cursor: pointer; }
 .magic-card>*{position:relative;z-index:2}
 .magic-card__ripple{position:absolute;z-index:1;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;background:radial-gradient(circle,rgba(0,140,165,.28),rgba(138,193,200,.08) 48%,transparent 72%);pointer-events:none}
 @media(prefers-reduced-motion:reduce){.magic-card{transform:none!important}.magic-card::after{display:none}.magic-card__ripple{display:none}}
+
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}

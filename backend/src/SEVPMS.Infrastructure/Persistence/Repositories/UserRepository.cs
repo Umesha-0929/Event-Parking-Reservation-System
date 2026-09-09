@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SEVPMS.Application.Common.Paging;
 using SEVPMS.Application.Interfaces.Repositories;
 using SEVPMS.Domain.Entities.Users;
 
@@ -10,6 +11,20 @@ public sealed class UserRepository(SEVPMSDbContext dbContext) : IUserRepository
         => await dbContext.Users.AsNoTracking()
             .OrderByDescending(x => x.CreatedAtUtc)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<User>> GetPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (_, size, skip) = PagingRules.Normalize(page, pageSize);
+        return await dbContext.Users
+            .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .Skip(skip)
+            .Take(size)
+            .ToListAsync(cancellationToken);
+    }
 
     public Task<User?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
         => dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);

@@ -7,6 +7,7 @@ public interface IReceiptRepository
     Task<Receipt?> GetByIdAsync(Guid receiptId, CancellationToken cancellationToken = default);
     Task<Receipt?> GetByPaymentIdAsync(Guid paymentId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Receipt>> GetByCustomerAsync(Guid customerUserId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Receipt>> GetRecentAsync(int take = 100, CancellationToken cancellationToken = default);
     Task AddAsync(Receipt receipt, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

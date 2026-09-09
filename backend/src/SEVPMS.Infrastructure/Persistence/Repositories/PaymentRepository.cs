@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SEVPMS.Application.Common.Paging;
 using SEVPMS.Application.Interfaces.Repositories;
 using SEVPMS.Domain.Entities.Payments;
 
@@ -34,6 +35,30 @@ public sealed class PaymentRepository(SEVPMSDbContext dbContext) : IPaymentRepos
             .AsNoTracking()
             .Where(x => x.CustomerUserId == customerUserId)
             .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Payment>> GetByCustomerPageAsync(
+        Guid customerUserId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (_, size, skip) = PagingRules.Normalize(page, pageSize);
+        return await dbContext.Set<Payment>()
+            .AsNoTracking()
+            .Where(x => x.CustomerUserId == customerUserId)
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .Skip(skip)
+            .Take(size)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Payment>> GetPendingManualAsync(
+        CancellationToken cancellationToken = default)
+        => await dbContext.Set<Payment>()
+            .AsNoTracking()
+            .Where(x => x.Provider == "OrganizerQr" && x.Status == SEVPMS.Domain.Enums.PaymentStatus.Pending)
+            .OrderBy(x => x.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
     public async Task AddAsync(
