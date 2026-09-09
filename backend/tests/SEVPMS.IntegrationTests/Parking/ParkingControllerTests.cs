@@ -36,7 +36,7 @@ public sealed class ParkingControllerTests
         };
 
         var controller = CreateController(service);
-        var result = await controller.GetZonesByVenue(venueId, CancellationToken.None);
+        var result = await controller.GetZonesByVenue(venueId, 1, 50, CancellationToken.None);
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var zones = Assert.IsAssignableFrom<IReadOnlyList<ParkingZoneDto>>(okResult.Value);
         Assert.Single(zones);
@@ -65,7 +65,7 @@ public sealed class ParkingControllerTests
         };
 
         var controller = CreateController(service);
-        var result = await controller.GetSlotsByZone(zoneId, CancellationToken.None);
+        var result = await controller.GetSlotsByZone(zoneId, 1, 100, CancellationToken.None);
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var slots = Assert.IsAssignableFrom<IReadOnlyList<ParkingSlotDto>>(okResult.Value);
         Assert.Single(slots);
@@ -379,6 +379,7 @@ public sealed class ParkingControllerTests
         var controller = new ParkingController(
             service,
             parkingRepository ?? new FakeParkingRepository(),
+            new FakeParkingRouteRepository(),
             venueRepository ?? new FakeVenueRepository());
 
         var claims = new[]
@@ -396,6 +397,19 @@ public sealed class ParkingControllerTests
         };
 
         return controller;
+    }
+
+    private sealed class FakeParkingRouteRepository : IParkingRouteRepository
+    {
+        public Task<IReadOnlyList<ParkingNode>> GetNodesByVenueAsync(
+            Guid venueId,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<ParkingNode>>(Array.Empty<ParkingNode>());
+
+        public Task<IReadOnlyList<ParkingEdge>> GetEdgesByVenueAsync(
+            Guid venueId,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<ParkingEdge>>(Array.Empty<ParkingEdge>());
     }
 
     private sealed class FakeParkingRepository : IParkingRepository
@@ -454,7 +468,17 @@ public sealed class ParkingControllerTests
         }
 
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
-    }
+
+        public Task<bool> IsReferencedAsync(
+            Guid venueId,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(false);
+
+        public Task DeleteAsync(
+            Venue venueToDelete,
+            CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+}
 
     private sealed class FakeParkingService : IParkingService
     {
@@ -488,6 +512,20 @@ public sealed class ParkingControllerTests
 
         public Task<ParkingSlotDto> CreateSlotAsync(UpsertParkingSlotRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(CreatedSlot ?? throw new InvalidOperationException());
+
+        public Task<IReadOnlyList<ParkingSlotDto>> CreateSlotsBulkAsync(
+            IReadOnlyCollection<UpsertParkingSlotRequest> requests,
+            CancellationToken cancellationToken = default)
+        {
+            if (requests.Count == 0)
+            {
+                return Task.FromResult<IReadOnlyList<ParkingSlotDto>>(Array.Empty<ParkingSlotDto>());
+            }
+
+            var slot = CreatedSlot ?? throw new InvalidOperationException();
+            return Task.FromResult<IReadOnlyList<ParkingSlotDto>>(
+                Enumerable.Repeat(slot, requests.Count).ToArray());
+        }
 
         public Task<ParkingSlotDto> UpdateSlotAsync(Guid parkingSlotId, UpsertParkingSlotRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(UpdatedSlot ?? throw new InvalidOperationException());

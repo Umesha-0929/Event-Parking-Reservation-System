@@ -329,5 +329,15 @@ public sealed class BookingCalendarServiceTests
         public Task SaveChangesAsync(
             CancellationToken cancellationToken = default)
             => Task.CompletedTask;
-    }
+
+        public Task<bool> IsReferencedAsync(
+            Guid venueId,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(false);
+
+        public Task DeleteAsync(
+            Venue venueToDelete,
+            CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+}
 }

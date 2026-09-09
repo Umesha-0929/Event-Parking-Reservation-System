@@ -302,7 +302,17 @@ public sealed class EventCategoryForeignKeyTests
         public Task SaveChangesAsync(
             CancellationToken cancellationToken = default)
             => Task.CompletedTask;
-    }
+
+        public Task<bool> IsReferencedAsync(
+            Guid venueId,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(false);
+
+        public Task DeleteAsync(
+            Venue venueToDelete,
+            CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+}
 
     private sealed class FakeEventCategoryRepository(
         EventCategory category)
@@ -356,7 +366,17 @@ public sealed class EventCategoryForeignKeyTests
         public Task SaveChangesAsync(
             CancellationToken cancellationToken = default)
             => Task.CompletedTask;
-    }
+
+        public Task<bool> IsUsedAsync(
+            Guid categoryId,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(false);
+
+        public Task DeleteAsync(
+            EventCategory categoryToDelete,
+            CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+}
 
     private sealed class FakeVenueRentalRepository
         : IVenueRentalRepository

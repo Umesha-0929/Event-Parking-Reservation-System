@@ -172,6 +172,12 @@ public sealed class SeatTicketFulfillmentServiceTests
             CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
 
+        public Task<IReadOnlyList<CustomerTicketSummaryDto>> GetMineAsync(
+            Guid customerUserId,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<CustomerTicketSummaryDto>>(
+                Array.Empty<CustomerTicketSummaryDto>());
+
         public Task<TicketDto?> GetByTicketNoAsync(
             string ticketNo,
             CancellationToken cancellationToken = default)

@@ -29,6 +29,7 @@ public sealed class AccountSecurityAuditTests
                 new FakePasswordHasher(),
                 new FakeRefreshTokenService(),
                 new FakeEmailSender(),
+                new FakeApplicationLinkBuilder(),
                 audit);
 
         await service.LogoutAsync(
@@ -68,6 +69,13 @@ public sealed class AccountSecurityAuditTests
         Assert.Equal(
             "All refresh tokens revoked",
             entry.AfterSummary);
+    }
+
+
+    private sealed class FakeApplicationLinkBuilder : IApplicationLinkBuilder
+    {
+        public string PasswordReset(string token)
+            => $"https://example.test/password-reset?token={Uri.EscapeDataString(token)}";
     }
 
     private sealed class FakeAuditLogService

@@ -213,6 +213,15 @@ public async Task Successful_callback_is_idempotent_and_records_success_once()
                             customerUserId)
                     .ToList());
 
+        public Task<IReadOnlyList<Payment>> GetPendingManualAsync(
+            CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<Payment>>(
+                items
+                    .Where(x =>
+                        x.Provider == "OrganizerQr" &&
+                        x.Status == PaymentStatus.Pending)
+                    .ToList());
+
         public Task AddAsync(
             Payment payment,
             CancellationToken cancellationToken = default)
@@ -359,6 +368,12 @@ public async Task Successful_callback_is_idempotent_and_records_success_once()
                     CustomerUserId =
                         customerUserId
                 });
+
+        public Task<IReadOnlyList<ReceiptResponse>> GetRecentAdminAsync(
+            int take = 100,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<ReceiptResponse>>(
+                Array.Empty<ReceiptResponse>());
 
         public Task<ReceiptResponse>
             IssueAsync(
