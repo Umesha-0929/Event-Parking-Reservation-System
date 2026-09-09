@@ -1,10 +1,10 @@
 <header class="builder-head">
   <div>
-    <span class="eyebrow">Host / Create Event</span>
-    <h1>Start with the event. Build the experience around it.</h1>
-    <p>Create the event details first, then continue to stage and seating configuration.</p>
+    <span class="eyebrow">{{ editing() ? 'Organizer / Edit Event' : 'Host / Create Event' }}</span>
+    <h1>{{ editing() ? 'Update your event details.' : 'Start with the event. Build the experience around it.' }}</h1>
+    <p>{{ editing() ? 'Correct the event information below. Existing seating and ticket configuration is preserved.' : 'Create the event details first, then continue to stage and seating configuration.' }}</p>
   </div>
-  <span class="badge">Step 1 of 5</span>
+  <span class="badge">{{ editing() ? 'Edit event' : 'Step 1 of 5' }}</span>
 </header>
 
 <div class="builder-layout">
@@ -90,7 +90,7 @@
     @if (error()) {
       <div class="preview-note error-note action-error" role="alert">
         <span>!</span>
-        <div><strong>Event could not be created</strong><br>{{ error() }}</div>
+        <div><strong>{{ editing() ? 'Event could not be saved' : 'Event could not be created' }}</strong><br>{{ error() }}</div>
       </div>
     }
 
@@ -101,11 +101,11 @@
     <div class="builder-actions">
       <a class="btn btn--secondary" href="/organizer/events">Cancel</a>
       <button class="btn btn--primary" type="submit" [disabled]="saving() || loadingOptions()">
-        {{ saving() ? 'Creating draft…' : 'Create event draft →' }}
+        {{ saving() ? (editing() ? 'Saving changes…' : 'Creating draft…') : (editing() ? 'Save event changes' : 'Create event draft →') }}
       </button>
     </div>
 
-    @if (created()) {<div class="preview-note ready-note"><span>✓</span><div><strong>Event draft created.</strong><br>Opening stage setup…</div></div>}
+    @if (created()) {<div class="preview-note ready-note"><span>✓</span><div><strong>{{editing()?'Event updated.':'Event draft created.'}}</strong><br>{{editing()?'Returning to your events…':'Opening stage setup…'}}</div></div>}
   </form>
 
   <aside class="card next-card">

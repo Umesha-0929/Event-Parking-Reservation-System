@@ -1,9 +1,11 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, forkJoin, of, from, mergeMap, switchMap, toArray } from 'rxjs';
 import { EventSummary, SeatApiModel, SeatCategoryDto, SeatSectionDto, SeatingLayoutDto, VenueRentalDto } from '../../../core/models/api.models';
 import { DomainApiService } from '../../../core/services/domain-api.service';
+import { KlegarSeatTicketApiService } from '../../../core/services/klegar-seat-ticket-api.service';
+import { stagePatternPositions, stageTemplateGeometry } from '../../../shared/utils/stage-seat-patterns';
 import { httpErrorMessage } from '../../../core/utils/http-error';
 
 type SetupStep = 'stage' | 'seating' | 'categories' | 'preview';
@@ -19,6 +21,7 @@ export class OrganizerEventSetupComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly domain = inject(DomainApiService);
+  private readonly seatTicketApi = inject(KlegarSeatTicketApiService);
 
   readonly eventId = this.route.snapshot.paramMap.get('eventId') ?? '';
   readonly step = (this.route.snapshot.data['step'] ?? 'stage') as SetupStep;
@@ -233,13 +236,58 @@ export class OrganizerEventSetupComponent implements OnInit {
       horizontalSpacing: Math.max(24, 650 / Math.max(section.columnCount, 1)), verticalSpacing: Math.max(24, 285 / Math.max(section.rowCount, 1)),
       unavailablePositions: blocked, accessiblePositions: accessible, gaps
     }).subscribe({
-      next: () => {
-        this.domain.seats(this.eventId).subscribe({
-          next: (items) => { this.seats.set(items); this.saving.set(false); this.notice.set(`Seats generated for ${section.name}.`); },
-          error: () => { this.saving.set(false); this.notice.set(`Seats generated for ${section.name}.`); }
+      next: () => this.autoArrangeGeneratedSeats(section.name),
+      error: (error) => { this.error.set(httpErrorMessage(error, 'Seats could not be generated.')); this.saving.set(false); }
+    });
+  }
+
+  private autoArrangeGeneratedSeats(sectionName: string): void {
+    const layout = this.layout();
+    if (!layout) { this.saving.set(false); this.notice.set(`Seats generated for ${sectionName}.`); return; }
+
+    this.seatTicketApi.seats(this.eventId).subscribe({
+      next: (items) => {
+        const movable = items.filter((seat) => {
+          const state = String(seat.state ?? '').toLowerCase();
+          return state !== 'held' && state !== 'booked';
+        });
+        if (!movable.length) { this.seats.set(items); this.saving.set(false); this.notice.set(`Seats generated for ${sectionName}.`); return; }
+
+        const targets = stagePatternPositions(movable, this.stageType, layout.canvasWidth, layout.canvasHeight);
+        const positions = new Map(targets.map((target) => [target.seat.seatId, target]));
+        from(movable).pipe(
+          mergeMap((seat) => {
+            const target = positions.get(seat.seatId)!;
+            const state = String(seat.state ?? '').toLowerCase();
+            return this.seatTicketApi.seatView(this.eventId, seat.seatId).pipe(
+              catchError(() => of(null)),
+              switchMap((asset) => this.seatTicketApi.saveSeat(this.eventId, {
+                seatId: seat.seatId, sectionId: seat.sectionId, rowLabel: seat.rowLabel, seatNumber: seat.seatNumber,
+                x: target.x, y: target.y, ticketTypeId: seat.ticketTypeId ?? null, isAccessible: seat.isAccessible,
+                status: state === 'blocked' || state === 'unavailable' ? 'Blocked' : 'Available',
+                seatViewAssetId: asset?.seatId === seat.seatId ? asset.id : null,
+              })),
+            );
+          }, 6),
+          toArray(),
+        ).subscribe({
+          next: (updated) => {
+            const byId = new Map(updated.map((seat) => [seat.seatId, seat]));
+            const merged = items.map((seat) => byId.get(seat.seatId) ?? seat);
+            this.seats.set(merged);
+            this.saving.set(false);
+            this.notice.set(`Seats generated and automatically arranged for ${this.stageLabel()}. You can fine-tune them in Seat Tools.`);
+          },
+          error: (error) => {
+            this.error.set(httpErrorMessage(error, 'Seats were generated, but the stage-specific arrangement could not be saved.'));
+            this.saving.set(false);
+          },
         });
       },
-      error: (error) => { this.error.set(httpErrorMessage(error, 'Seats could not be generated.')); this.saving.set(false); }
+      error: (error) => {
+        this.error.set(httpErrorMessage(error, 'Seats were generated, but could not be loaded for automatic arrangement.'));
+        this.saving.set(false);
+      },
     });
   }
 
@@ -302,13 +350,7 @@ export class OrganizerEventSetupComponent implements OnInit {
   private replaceById<T extends { id: string }>(items: T[], saved: T): T[] { return items.some((item) => item.id === saved.id) ? items.map((item) => item.id === saved.id ? saved : item) : [...items, saved]; }
   private clamp(value: number, min: number, max: number): number { return Math.max(min, Math.min(max, Number(value) || min)); }
   private stageGeometry(): { x: number; y: number; w: number; h: number } {
-    switch (this.stageType) {
-      case 1: return { x: 300, y: 65, w: 300, h: 125 };
-      case 4: return { x: 330, y: 55, w: 240, h: 190 };
-      case 5: return { x: 350, y: 80, w: 200, h: 380 };
-      case 6: return { x: 350, y: 100, w: 200, h: 200 };
-      default: return { x: 245, y: 55, w: 410, h: 95 };
-    }
+    return stageTemplateGeometry(this.stageType);
   }
   private parseSeatList(value: string, section: SeatSectionDto): { rowNumber: number; columnNumber: number }[] {
     return value.split(',').map((item) => item.trim().toUpperCase()).filter(Boolean).map((token) => {

@@ -1,31 +1,25 @@
 <header class="events-head">
-  <div>
-    <span class="eyebrow">Organizer events</span>
-    <h1>Your events and setup progress.</h1>
-    <p>Create a draft, then continue through stage, seating, categories and final review without losing the event you are working on.</p>
-  </div>
-  <a class="btn btn--primary" routerLink="/organizer/create-event">Create event →</a>
+  <div><span class="eyebrow">Organizer events</span><h1>Your events and setup progress.</h1><p>Create a draft, continue setup, cancel when necessary and archive finished records without deleting event history.</p></div>
+  <a class="btn btn--primary" routerLink="/organizer/create-event"><app-nav-icon name="plus-circle" /> Create event</a>
 </header>
-
-@if (error()) {
-  <div class="state state--error" role="alert"><strong>We couldn't load your events.</strong><span>{{ error() }}</span><button type="button" (click)="load()">Retry</button></div>
-} @else if (loading()) {
-  <div class="event-grid">@for (item of [1,2,3]; track item) {<div class="card event-card skeleton"></div>}</div>
-} @else if (events().length === 0) {
-  <div class="empty-state"><span class="badge badge--muted">No events yet</span><h3>Create your first event draft.</h3><p>Once the draft is saved, Nvent will guide you through the complete setup journey.</p><a class="btn btn--primary" routerLink="/organizer/create-event">Create event</a></div>
-} @else {
+@if(error()){<div class="state state--error" role="alert"><strong>We couldn't load your events.</strong><span>{{error()}}</span><button type="button" (click)="load()">Retry</button></div>}
+@if(success()){<div class="state state--success" role="status">{{success()}}</div>}
+<section class="card event-tools"><label><app-nav-icon name="search"/><input [(ngModel)]="query" placeholder="Search events" aria-label="Search events"></label><select [(ngModel)]="filter" aria-label="Event filter"><option value="active">Current events</option><option value="draft">Draft</option><option value="published">Published</option><option value="cancelled">Cancelled</option><option value="completed">Completed</option><option value="archived">Archived</option></select><button class="clear-cancelled" type="button" (click)="clearCancelled()">Clear cancelled</button></section>
+@if(loading()){
+  <div class="event-grid">@for(item of [1,2,3];track item){<div class="card event-card skeleton"></div>}</div>
+}@else if(filteredEvents().length===0){
+  <div class="empty-state"><span class="badge badge--muted">No events here</span><h3>{{filter==='archived'?'No archived events.':'No matching events.'}}</h3><p>Use the filters above or create a new event.</p><a class="btn btn--primary" routerLink="/organizer/create-event">Create event</a></div>
+}@else{
   <div class="event-grid">
-    @for (event of events(); track id(event)) {
-      <article class="card event-card">
-        <div class="event-card__top"><span class="badge" [class.badge--success]="status(event) === 'Published'" [class.badge--warning]="status(event) === 'Draft'" [class.badge--danger]="status(event) === 'Cancelled'" [class.badge--muted]="status(event) === 'Completed'">{{ status(event) }}</span><small>{{ event.category || event.categoryName || 'Event' }}</small></div>
-        <h2>{{ event.title || event.name || 'Untitled event' }}</h2>
-        <p>{{ when(event.startAtUtc || event.startDateTime) }}</p>
-        <div class="event-card__actions">
-          <a [routerLink]="['/organizer/events', id(event), 'stage']">Stage</a>
-          <a [routerLink]="['/organizer/events', id(event), 'seating']">Seating</a>
-          <a [routerLink]="['/organizer/events', id(event), 'categories']">Categories</a>
-          <a class="primary" [routerLink]="['/organizer/events', id(event), 'preview']">Review →</a>
-          @if(status(event) !== 'Cancelled' && status(event) !== 'Completed'){<button class="danger-action" type="button" [disabled]="busyId()===id(event)" (click)="cancel(event)">{{busyId()===id(event)?'Cancelling…':'Cancel'}}</button>}
+    @for(event of filteredEvents();track id(event)){
+      <article class="card event-card" [class.event-card--inactive]="status(event)==='Cancelled'||status(event)==='Completed'">
+        <div class="event-card__top"><span class="badge" [class.badge--success]="status(event)==='Published'" [class.badge--warning]="status(event)==='Draft'" [class.badge--danger]="status(event)==='Cancelled'" [class.badge--muted]="status(event)==='Completed'">{{status(event)}}</span><small>{{event.categoryName||event.category||'Event'}}</small></div>
+        <h2>{{event.title||event.name||'Untitled event'}}</h2><p><app-nav-icon name="clock"/> {{when(event.startAtUtc||event.startDateTime)}}</p>
+        <div class="event-card__actions"><a [routerLink]="['/organizer/events',id(event),'edit']">Edit</a><a [routerLink]="['/organizer/events',id(event),'stage']">Stage</a><a [routerLink]="['/organizer/events',id(event),'seating']">Seating</a><a [routerLink]="['/organizer/events',id(event),'categories']">Categories</a><a [routerLink]="['/organizer/events',id(event),'media']">Media</a><a class="primary" [routerLink]="['/organizer/events',id(event),'preview']">Review →</a></div>
+        <div class="event-card__management">
+          @if(status(event)!=='Cancelled'&&status(event)!=='Completed'&&filter!=='archived'){<button class="danger-action" type="button" [disabled]="busyId()===id(event)" (click)="cancel(event)">{{busyId()===id(event)?'Cancelling…':'Cancel event'}}</button>}
+          @if((status(event)==='Cancelled'||status(event)==='Completed')&&filter!=='archived'){<button class="archive-action" type="button" (click)="archive(event)"><app-nav-icon name="audit"/> Archive</button>}
+          @if(filter==='archived'){<button class="archive-action" type="button" (click)="restore(event)">Restore to list</button>}
         </div>
       </article>
     }

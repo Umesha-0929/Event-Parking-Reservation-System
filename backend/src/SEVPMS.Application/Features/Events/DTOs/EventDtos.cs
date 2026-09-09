@@ -77,4 +77,8 @@ public sealed class EventSearchRequest
     public string? Category { get; set; }
 
     public DateOnly? Date { get; set; }
+
+    public int Page { get; set; } = 1;
+
+    public int PageSize { get; set; } = 50;
 }
