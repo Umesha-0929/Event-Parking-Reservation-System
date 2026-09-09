@@ -164,6 +164,25 @@ export interface TicketApiModel {
   checkedInAtUtc?: string;
 }
 
+export interface CustomerTicketSummary {
+  ticketId: string;
+  ticketNo: string;
+  bookingId: string;
+  bookingNumber: string;
+  eventId: string;
+  eventName: string;
+  venueName: string;
+  seatId?: string | null;
+  rowLabel?: string | null;
+  seatNumber?: string | null;
+  status: string;
+  issuedAtUtc: string;
+  checkedInAtUtc?: string | null;
+  isAccessible: boolean;
+  qrPayload: string;
+}
+
+
 
 export interface SeatSectionDto {
   id: string;
@@ -208,7 +227,12 @@ export interface SeatingLayoutDto {
 }
 
 export interface PaymentResponseDto { paymentId:string; bookingId:string; customerUserId:string; amount:number; currency:string; provider:string; checkoutReference:string; qrPayload:string; status:number|string; paidAtUtc?:string|null; createdAtUtc:string; }
-export interface PayHereCheckoutDto { paymentId:string; checkoutUrl:string; merchantId:string; orderId:string; amount:string; currency:string; hash:string; }
+export interface PayHereCheckoutDto {
+  paymentId:string; checkoutUrl:string; merchantId:string; returnUrl:string; cancelUrl:string; notifyUrl:string;
+  firstName:string; lastName:string; email:string; phone:string; address:string; city:string; country:string;
+  orderId:string; items:string; amount:string; currency:string; hash:string;
+}
+export interface ManualPaymentReviewDto { paymentId:string; bookingId:string; eventId:string; amount:number; currency:string; proofUrl:string; submittedAtUtc:string; }
 
 export interface UserProfileDto {
   userId?: string; id?: string; name?: string; firstName?: string; lastName?: string; email?: string; phoneNumber?: string | null; role?: BackendRoleValue; isActive?: boolean;
@@ -332,3 +356,24 @@ export interface AuditLogDto { id?: string; auditLogId?: string; actorUserId?: s
 export interface EventReviewDto { id?: string; eventReviewId?: string; eventId?: string; rating: number; title?: string; comment?: string; createdAtUtc?: string; customerName?: string; }
 export interface EventRatingSummaryDto { averageRating?: number; reviewCount?: number; }
 export interface WaitlistEntryDto { id?: string; waitlistEntryId?: string; eventId?: string; status?: string; joinedAtUtc?: string; position?: number; }
+
+export interface RegistrationPendingResponse {
+  email: string;
+  emailVerificationRequired: boolean;
+  otpExpiresAtUtc: string;
+  message: string;
+}
+
+export interface EmailVerificationResponse {
+  verified: boolean;
+  message: string;
+}
+
+export interface VerifyEmailOtpRequest {
+  email: string;
+  otp: string;
+}
+
+export interface ResendEmailOtpRequest {
+  email: string;
+}
