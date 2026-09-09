@@ -2,9 +2,7 @@
   <section class="hero-wrap" aria-labelledby="home-title">
     <div class="container">
       <div class="hero-shell">
-        <video data-motion-media class="hero-shell__video" autoplay muted loop playsinline poster="/assets/images/conference-poster.jpg" aria-hidden="true">
-          <source src="/assets/videos/conference-story.mp4" type="video/mp4">
-        </video>
+        <video data-motion-media class="hero-shell__video" muted loop playsinline poster="/assets/images/conference-poster.jpg" aria-hidden="true" appLazyVideo="/assets/videos/conference-story.mp4"></video>
         <div class="hero-shell__wash"></div>
         <div class="hero-shell__content">
           <span class="hero-eyebrow">✦ Welcome to Nvent</span>
@@ -23,9 +21,9 @@
   <section class="search-zone" id="event-search" aria-label="Search Nvent">
     <div class="container">
       <form class="search-panel" action="/events">
-        <label class="search-field search-field--wide"><span aria-hidden="true">⌕</span><span><small>Search</small><input name="q" placeholder="Search events, venues or keywords"></span></label>
-        <label class="search-field"><span aria-hidden="true">⌖</span><span><small>Location</small><select name="location"><option value="">All locations</option><option value="nearby">Near me</option></select></span></label>
-        <label class="search-field"><span aria-hidden="true">◷</span><span><small>Date</small><select name="date"><option value="">Any date</option><option value="week">This week</option><option value="month">This month</option></select></span></label>
+        <label class="search-field search-field--wide"><span aria-hidden="true">⌕</span><span><small>Search</small><input aria-label="Search events, venues or keywords" name="q" placeholder="Search events, venues or keywords"></span></label>
+        <label class="search-field"><span aria-hidden="true">⌖</span><span><small>Location</small><select aria-label="Location" name="location"><option value="">All locations</option><option value="nearby">Near me</option></select></span></label>
+        <label class="search-field"><span aria-hidden="true">◷</span><span><small>Date</small><select aria-label="Date" name="date"><option value="">Any date</option><option value="week">This week</option><option value="month">This month</option></select></span></label>
         <button class="search-button" type="submit" aria-label="Search">⌕</button>
       </form>
       <div class="popular"><strong>Popular Searches:</strong>@for (category of categories; track category) {<a routerLink="/events" [queryParams]="{category}">{{ category }}</a>}</div>
@@ -76,7 +74,7 @@
           <div><b>04</b><span><strong>Arrive</strong><small>Tickets, QR check-in and smart parking.</small></span></div>
         </div>
       </div>
-      <div class="story-video reveal-right" appRevealOnScroll [revealDelay]="100"><video data-motion-media autoplay muted loop playsinline poster="/assets/images/concert-poster.jpg"><source src="/assets/videos/concert-hero.mp4" type="video/mp4"></video><span>Live event storytelling • supplied media</span></div>
+      <div class="story-video reveal-right" appRevealOnScroll [revealDelay]="100"><video data-motion-media muted loop playsinline poster="/assets/images/concert-poster.jpg" appLazyVideo="/assets/videos/concert-hero.mp4"></video><span>Live event storytelling • supplied media</span></div>
     </div>
   </section>
 
@@ -86,7 +84,7 @@
 
   <section class="section arrival-section">
     <div class="container arrival-grid">
-      <div class="arrival-video reveal-left" appRevealOnScroll><video data-motion-media autoplay muted loop playsinline poster="/assets/images/parking-poster.jpg"><source src="/assets/videos/smart-parking.mp4" type="video/mp4"></video></div>
+      <div class="arrival-video reveal-left" appRevealOnScroll><video data-motion-media muted loop playsinline poster="/assets/images/parking-poster.jpg" appLazyVideo="/assets/videos/smart-parking.mp4"></video></div>
       <div class="arrival-copy reveal-right" appRevealOnScroll [revealDelay]="100">
         <span class="eyebrow">Beyond the booking</span><h2>Arrival belongs to the experience too.</h2><p>Parking, food and nearby-place discovery stay connected to the event journey from arrival to departure.</p>
         <div class="service-links"><a routerLink="/customer/parking"><b>P</b><span><strong>Smart Parking</strong><small>Recommendation, reservation and navigation UI</small></span></a><a routerLink="/customer/food"><b>◌</b><span><strong>Food</strong><small>Event stalls, menus and order status</small></span></a><a routerLink="/customer/places"><b>⌖</b><span><strong>Place Finder</strong><small>Couples, singles, friends and family discovery</small></span></a></div>
@@ -104,7 +102,7 @@
   <app-end-flow />
 
   <section class="final-cta">
-    <video data-motion-media autoplay muted loop playsinline poster="/assets/images/venue-night-poster.jpg" aria-hidden="true"><source src="/assets/videos/night-arrival.mp4" type="video/mp4"></video><div class="final-cta__veil"></div>
+    <video data-motion-media muted loop playsinline poster="/assets/images/venue-night-poster.jpg" aria-hidden="true" appLazyVideo="/assets/videos/night-arrival.mp4"></video><div class="final-cta__veil"></div>
     <div class="container final-cta__content" appRevealOnScroll><span class="eyebrow">Create something memorable</span><h2>Bring your next event into one confident experience.</h2><p>Start with the organizer workspace, then connect your real venue, seating, ticket, parking and payment services.</p><div><a class="btn btn--primary" routerLink="/organizer/create-event">Host an Event →</a><a class="btn final-cta__ghost" routerLink="/venues">Explore Venues</a></div></div>
   </section>
 </div>

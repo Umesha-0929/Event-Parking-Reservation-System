@@ -1,5 +1,5 @@
 export const environment = {
-  production: false,
+  production: true,
   apiBaseUrl: '/api',
   notificationHubUrl: '/hubs/notifications',
   eventHubUrl: '/hubs/events',

@@ -1,47 +1,6 @@
-@if (loading()) {
-  <section class="detail-loading"><div class="container"><div class="skeleton hero-skeleton"></div><div class="skeleton line"></div><div class="skeleton line short"></div></div></section>
-}
-@else if (error()) {
-  <section class="page-content"><div class="container"><div class="empty-state"><span class="badge badge--danger">Unable to load</span><h2>{{ kind === 'event' ? 'Event unavailable' : 'Venue unavailable' }}</h2><p>{{ error() }}</p><a class="btn btn--secondary" [routerLink]="backLink">Back to {{ kind === 'event' ? 'events' : 'venues' }}</a></div></div></section>
-}
-@else {
-  <section class="detail-hero">
-    <img [src]="image" [alt]="title">
-    <div class="detail-hero__veil"></div>
-    <div class="container detail-hero__content" appRevealOnScroll>
-      <span class="eyebrow">{{ kind === 'event' ? (event()?.categoryName || 'Event') : 'Venue' }}</span>
-      <h1>{{ title }}</h1><p>{{ description }}</p>
-      @if (kind === 'event') {<a class="btn btn--primary" [routerLink]="['/customer/seats']" [queryParams]="{eventId:id}">Book Tickets →</a>}
-      @else {<a class="btn btn--primary" [routerLink]="eventsLink" [queryParams]="{venueId:id}">View Events →</a>}
-    </div>
-  </section>
-
-  <section class="page-content"><div class="container detail-grid">
-    <article class="card detail-main" appRevealOnScroll>
-      <h2>{{ kind === 'event' ? 'About this event' : 'About this venue' }}</h2><p>{{ description }}</p>
-      @if (kind === 'event') {
-        <div class="detail-facts"><span><small>Venue</small><strong>{{ event()?.venueName || 'See venue details' }}</strong></span><span><small>Location</small><strong>{{ event()?.city || event()?.location || 'Provided by event record' }}</strong></span><span><small>Status</small><strong>{{ event()?.status || 'Published information' }}</strong></span></div>
-      } @else {
-        <div class="detail-facts"><span><small>Location</small><strong>{{ venue()?.city || venue()?.address || 'Provided by venue record' }}</strong></span><span><small>Capacity</small><strong>{{ venue()?.capacity || 'See venue information' }}</strong></span><span><small>Status</small><strong>{{ venue()?.status || 'Venue information' }}</strong></span></div>
-      }
-    </article>
-    <aside class="card detail-side" appRevealOnScroll [revealDelay]="100">
-      <span class="badge">Nvent</span><h3>{{ kind === 'event' ? 'Ready to continue?' : 'Explore the event journey' }}</h3>
-      <p>{{ kind === 'event' ? 'Seat selection uses the published layout and current seat availability.' : 'Venue pages connect naturally to events, rentals, parking and nearby services.' }}</p>
-      @if(kind === 'event'){<a class="btn btn--primary" [routerLink]="['/customer/seats']" [queryParams]="{eventId:id}">Choose Seats</a>}
-      @else{<a class="btn btn--secondary" [routerLink]="eventsLink">Browse Events</a>}
-    </aside>
-  </div></section>
-
-  @if(kind === 'venue' && marketplace()){
-    <section class="venue-market-section"><div class="container">
-      <div class="section-heading"><div><span class="eyebrow">Venue information</span><h2>Plan with the details that matter.</h2></div><p>Facilities, media, rates and availability are maintained by the venue owner.</p></div>
-      <div class="venue-market-grid">
-        <article class="card venue-market-card"><h3>Facilities</h3><div class="market-chips">@for(f of marketplace()?.facilities ?? [];track f.facilityId){<span class="badge">{{f.name}}</span>}@empty{<span class="muted">No facilities listed yet.</span>}</div></article>
-        <article class="card venue-market-card"><h3>Rates</h3>@for(r of marketplace()?.rates ?? [];track r.venueRateId){<div class="market-row"><span>{{r.rateType}}</span><strong>{{r.currency}} {{r.amount | number:'1.0-2'}}</strong></div>}@empty{<span class="muted">Contact the venue for pricing.</span>}</article>
-        <article class="card venue-market-card"><h3>Availability</h3>@for(a of (marketplace()?.availability ?? []).slice(0,4);track a.venueAvailabilityId){<div class="market-row"><span>{{a.startAtUtc | date:'mediumDate'}}</span><strong>{{a.type===1?'Blocked':a.type===2?'Maintenance':'Available'}}</strong></div>}@empty{<span class="muted">No availability windows published yet.</span>}</article>
-      </div>
-      @if((marketplace()?.media ?? []).length){<div class="venue-media-grid">@for(m of (marketplace()?.media ?? []).slice(0,4);track m.venueMediaId){@if(m.type.toLowerCase()!=='video'){<img [src]="m.url" [alt]="title + ' venue media'" loading="lazy">}}</div>}
-    </div></section>
-  }
+@if(loading()){<section class="detail-loading"><div class="container"><div class="skeleton hero-skeleton"></div></div></section>}@else if(error()){<section class="page-content"><div class="container"><div class="empty-state"><span class="badge badge--danger">Unable to load</span><h2>{{kind==='event'?'Event unavailable':'Venue unavailable'}}</h2><p>{{error()}}</p><a class="btn btn--secondary" [routerLink]="backLink">Back</a></div></div></section>}@else{
+<section class="detail-hero" [class.no-cover]="!cover()">@if(cover()){<img [src]="cover()" [alt]="title">}@else{<div class="hero-placeholder"><strong>{{kind==='event'?'Event image not added':'No venue image available'}}</strong><span>{{kind==='event'?'The organizer has not uploaded a cover image yet.':'The venue owner has not uploaded a cover image yet.'}}</span></div>}<div class="detail-hero__veil"></div><div class="container detail-hero__content" appRevealOnScroll><span class="eyebrow">{{kind==='event'?(event()?.categoryName||event()?.category||'Event'):'Venue'}}</span><h1>{{title}}</h1><p>{{description}}</p>@if(kind==='event'){<a class="btn btn--primary" [routerLink]="['/customer/seats']" [queryParams]="{eventId:id}">Book Tickets →</a>}@else{<a class="btn btn--primary" [routerLink]="eventsLink" [queryParams]="{venueId:id}">View Events →</a>}</div></section>
+<section class="page-content"><div class="container detail-grid"><article class="card detail-main" appRevealOnScroll><h2>{{kind==='event'?'About this event':'About this venue'}}</h2><p class="description">{{description}}</p>@if(kind==='event'){<div class="detail-facts"><div><small>Venue</small><strong>{{event()?.venueName||'Venue details unavailable'}}</strong></div><div><small>Location</small><strong>{{event()?.city||event()?.location||'Location available from venue record'}}</strong></div><div><small>Status</small><strong>{{statusText(event()?.status)}}</strong></div></div>}@else{<div class="detail-facts"><div><small>Location</small><strong>{{venue()?.city||venue()?.addressLine1||venue()?.address||'Location not provided'}}</strong></div><div><small>Capacity</small><strong>{{venue()?.capacity||'Not provided'}}</strong></div><div><small>Status</small><strong>{{venue()?.isActive===false?'Inactive':'Active'}}</strong></div></div>}</article>@if(mapPins().length){<section class="card detail-map"><h3>Exact location</h3><app-location-map [pins]="mapPins()" [selectable]="false" [height]="300"/></section>}
+<aside class="card detail-side" appRevealOnScroll [revealDelay]="100"><span class="badge">Nvent</span><h3>{{kind==='event'?'Ready to continue?':'Explore this venue'}}</h3><p>{{kind==='event'?'Seat selection uses the published layout and current seat availability.':'Venue pages connect to events, rentals, parking and nearby services.'}}</p>@if(kind==='event'){<a class="btn btn--primary" [routerLink]="['/customer/seats']" [queryParams]="{eventId:id}">Choose Seats</a>}@else{<a class="btn btn--secondary" [routerLink]="eventsLink">Browse Events</a>}</aside></div></section>
+@if(kind==='venue'&&marketplace()){<section class="venue-market-section"><div class="container"><div class="venue-market-grid"><article class="card venue-market-card"><h3>Facilities</h3><div class="market-chips">@for(f of marketplace()?.facilities??[];track f.facilityId){<span class="badge">{{f.name}}</span>}@empty{<span class="muted">No facilities listed yet.</span>}</div></article><article class="card venue-market-card"><h3>Rates</h3>@for(r of marketplace()?.rates??[];track r.venueRateId){<div class="market-row"><span>{{r.rateType}}</span><strong>{{r.currency}} {{r.amount|number:'1.0-2'}}</strong></div>}@empty{<span class="muted">Contact the venue for pricing.</span>}</article><article class="card venue-market-card"><h3>Availability</h3>@for(a of (marketplace()?.availability??[]).slice(0,4);track a.venueAvailabilityId){<div class="market-row"><span>{{a.startAtUtc|date:'mediumDate'}}</span><strong>{{a.type===1?'Blocked':a.type===2?'Maintenance':'Available'}}</strong></div>}@empty{<span class="muted">No availability windows yet.</span>}</article></div></div></section>}
 }

@@ -2,14 +2,25 @@
   <div class="scroll-progress" [style.transform]="'scaleX(' + scrollProgress() + ')'" aria-hidden="true"></div>
   <div class="container nav-row">
     <a class="brand" routerLink="/" aria-label="Nvent home" (click)="closeMenu()"><img src="/assets/brand/nvent-logo-horizontal.png" alt="Nvent"></a>
-    <button class="menu-toggle" type="button" aria-label="Toggle navigation" [attr.aria-expanded]="menuOpen()" (click)="toggleMenu()">☰</button>
-    <nav class="main-nav" [class.main-nav--open]="menuOpen()" aria-label="Primary navigation">
+    <button #menuToggle class="menu-toggle" type="button" aria-label="Toggle navigation" aria-controls="public-mobile-navigation" [attr.aria-expanded]="menuOpen()" (click)="toggleMenu()">☰</button>
+    <nav #mobileNav id="public-mobile-navigation" class="main-nav" [class.main-nav--open]="menuOpen()" aria-label="Primary navigation">
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="closeMenu()">Home</a>
       <a routerLink="/events" routerLinkActive="active" (click)="closeMenu()">Events</a>
       <a routerLink="/venues" routerLinkActive="active" (click)="closeMenu()">Venues</a>
       <a routerLink="/services" routerLinkActive="active" (click)="closeMenu()">Services</a>
       <a routerLink="/resources" routerLinkActive="active" (click)="closeMenu()">Resources</a>
       <a routerLink="/about" routerLinkActive="active" (click)="closeMenu()">About Us</a>
+      <div class="mobile-auth-actions">
+        @if (session.isAuthenticated()) {
+          <a [routerLink]="session.routeForRole()" (click)="closeMenu()">Dashboard</a>
+          @if (session.role() === 'EventOrganizer') { <a routerLink="/organizer/create-event" (click)="closeMenu()">Create Event</a> }
+          <button type="button" [disabled]="loggingOut()" (click)="logout()">{{ loggingOut() ? 'Logging out…' : 'Logout' }}</button>
+        } @else {
+          <a routerLink="/login" (click)="closeMenu()">Login</a>
+          <a routerLink="/register" (click)="closeMenu()">Sign Up</a>
+          <a routerLink="/register" (click)="closeMenu()">Host Event</a>
+        }
+      </div>
     </nav>
     <div class="nav-actions">
       <a class="icon-action" routerLink="/events" aria-label="Search events">⌕</a>
@@ -27,6 +38,7 @@
     </div>
   </div>
 </header>
+@if (menuOpen()) { <button class="public-nav-backdrop" type="button" aria-label="Close navigation" (click)="closeMenu(true)"></button> }
 <main><router-outlet /></main>
 <footer class="footer">
   <div class="container footer-grid">
@@ -37,4 +49,3 @@
   </div>
   <div class="container footer-bottom"><span>© {{ year }} Nvent</span></div>
 </footer>
-<app-cookie-banner />

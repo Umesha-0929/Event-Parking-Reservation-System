@@ -1,1 +1,41 @@
-<section class="legal-hero"><div class="container" appRevealOnScroll><span class="eyebrow">Nvent legal</span><h1>{{title}}</h1><p>This page is intentionally structured for final production legal copy; the frontend specification does not provide final legal wording.</p></div></section><section class="legal-body"><div class="container legal-grid"><aside class="card reveal-left" appRevealOnScroll><strong>On this page</strong><a href="#overview">Overview</a><a href="#data">{{kind==='privacy'?'Data & choices':'Using Nvent'}}</a><a href="#services">Services</a><a href="#contact">Contact</a></aside><article class="card reveal-right" appRevealOnScroll [revealDelay]="100"><div class="preview-note"><span>ⓘ</span><div><strong>Legal copy pending.</strong><br>Do not deploy this placeholder as final legal advice or policy wording.</div></div><h2 id="overview">Overview</h2><p>Final {{title.toLowerCase()}} content must be reviewed and supplied by the product owner or appropriate legal reviewer. This route focuses on readability, headings, spacing and navigation.</p><h2 id="data">{{kind==='privacy'?'Data, consent and choices':'Use of the service'}}</h2><p>Nvent’s frontend includes a cookie-consent surface that can keep non-essential analytics disabled until consent. Specific data practices and contractual terms must reflect the real production implementation.</p><h2 id="services">Connected services</h2><p>Authentication, payments, tickets, seating, parking and other operational services must be described accurately in the final legal copy.</p><h2 id="contact">Contact</h2><p>No production address or contact details have been invented. Add the verified company contact information here once supplied.</p></article></div></section>
+<section class="legal-hero"><div class="container" appRevealOnScroll><span class="eyebrow">Nvent legal</span><h1>{{ title }}</h1><p>Effective {{ effectiveDate }}</p></div></section>
+<section class="legal-body"><div class="container legal-grid">
+  <aside class="card reveal-left" appRevealOnScroll><strong>On this page</strong><a href="#overview">Overview</a><a href="#data">{{ kind === 'privacy' ? 'Data & choices' : 'Using Nvent' }}</a><a href="#services">Services</a><a href="#contact">Contact</a></aside>
+  <article class="card reveal-right" appRevealOnScroll [revealDelay]="100">
+    @if (kind === 'privacy') {
+      <h2 id="overview">Overview</h2>
+      <p>Nvent uses personal information to provide accounts, event discovery, bookings, seat reservations, tickets, venue services, payments, parking, food ordering, notifications and customer support. We collect only information needed to operate, secure and improve these services.</p>
+      <h2 id="data">Information we process</h2>
+      <p>Depending on how you use Nvent, this can include your name, email address, phone number, account role, event and venue activity, booking and seat details, ticket identifiers, payment status and references, vehicle or parking details, food orders, notifications, uploaded event/venue media and security/audit records. Payment card or bank credentials entered on an external payment provider are handled by that provider rather than stored by Nvent.</p>
+      <h3>Why we use it</h3>
+      <p>We use this information to authenticate users, complete bookings, issue tickets and receipts, verify admission, coordinate venue and parking operations, deliver notifications, prevent abuse, troubleshoot problems and maintain records required for platform operations.</p>
+      <h3>Sharing</h3>
+      <p>Information is shared only as needed with the relevant participant in a transaction, such as an Event Organizer, Venue Owner, payment provider or operational service provider. We do not sell personal information to advertisers.</p>
+      <h3>Retention and security</h3>
+      <p>Operational records are retained for as long as needed for the service, security, dispute handling and applicable record-keeping obligations. Nvent uses access controls, authenticated APIs, encrypted transport, password hashing, token rotation and audit logging to reduce unauthorized access.</p>
+      <h3>Your choices</h3>
+      <p>You can update supported profile information through your account controls. Account or privacy requests can be raised through the Nvent support channel.</p>
+      <h2 id="services">Cookies and connected services</h2>
+      <p>Essential session and security technologies are used to keep signed-in activity working. Nvent does not enable non-essential analytics in the current release. Connected payment and mapping services may apply their own privacy terms when you use them.</p>
+      <h2 id="contact">Questions and requests</h2>
+      <p>Use the support/contact route provided in Nvent to raise privacy, account-access or data-correction requests. Requests are verified before account information is disclosed or changed.</p>
+    } @else {
+      <h2 id="overview">Agreement to these terms</h2>
+      <p>These Terms govern use of Nvent’s event, venue, ticket, parking, food, payment and related platform features. By creating an account or using a protected service, you agree to use Nvent lawfully and to provide accurate information for transactions you initiate.</p>
+      <h2 id="data">Accounts and acceptable use</h2>
+      <p>You are responsible for keeping your credentials secure and for activity performed through your account. Do not attempt to access another user’s bookings, tickets, organizer resources or administrative features; interfere with platform security; upload harmful or unlawful content; or misuse tickets, QR credentials, payment proofs or operational systems.</p>
+      <h3>Organizer and Venue Owner responsibilities</h3>
+      <p>Event Organizers and Venue Owners are responsible for accurate event, venue, pricing, seating, availability, payment-QR and operational information they publish. They must review payment proofs and check-in activity only for events or venues they are authorized to manage.</p>
+      <h3>Bookings, payments and tickets</h3>
+      <p>Bookings remain subject to availability and the displayed status. Where an online payment provider is used, its checkout terms also apply. Manual Organizer-QR payments are not treated as complete until the relevant Organizer or an authorized administrator reconciles and approves the submitted proof. Tickets may be cancelled or invalidated when a booking is cancelled, refunded or found to be fraudulent.</p>
+      <h2 id="services">Platform services</h2>
+      <p>Seat views, parking guidance, nearby-place suggestions, food services and real-time notifications are assistance features and can depend on organizer, venue, mapping or device data. Follow on-site safety instructions and venue rules where they differ from an in-app suggestion.</p>
+      <h3>Availability and changes</h3>
+      <p>Nvent may update, suspend or limit features for maintenance, security, legal or operational reasons. We may also restrict accounts that abuse the service or compromise other users or platform integrity.</p>
+      <h3>Refunds and disputes</h3>
+      <p>Refund handling depends on the booking, event and payment status shown in Nvent and on the applicable organizer/provider process. Keep booking and payment references when contacting support about a dispute.</p>
+      <h2 id="contact">Questions</h2>
+      <p>Use the Nvent support/contact route for account, booking, ticket, payment or terms questions. Include the relevant booking or transaction reference, but never send passwords or full payment credentials.</p>
+    }
+  </article>
+</div></section>
