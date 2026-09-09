@@ -30,6 +30,16 @@ public sealed class EventCategoryRepository(SEVPMSDbContext dbContext) : IEventC
     public async Task AddAsync(EventCategory category, CancellationToken cancellationToken = default)
         => await dbContext.Set<EventCategory>().AddAsync(category, cancellationToken);
 
+    public Task<bool> IsUsedAsync(Guid id, CancellationToken cancellationToken = default)
+        => dbContext.Set<SEVPMS.Domain.Entities.Events.Event>().AsNoTracking().AnyAsync(x => x.CategoryId == id, cancellationToken);
+
+    public Task DeleteAsync(EventCategory category, CancellationToken cancellationToken = default)
+    {
+        dbContext.Set<EventCategory>().Remove(category);
+        return Task.CompletedTask;
+    }
+
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         => dbContext.SaveChangesAsync(cancellationToken);
 }

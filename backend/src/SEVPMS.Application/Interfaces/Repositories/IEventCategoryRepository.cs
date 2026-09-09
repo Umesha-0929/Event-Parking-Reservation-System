@@ -8,5 +8,7 @@ public interface IEventCategoryRepository
     Task<EventCategory?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<EventCategory?> FindActiveAsync(string nameOrCode, CancellationToken cancellationToken = default);
     Task AddAsync(EventCategory category, CancellationToken cancellationToken = default);
+    Task<bool> IsUsedAsync(Guid id, CancellationToken cancellationToken = default);
+    Task DeleteAsync(EventCategory category, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

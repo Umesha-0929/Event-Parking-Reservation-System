@@ -1,18 +1,14 @@
-
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { VenueFacilityDto } from '../../../core/models/api.models';
 import { DomainApiService } from '../../../core/services/domain-api.service';
 import { httpErrorMessage } from '../../../core/utils/http-error';
-
 @Component({selector:'app-venue-facilities',imports:[FormsModule],templateUrl:'./venue-facilities.html',styleUrl:'./venue-facilities.scss'})
 export class VenueFacilitiesComponent implements OnInit{
- private readonly domain=inject(DomainApiService);
- readonly facilities=signal<VenueFacilityDto[]>([]); readonly loading=signal(true); readonly error=signal(''); readonly busy=signal(false);
- name='';category='General';editing:VenueFacilityDto|null=null;active=true;
- ngOnInit():void{this.load();}
- load():void{this.loading.set(true);this.domain.venueFacilities().subscribe({next:x=>{this.facilities.set(x);this.loading.set(false);},error:e=>{this.loading.set(false);this.error.set(httpErrorMessage(e,'Facilities could not be loaded.'));}});}
- edit(f:VenueFacilityDto):void{this.editing=f;this.name=f.name;this.category=f.category;this.active=f.isActive;}
- reset():void{this.editing=null;this.name='';this.category='General';this.active=true;}
- save():void{if(!this.name.trim()||!this.category.trim()||this.busy())return;this.busy.set(true);const body={name:this.name.trim(),category:this.category.trim(),isActive:this.active};const req=this.editing?this.domain.updateVenueFacility(this.editing.facilityId,body):this.domain.createVenueFacility(body);req.subscribe({next:()=>{this.busy.set(false);this.reset();this.load();},error:e=>{this.busy.set(false);this.error.set(httpErrorMessage(e,'Facility could not be saved.'));}});}
+ private readonly domain=inject(DomainApiService);readonly facilities=signal<VenueFacilityDto[]>([]);readonly loading=signal(true);readonly error=signal('');readonly success=signal('');readonly busyId=signal('');name='';category='General';editing:VenueFacilityDto|null=null;active=true;
+ ngOnInit():void{this.load();} load():void{this.loading.set(true);this.domain.adminVenueFacilities().subscribe({next:x=>{this.facilities.set(x);this.loading.set(false);},error:e=>{this.loading.set(false);this.error.set(httpErrorMessage(e,'Facilities could not be loaded.'));}});}
+ edit(f:VenueFacilityDto):void{this.editing=f;this.name=f.name;this.category=f.category;this.active=f.isActive;} reset():void{this.editing=null;this.name='';this.category='General';this.active=true;}
+ save():void{if(!this.name.trim()||!this.category.trim()||this.busyId())return;this.busyId.set(this.editing?.facilityId||'new');const body={name:this.name.trim(),category:this.category.trim(),isActive:this.active};const req=this.editing?this.domain.updateVenueFacility(this.editing.facilityId,body):this.domain.createVenueFacility(body);req.subscribe({next:()=>{this.busyId.set('');this.success.set(this.editing?'Facility updated.':'Facility created.');this.reset();this.load();},error:e=>{this.busyId.set('');this.error.set(httpErrorMessage(e,'Facility could not be saved.'));}});}
+ setActive(f:VenueFacilityDto,isActive:boolean):void{if(this.busyId())return;this.busyId.set(f.facilityId);this.domain.updateVenueFacility(f.facilityId,{name:f.name,category:f.category,isActive}).subscribe({next:()=>{this.busyId.set('');this.success.set(isActive?'Facility activated.':'Facility deactivated.');this.load();},error:e=>{this.busyId.set('');this.error.set(httpErrorMessage(e,'Facility status could not be changed.'));}});}
+ remove(f:VenueFacilityDto):void{if(f.isActive||this.busyId()||!confirm(`Delete inactive facility “${f.name}” permanently? It must first be removed from every venue.`))return;this.busyId.set(f.facilityId);this.domain.deleteVenueFacilityPermanent(f.facilityId).subscribe({next:()=>{this.busyId.set('');this.success.set('Unused facility deleted permanently.');this.load();},error:e=>{this.busyId.set('');this.error.set(httpErrorMessage(e,'This facility could not be permanently deleted.'));}});}
 }

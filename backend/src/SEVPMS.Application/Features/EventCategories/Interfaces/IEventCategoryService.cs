@@ -8,4 +8,5 @@ public interface IEventCategoryService
     Task<EventCategoryResponse> CreateAsync(UpsertEventCategoryRequest request, CancellationToken cancellationToken = default);
     Task<EventCategoryResponse> UpdateAsync(Guid id, UpsertEventCategoryRequest request, CancellationToken cancellationToken = default);
     Task DeactivateAsync(Guid id, CancellationToken cancellationToken = default);
+    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

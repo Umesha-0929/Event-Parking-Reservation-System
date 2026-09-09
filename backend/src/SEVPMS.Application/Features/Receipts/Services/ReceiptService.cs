@@ -32,6 +32,11 @@ public sealed class ReceiptService(
         return Map(receipt);
     }
 
+    public async Task<IReadOnlyList<ReceiptResponse>> GetRecentAdminAsync(
+        int take = 100,
+        CancellationToken cancellationToken = default)
+        => (await receiptRepository.GetRecentAsync(take, cancellationToken)).Select(Map).ToList();
+
     public async Task<ReceiptResponse> IssueAsync(
         Guid paymentId,
         Guid bookingId,

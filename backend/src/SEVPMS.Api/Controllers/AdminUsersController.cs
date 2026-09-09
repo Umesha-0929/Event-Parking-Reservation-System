@@ -23,10 +23,14 @@ public sealed class AdminUsersController(
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<AdminUserResponse>>>
         GetAllUsers(
+            [FromQuery] int page,
+            [FromQuery] int pageSize,
             CancellationToken cancellationToken)
     {
         var users =
-            await adminUserService.GetAllUsersAsync(
+            await adminUserService.GetUsersPageAsync(
+                page == 0 ? 1 : page,
+                pageSize == 0 ? 50 : pageSize,
                 cancellationToken);
 
         return Ok(users);
