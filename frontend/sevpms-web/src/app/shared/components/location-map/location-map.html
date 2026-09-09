@@ -1,0 +1,35 @@
+<div class="map-shell" [style.height.px]="height">
+  <iframe class="map-base" [src]="mapUrl()" loading="lazy" title="OpenStreetMap"></iframe>
+  <div #overlay class="map-overlay" [class.selectable]="selectable" (click)="choose($event, overlay)">
+    @for (pin of pins; track pin.id) {
+      <button
+        type="button"
+        class="map-pin"
+        [class.map-pin--venue]="pin.kind === 'venue'"
+        [class.map-pin--event]="pin.kind === 'event'"
+        [class.map-pin--food]="pin.kind === 'food'"
+        [class.map-pin--place]="pin.kind === 'place'"
+        [style.left]="pinStyle(pin)['left']"
+        [style.top]="pinStyle(pin)['top']"
+        [title]="pin.name + (pin.subtitle ? ' · ' + pin.subtitle : '')"
+        (click)="$event.stopPropagation(); pinSelected.emit(pin)"
+      ><span></span><b>{{ pin.name }}</b></button>
+    }
+    @if (selectedPin(); as selected) {
+      <div
+        class="map-pin map-pin--selected selected-marker"
+        [style.left]="pinStyle(selected)['left']"
+        [style.top]="pinStyle(selected)['top']"
+      ><span></span><b>Selected location</b></div>
+    }
+  </div>
+  <div class="map-controls">
+    <button type="button" (click)="zoomBy(1.5)">＋</button>
+    <button type="button" (click)="zoomBy(.67)">−</button>
+    @if (selectable) { <button class="locate" type="button" (click)="useMyLocation()">◎ My location</button> }
+  </div>
+  @if (reverseBusy()) { <div class="map-busy">Finding address…</div> }
+</div>
+<div class="map-legend">
+  <span class="venue">Venue</span><span class="event">Event</span><span class="food">Food stall</span><span class="place">Nearby place</span>
+</div>
