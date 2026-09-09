@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SEVPMS.Application.Common.Paging;
 using SEVPMS.Application.Features.Parking.Interfaces;
 using SEVPMS.Domain.Entities.Parking;
 
@@ -17,6 +18,22 @@ public sealed class ParkingRepository(
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<ParkingZone>> GetZonesByVenuePageAsync(
+        Guid venueId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (_, size, skip) = PagingRules.Normalize(page, pageSize);
+        return await dbContext.Set<ParkingZone>()
+            .AsNoTracking()
+            .Where(zone => zone.VenueId == venueId)
+            .OrderBy(zone => zone.Name)
+            .Skip(skip)
+            .Take(size)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<ParkingSlot>> GetSlotsByZoneAsync(
         Guid parkingZoneId,
         CancellationToken cancellationToken = default)
@@ -24,6 +41,22 @@ public sealed class ParkingRepository(
         return await dbContext
             .Set<ParkingSlot>()
             .Where(slot => slot.ParkingZoneId == parkingZoneId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ParkingSlot>> GetSlotsByZonePageAsync(
+        Guid parkingZoneId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (_, size, skip) = PagingRules.Normalize(page, pageSize);
+        return await dbContext.Set<ParkingSlot>()
+            .AsNoTracking()
+            .Where(slot => slot.ParkingZoneId == parkingZoneId)
+            .OrderBy(slot => slot.SlotCode)
+            .Skip(skip)
+            .Take(size)
             .ToListAsync(cancellationToken);
     }
 

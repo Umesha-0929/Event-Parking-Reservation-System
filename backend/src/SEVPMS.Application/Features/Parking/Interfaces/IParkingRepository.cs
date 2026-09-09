@@ -8,9 +8,27 @@ public interface IParkingRepository
         Guid venueId,
         CancellationToken cancellationToken = default);
 
+    async Task<IReadOnlyList<ParkingZone>> GetZonesByVenuePageAsync(
+        Guid venueId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var all = await GetZonesByVenueAsync(venueId, cancellationToken);
+        var safePage = Math.Max(page, 1);
+        var safePageSize = Math.Clamp(pageSize, 1, 200);
+        return all.Skip((safePage - 1) * safePageSize).Take(safePageSize).ToArray();
+    }
+
     Task<IReadOnlyList<ParkingSlot>> GetSlotsByZoneAsync(
         Guid parkingZoneId,
         CancellationToken cancellationToken = default);
+
+    async Task<IReadOnlyList<ParkingSlot>> GetSlotsByZonePageAsync(
+        Guid parkingZoneId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var all = await GetSlotsByZoneAsync(parkingZoneId, cancellationToken);
+        var safePage = Math.Max(page, 1);
+        var safePageSize = Math.Clamp(pageSize, 1, 200);
+        return all.Skip((safePage - 1) * safePageSize).Take(safePageSize).ToArray();
+    }
 
     Task<ParkingSlot?> GetSlotByIdAsync(
         Guid parkingSlotId,
