@@ -1,10 +1,14 @@
-﻿@baseUrl = http://localhost:5000
+@baseUrl = http://localhost:5000
 
 # Replace these with real IDs while testing.
 @eventId = 11111111-1111-1111-1111-111111111111
 @organizerId = 22222222-2222-2222-2222-222222222222
 @customerId = 33333333-3333-3333-3333-333333333333
 @scannerId = 44444444-4444-4444-4444-444444444444
+
+@organizerToken = REPLACE_ORGANIZER_ACCESS_TOKEN
+@customerToken = REPLACE_CUSTOMER_ACCESS_TOKEN
+@scannerToken = REPLACE_AUTHORIZED_SCANNER_ACCESS_TOKEN
 
 # Paste IDs returned by previous requests.
 @sectionId = 55555555-5555-5555-5555-555555555555
@@ -21,8 +25,7 @@
 ### 1 - Configure organizer 2D seating layout
 PUT {{baseUrl}}/api/events/{{eventId}}/seating-layout
 Content-Type: application/json
-X-SEVPMS-Demo-UserId: {{organizerId}}
-X-SEVPMS-Demo-Role: Organizer
+Authorization: Bearer {{organizerToken}}
 
 {
   "stageType": 4,
@@ -40,8 +43,7 @@ X-SEVPMS-Demo-Role: Organizer
 ### 2 - Create Premium section
 PUT {{baseUrl}}/api/events/{{eventId}}/seating-layout/sections
 Content-Type: application/json
-X-SEVPMS-Demo-UserId: {{organizerId}}
-X-SEVPMS-Demo-Role: Organizer
+Authorization: Bearer {{organizerToken}}
 
 {
   "id": null,
@@ -62,8 +64,7 @@ X-SEVPMS-Demo-Role: Organizer
 ### 3 - Create Premium category and price
 PUT {{baseUrl}}/api/events/{{eventId}}/seating-layout/categories
 Content-Type: application/json
-X-SEVPMS-Demo-UserId: {{organizerId}}
-X-SEVPMS-Demo-Role: Organizer
+Authorization: Bearer {{organizerToken}}
 
 {
   "id": null,
@@ -78,8 +79,7 @@ X-SEVPMS-Demo-Role: Organizer
 ### 4 - Generate seats with accessibility, unavailable seat and aisle gap
 POST {{baseUrl}}/api/events/{{eventId}}/seating-layout/generate-seats
 Content-Type: application/json
-X-SEVPMS-Demo-UserId: {{organizerId}}
-X-SEVPMS-Demo-Role: Organizer
+Authorization: Bearer {{organizerToken}}
 
 {
   "sectionId": "{{sectionId}}",
@@ -116,15 +116,13 @@ X-SEVPMS-Demo-Role: Organizer
 
 ### 5 - Organizer preview
 GET {{baseUrl}}/api/events/{{eventId}}/seating-layout/organizer
-X-SEVPMS-Demo-UserId: {{organizerId}}
-X-SEVPMS-Demo-Role: Organizer
+Authorization: Bearer {{organizerToken}}
 
 
 ### 6 - Publish layout
 PUT {{baseUrl}}/api/events/{{eventId}}/seating-layout/publish
 Content-Type: application/json
-X-SEVPMS-Demo-UserId: {{organizerId}}
-X-SEVPMS-Demo-Role: Organizer
+Authorization: Bearer {{organizerToken}}
 
 {
   "publish": true
@@ -142,8 +140,7 @@ GET {{baseUrl}}/api/events/{{eventId}}/seats
 ### 9 - Customer holds a seat
 POST {{baseUrl}}/api/events/{{eventId}}/seat-holds
 Content-Type: application/json
-X-SEVPMS-Demo-UserId: {{customerId}}
-X-SEVPMS-Demo-Role: Customer
+Authorization: Bearer {{customerToken}}
 
 {
   "seatIds": [
@@ -163,15 +160,13 @@ GET {{baseUrl}}/api/events/{{eventId}}/seats
 
 ### 12 - Organizer/admin recovery commit of hold to booking
 POST {{baseUrl}}/api/seat-holds/{{holdToken}}/commit?bookingId={{bookingId}}&customerUserId={{customerId}}
-X-SEVPMS-Demo-UserId: {{organizerId}}
-X-SEVPMS-Demo-Role: Organizer
+Authorization: Bearer {{organizerToken}}
 
 
 ### 13 - Issue ticket after verified booking/payment
 POST {{baseUrl}}/api/bookings/{{bookingId}}/tickets/issue
 Content-Type: application/json
-X-SEVPMS-Demo-UserId: {{organizerId}}
-X-SEVPMS-Demo-Role: Organizer
+Authorization: Bearer {{organizerToken}}
 
 {
   "eventId": "{{eventId}}",
@@ -183,21 +178,18 @@ X-SEVPMS-Demo-Role: Organizer
 
 ### 14 - Get booking tickets
 GET {{baseUrl}}/api/bookings/{{bookingId}}/tickets
-X-SEVPMS-Demo-UserId: {{customerId}}
-X-SEVPMS-Demo-Role: Customer
+Authorization: Bearer {{customerToken}}
 
 
 ### 15 - Read ticket by ticket number
 GET {{baseUrl}}/api/tickets/{{ticketNo}}
-X-SEVPMS-Demo-UserId: {{customerId}}
-X-SEVPMS-Demo-Role: Customer
+Authorization: Bearer {{customerToken}}
 
 
 ### 16 - First QR check-in should be Accepted
 POST {{baseUrl}}/api/events/{{eventId}}/check-ins/scan
 Content-Type: application/json
-X-SEVPMS-Demo-UserId: {{scannerId}}
-X-SEVPMS-Demo-Role: Organizer
+Authorization: Bearer {{scannerToken}}
 
 {
   "qrPayload": "{{qrPayload}}",
@@ -208,8 +200,7 @@ X-SEVPMS-Demo-Role: Organizer
 ### 17 - Scan same QR again; should return Duplicate
 POST {{baseUrl}}/api/events/{{eventId}}/check-ins/scan
 Content-Type: application/json
-X-SEVPMS-Demo-UserId: {{scannerId}}
-X-SEVPMS-Demo-Role: Organizer
+Authorization: Bearer {{scannerToken}}
 
 {
   "qrPayload": "{{qrPayload}}",

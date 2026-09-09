@@ -45,3 +45,6 @@ Thumbs.db
 TestResults/
 coverage/
 *.trx
+
+# Local runtime media uploads
+backend/src/SEVPMS.Api/App_Data/uploads/
