@@ -53,6 +53,17 @@ public sealed class VenueMarketplaceService(
         return Map(entity);
     }
 
+    public async Task DeleteFacilityAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var facility = await marketplaceRepository.GetFacilityAsync(id, cancellationToken)
+            ?? throw new KeyNotFoundException("Venue facility was not found.");
+        if (facility.IsActive) throw new InvalidOperationException("Deactivate the facility before deleting it permanently.");
+        if (await marketplaceRepository.IsFacilityUsedAsync(id, cancellationToken)) throw new InvalidOperationException("This facility is still linked to a venue. Remove it from venues before deleting it.");
+        await marketplaceRepository.DeleteFacilityAsync(facility, cancellationToken);
+        await marketplaceRepository.SaveChangesAsync(cancellationToken);
+    }
+
+
     public async Task<VenueMarketplaceResponse> GetVenueAsync(
         Guid venueId,
         CancellationToken cancellationToken = default)
@@ -272,6 +283,151 @@ public sealed class VenueMarketplaceService(
             LayoutJson = entity.LayoutJson,
             IsActive = entity.IsActive
         };
+    }
+
+    public async Task<VenueMediaResponse> UpdateMediaAsync(
+        Guid ownerUserId,
+        Guid venueId,
+        Guid mediaId,
+        AddVenueMediaRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureOwnerAsync(ownerUserId, venueId, cancellationToken);
+        if (string.IsNullOrWhiteSpace(request.Url)) throw new ArgumentException("Media URL is required.");
+        var entity = await marketplaceRepository.GetMediaByIdAsync(mediaId, cancellationToken)
+            ?? throw new KeyNotFoundException("Venue media was not found.");
+        if (entity.VenueId != venueId) throw new ForbiddenAccessException("This media does not belong to the selected venue.");
+        entity.Url = request.Url.Trim();
+        entity.Type = string.IsNullOrWhiteSpace(request.Type) ? "Photo" : request.Type.Trim();
+        entity.SortOrder = request.SortOrder;
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+        await marketplaceRepository.SaveChangesAsync(cancellationToken);
+        return new VenueMediaResponse { VenueMediaId = entity.Id, Url = entity.Url, Type = entity.Type, SortOrder = entity.SortOrder };
+    }
+
+    public async Task DeleteMediaAsync(
+        Guid ownerUserId,
+        Guid venueId,
+        Guid mediaId,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureOwnerAsync(ownerUserId, venueId, cancellationToken);
+        var entity = await marketplaceRepository.GetMediaByIdAsync(mediaId, cancellationToken)
+            ?? throw new KeyNotFoundException("Venue media was not found.");
+        if (entity.VenueId != venueId) throw new ForbiddenAccessException("This media does not belong to the selected venue.");
+        marketplaceRepository.DeleteMedia(entity);
+        await marketplaceRepository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<VenueRateResponse> UpdateRateAsync(
+        Guid ownerUserId,
+        Guid venueId,
+        Guid rateId,
+        AddVenueRateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureOwnerAsync(ownerUserId, venueId, cancellationToken);
+        if (request.Amount < 0) throw new ArgumentException("Venue rate cannot be negative.");
+        if (request.ValidFromUtc.HasValue && request.ValidToUtc.HasValue && request.ValidToUtc <= request.ValidFromUtc)
+            throw new ArgumentException("Venue rate end date must be later than start date.");
+        var entity = await marketplaceRepository.GetRateByIdAsync(rateId, cancellationToken)
+            ?? throw new KeyNotFoundException("Venue rate was not found.");
+        if (entity.VenueId != venueId) throw new ForbiddenAccessException("This rate does not belong to the selected venue.");
+        entity.RateType = string.IsNullOrWhiteSpace(request.RateType) ? "Hourly" : request.RateType.Trim();
+        entity.Amount = request.Amount;
+        entity.Currency = string.IsNullOrWhiteSpace(request.Currency) ? "LKR" : request.Currency.Trim().ToUpperInvariant();
+        entity.ValidFromUtc = request.ValidFromUtc;
+        entity.ValidToUtc = request.ValidToUtc;
+        entity.IsActive = true;
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+        await marketplaceRepository.SaveChangesAsync(cancellationToken);
+        return new VenueRateResponse { VenueRateId = entity.Id, RateType = entity.RateType, Amount = entity.Amount, Currency = entity.Currency, ValidFromUtc = entity.ValidFromUtc, ValidToUtc = entity.ValidToUtc };
+    }
+
+    public async Task DeleteRateAsync(
+        Guid ownerUserId,
+        Guid venueId,
+        Guid rateId,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureOwnerAsync(ownerUserId, venueId, cancellationToken);
+        var entity = await marketplaceRepository.GetRateByIdAsync(rateId, cancellationToken)
+            ?? throw new KeyNotFoundException("Venue rate was not found.");
+        if (entity.VenueId != venueId) throw new ForbiddenAccessException("This rate does not belong to the selected venue.");
+        marketplaceRepository.DeleteRate(entity);
+        await marketplaceRepository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<VenueAvailabilityResponse> UpdateAvailabilityAsync(
+        Guid ownerUserId,
+        Guid venueId,
+        Guid availabilityId,
+        AddVenueAvailabilityRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureOwnerAsync(ownerUserId, venueId, cancellationToken);
+        if (request.EndAtUtc <= request.StartAtUtc) throw new ArgumentException("Availability end time must be later than start time.");
+        var entity = await marketplaceRepository.GetAvailabilityByIdAsync(availabilityId, cancellationToken)
+            ?? throw new KeyNotFoundException("Venue availability entry was not found.");
+        if (entity.VenueId != venueId) throw new ForbiddenAccessException("This availability entry does not belong to the selected venue.");
+        entity.StartAtUtc = request.StartAtUtc;
+        entity.EndAtUtc = request.EndAtUtc;
+        entity.Type = request.Type;
+        entity.Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+        await marketplaceRepository.SaveChangesAsync(cancellationToken);
+        return new VenueAvailabilityResponse { VenueAvailabilityId = entity.Id, StartAtUtc = entity.StartAtUtc, EndAtUtc = entity.EndAtUtc, Type = entity.Type, Notes = entity.Notes };
+    }
+
+    public async Task DeleteAvailabilityAsync(
+        Guid ownerUserId,
+        Guid venueId,
+        Guid availabilityId,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureOwnerAsync(ownerUserId, venueId, cancellationToken);
+        var entity = await marketplaceRepository.GetAvailabilityByIdAsync(availabilityId, cancellationToken)
+            ?? throw new KeyNotFoundException("Venue availability entry was not found.");
+        if (entity.VenueId != venueId) throw new ForbiddenAccessException("This availability entry does not belong to the selected venue.");
+        marketplaceRepository.DeleteAvailability(entity);
+        await marketplaceRepository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<VenueLayoutTemplateResponse> UpdateLayoutTemplateAsync(
+        Guid ownerUserId,
+        Guid venueId,
+        Guid layoutId,
+        AddVenueLayoutTemplateRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureOwnerAsync(ownerUserId, venueId, cancellationToken);
+        if (string.IsNullOrWhiteSpace(request.Name)) throw new ArgumentException("Layout template name is required.");
+        if (request.Version <= 0) throw new ArgumentException("Layout template version must be positive.");
+        if (string.IsNullOrWhiteSpace(request.LayoutJson)) throw new ArgumentException("Layout metadata is required.");
+        var entity = await marketplaceRepository.GetLayoutTemplateByIdAsync(layoutId, cancellationToken)
+            ?? throw new KeyNotFoundException("Venue layout template was not found.");
+        if (entity.VenueId != venueId) throw new ForbiddenAccessException("This layout template does not belong to the selected venue.");
+        entity.Name = request.Name.Trim();
+        entity.Version = request.Version;
+        entity.LayoutJson = request.LayoutJson.Trim();
+        entity.IsActive = true;
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+        await marketplaceRepository.SaveChangesAsync(cancellationToken);
+        return new VenueLayoutTemplateResponse { VenueLayoutTemplateId = entity.Id, Name = entity.Name, Version = entity.Version, LayoutJson = entity.LayoutJson, IsActive = entity.IsActive };
+    }
+
+    public async Task DeleteLayoutTemplateAsync(
+        Guid ownerUserId,
+        Guid venueId,
+        Guid layoutId,
+        CancellationToken cancellationToken = default)
+    {
+        await EnsureOwnerAsync(ownerUserId, venueId, cancellationToken);
+        var entity = await marketplaceRepository.GetLayoutTemplateByIdAsync(layoutId, cancellationToken)
+            ?? throw new KeyNotFoundException("Venue layout template was not found.");
+        if (entity.VenueId != venueId) throw new ForbiddenAccessException("This layout template does not belong to the selected venue.");
+        marketplaceRepository.DeleteLayoutTemplate(entity);
+        await marketplaceRepository.SaveChangesAsync(cancellationToken);
     }
 
     private async Task EnsureOwnerAsync(

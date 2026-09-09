@@ -27,6 +27,16 @@ public sealed class VenueMarketplaceRepository(SEVPMSDbContext dbContext) : IVen
     public async Task AddFacilityAsync(VenueFacility facility, CancellationToken cancellationToken = default)
         => await dbContext.Set<VenueFacility>().AddAsync(facility, cancellationToken);
 
+    public Task<bool> IsFacilityUsedAsync(Guid id, CancellationToken cancellationToken = default)
+        => dbContext.Set<VenueFacilityLink>().AsNoTracking().AnyAsync(x => x.FacilityId == id, cancellationToken);
+
+    public Task DeleteFacilityAsync(VenueFacility facility, CancellationToken cancellationToken = default)
+    {
+        dbContext.Set<VenueFacility>().Remove(facility);
+        return Task.CompletedTask;
+    }
+
+
     public async Task<IReadOnlyList<VenueFacilityLink>> GetFacilityLinksAsync(
         Guid venueId,
         CancellationToken cancellationToken = default)
@@ -66,8 +76,13 @@ public sealed class VenueMarketplaceRepository(SEVPMSDbContext dbContext) : IVen
             .OrderBy(x => x.SortOrder)
             .ToListAsync(cancellationToken);
 
+    public Task<VenueMedia?> GetMediaByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => dbContext.Set<VenueMedia>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
     public async Task AddMediaAsync(VenueMedia media, CancellationToken cancellationToken = default)
         => await dbContext.Set<VenueMedia>().AddAsync(media, cancellationToken);
+
+    public void DeleteMedia(VenueMedia media) => dbContext.Set<VenueMedia>().Remove(media);
 
     public async Task<IReadOnlyList<VenueRate>> GetRatesAsync(
         Guid venueId,
@@ -78,8 +93,13 @@ public sealed class VenueMarketplaceRepository(SEVPMSDbContext dbContext) : IVen
             .OrderBy(x => x.Amount)
             .ToListAsync(cancellationToken);
 
+    public Task<VenueRate?> GetRateByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => dbContext.Set<VenueRate>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
     public async Task AddRateAsync(VenueRate rate, CancellationToken cancellationToken = default)
         => await dbContext.Set<VenueRate>().AddAsync(rate, cancellationToken);
+
+    public void DeleteRate(VenueRate rate) => dbContext.Set<VenueRate>().Remove(rate);
 
     public async Task<IReadOnlyList<VenueAvailability>> GetAvailabilityAsync(
         Guid venueId,
@@ -89,6 +109,9 @@ public sealed class VenueMarketplaceRepository(SEVPMSDbContext dbContext) : IVen
             .Where(x => x.VenueId == venueId)
             .OrderBy(x => x.StartAtUtc)
             .ToListAsync(cancellationToken);
+
+    public Task<VenueAvailability?> GetAvailabilityByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => dbContext.Set<VenueAvailability>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
     public Task<bool> HasBlockingAvailabilityAsync(
         Guid venueId,
@@ -109,6 +132,9 @@ public sealed class VenueMarketplaceRepository(SEVPMSDbContext dbContext) : IVen
         CancellationToken cancellationToken = default)
         => await dbContext.Set<VenueAvailability>().AddAsync(availability, cancellationToken);
 
+    public void DeleteAvailability(VenueAvailability availability)
+        => dbContext.Set<VenueAvailability>().Remove(availability);
+
     public async Task<IReadOnlyList<VenueLayoutTemplate>> GetLayoutTemplatesAsync(
         Guid venueId,
         CancellationToken cancellationToken = default)
@@ -119,10 +145,16 @@ public sealed class VenueMarketplaceRepository(SEVPMSDbContext dbContext) : IVen
             .ThenByDescending(x => x.Version)
             .ToListAsync(cancellationToken);
 
+    public Task<VenueLayoutTemplate?> GetLayoutTemplateByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        => dbContext.Set<VenueLayoutTemplate>().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
     public async Task AddLayoutTemplateAsync(
         VenueLayoutTemplate template,
         CancellationToken cancellationToken = default)
         => await dbContext.Set<VenueLayoutTemplate>().AddAsync(template, cancellationToken);
+
+    public void DeleteLayoutTemplate(VenueLayoutTemplate template)
+        => dbContext.Set<VenueLayoutTemplate>().Remove(template);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         => dbContext.SaveChangesAsync(cancellationToken);
