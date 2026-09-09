@@ -93,6 +93,10 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
   }
 
   seatStyle(seat: PublishedSeatDto): Record<string, string> { return { left: `${seat.x}px`, top: `${seat.y}px` }; }
+  stageClass(): string {
+    const type = Number(this.layout()?.stageType) || 2;
+    return ['arena', 'proscenium', 'end-on', 'thrust', 'traverse', 'in-round'][type - 1] ?? 'proscenium';
+  }
   setZoom(delta:number):void{this.zoom.update((value)=>Math.min(1.6,Math.max(.6,Number((value+delta).toFixed(2)))));}
 
   holdSelection(): void {
