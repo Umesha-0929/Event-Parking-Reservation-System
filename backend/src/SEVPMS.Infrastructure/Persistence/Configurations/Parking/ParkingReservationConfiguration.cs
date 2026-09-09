@@ -21,6 +21,7 @@ public sealed class ParkingReservationConfiguration
             .IsRequired();
 
         builder.Property(x => x.VehicleRegSnapshot)
+            .HasMaxLength(40)
             .IsRequired();
 
         builder.Property(x => x.Status)

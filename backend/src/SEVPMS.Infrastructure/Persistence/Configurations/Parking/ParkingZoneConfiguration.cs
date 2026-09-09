@@ -17,12 +17,15 @@ public sealed class ParkingZoneConfiguration
             .IsRequired();
 
         builder.Property(zone => zone.Name)
+            .HasMaxLength(160)
             .IsRequired();
 
         builder.Property(zone => zone.Level)
+            .HasMaxLength(80)
             .IsRequired();
 
         builder.Property(zone => zone.EntranceName)
+            .HasMaxLength(160)
             .IsRequired();
     }
 }
