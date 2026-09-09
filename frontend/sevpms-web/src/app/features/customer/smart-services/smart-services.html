@@ -1,0 +1,436 @@
+<section class="smart-page">
+  <header class="smart-hero">
+    <div>
+      <span class="eyebrow">Customer smart services</span>
+      <h1>Everything you need for your event day — in one place.</h1>
+      <p>Recommendations, event weather, reviews, waitlists, booking calendar, refunds, receipts and smart parking.</p>
+    </div>
+  </header>
+
+  <nav class="smart-tabs" aria-label="Smart service sections">
+    <button type="button" [class.active]="tab() === 'events'" (click)="setTab('events')">Event assistant</button>
+    <button type="button" [class.active]="tab() === 'bookings'" (click)="setTab('bookings')">Booking tools</button>
+    <button type="button" [class.active]="tab() === 'receipts'" (click)="setTab('receipts')">Receipts</button>
+    <button type="button" [class.active]="tab() === 'parking'" (click)="setTab('parking')">Smart parking</button>
+  </nav>
+
+  @if (message()) {
+    <div class="notice success">{{ message() }}</div>
+  }
+  @if (error()) {
+    <div class="notice error">{{ error() }}</div>
+  }
+
+  @if (tab() === 'events') {
+    <div class="section-grid">
+      <article class="panel wide">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">For you</span>
+            <h2>Event recommendations</h2>
+          </div>
+          <button class="ghost" type="button" (click)="loadRecommendations()">Refresh</button>
+        </div>
+
+        <label class="field">
+          <span>Preferred categories <small>optional, comma separated</small></span>
+          <input aria-label="Concert, Sports, Theatre" [(ngModel)]="preferredCategories" placeholder="Concert, Sports, Theatre">
+        </label>
+
+        @if (recommendations().length) {
+          <div class="recommend-grid">
+            @for (item of recommendations(); track item.eventId) {
+              <button class="recommend-card" type="button" (click)="openRecommendedEvent(item.eventId)">
+                <span class="score">{{ item.recommendationScore }}</span>
+                <strong>{{ item.title }}</strong>
+                <small>{{ item.category }} · {{ formatDate(item.startAtUtc) }}</small>
+                <p>{{ item.description }}</p>
+                @if (item.reasons.length) {
+                  <div class="chips">
+                    @for (reason of item.reasons; track reason) { <span>{{ reason }}</span> }
+                  </div>
+                }
+                <b>Open event →</b>
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="empty">No recommendations are available yet.</div>
+        }
+      </article>
+
+      <article class="panel wide">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">Event assistant</span>
+            <h2>Weather, reviews & waitlist</h2>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <label class="field grow">
+            <span>Event</span>
+            <select aria-label="Selected event" [(ngModel)]="selectedEventId">
+              <option value="">Choose an event</option>
+              @for (event of events(); track eventId(event)) {
+                <option [value]="eventId(event)">{{ eventName(event) }}</option>
+              }
+            </select>
+          </label>
+          <button class="primary" type="button" (click)="loadEventTools()" [disabled]="busy()">
+            {{ busy() ? 'Loading…' : 'Load event tools' }}
+          </button>
+        </div>
+
+        <div class="event-tools-grid">
+          <section class="mini-card">
+            <span class="eyebrow">Weather</span>
+            @if (weather(); as w) {
+              <h3>{{ w.condition || (w.available ? 'Forecast available' : 'Unavailable') }}</h3>
+              <p>{{ w.venueName }} · {{ w.location }}</p>
+              @if (w.available) {
+                <div class="metric-row">
+                  <div><strong>{{ w.minimumTemperatureC ?? '—' }}°C</strong><span>Min</span></div>
+                  <div><strong>{{ w.maximumTemperatureC ?? '—' }}°C</strong><span>Max</span></div>
+                  <div><strong>{{ w.precipitationProbabilityPercent ?? '—' }}%</strong><span>Rain</span></div>
+                  <div><strong>{{ w.maximumWindSpeedKmh ?? '—' }}</strong><span>km/h wind</span></div>
+                </div>
+              }
+              @if (w.warning) { <div class="weather-warning">{{ w.warning }}</div> }
+              @if (w.message) { <small>{{ w.message }}</small> }
+            } @else {
+              <div class="empty compact">Choose an event and load its forecast.</div>
+            }
+          </section>
+
+          <section class="mini-card">
+            <span class="eyebrow">Waitlist</span>
+            @if (waitlist(); as entry) {
+              <h3>{{ waitlistStatus(entry.status) }}</h3>
+              <p>
+                @if (entry.position) { Position {{ entry.position }} · }
+                Joined {{ formatDate(entry.joinedAtUtc) }}
+              </p>
+              <button class="danger-link" type="button" (click)="leaveWaitlist()">Leave waitlist</button>
+            } @else {
+              <h3>Not on the waitlist</h3>
+              <p>If this event offers a waitlist, you can join here.</p>
+              <button class="secondary" type="button" (click)="joinWaitlist()" [disabled]="!selectedEventId">Join waitlist</button>
+            }
+          </section>
+        </div>
+
+        <div class="review-layout">
+          <section class="mini-card">
+            <div class="panel-head compact-head">
+              <div>
+                <span class="eyebrow">Reviews</span>
+                <h3>What customers say</h3>
+              </div>
+              @if (rating(); as summary) {
+                <span class="rating-pill">★ {{ summary.averageRating ?? 0 }} · {{ summary.reviewCount ?? 0 }}</span>
+              }
+            </div>
+
+            <div class="review-list">
+              @for (review of reviews(); track review.eventReviewId || review.id || review.createdAtUtc) {
+                <article>
+                  <strong>{{ review.customerName || 'Customer' }}</strong>
+                  <span>★ {{ review.rating }}/5</span>
+                  @if (review.title) { <h4>{{ review.title }}</h4> }
+                  @if (review.comment) { <p>{{ review.comment }}</p> }
+                  <small>{{ formatDate(review.createdAtUtc) }}</small>
+                </article>
+              } @empty {
+                <div class="empty compact">No reviews yet.</div>
+              }
+            </div>
+          </section>
+
+          <section class="mini-card">
+            <span class="eyebrow">Your review</span>
+            <h3>Rate this event</h3>
+            <div class="two-col">
+              <label class="field">
+                <span>Rating</span>
+                <select aria-label="Review rating" [(ngModel)]="reviewRating">
+                  <option [ngValue]="5">5 — Excellent</option>
+                  <option [ngValue]="4">4 — Good</option>
+                  <option [ngValue]="3">3 — Okay</option>
+                  <option [ngValue]="2">2 — Poor</option>
+                  <option [ngValue]="1">1 — Very poor</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Title <small>optional</small></span>
+                <input aria-label="Great experience" [(ngModel)]="reviewTitle" placeholder="Great experience">
+              </label>
+            </div>
+            <label class="field">
+              <span>Comment <small>optional</small></span>
+              <textarea aria-label="Share your experience" [(ngModel)]="reviewComment" rows="4" placeholder="Share your experience"></textarea>
+            </label>
+            <button class="primary" type="button" (click)="submitReview()" [disabled]="!selectedEventId">Submit review</button>
+          </section>
+        </div>
+      </article>
+    </div>
+  }
+
+  @if (tab() === 'bookings') {
+    <article class="panel">
+      <span class="eyebrow">Confirmed bookings</span>
+      <h2>Calendar & refund tools</h2>
+      <p class="lead">Export your calendar and manage eligible confirmed bookings without leaving Nvent.</p>
+
+      <div class="action-row">
+        <label class="field grow">
+          <span>Booking</span>
+          <select aria-label="Selected booking" [(ngModel)]="selectedBookingId">
+            <option value="">Choose a booking</option>
+            @for (booking of bookings(); track bookingId(booking)) {
+              <option [value]="bookingId(booking)">
+                {{ bookingLabel(booking) }} · {{ booking.eventName || 'Event' }} · {{ bookingStatus(booking) }}
+              </option>
+            }
+          </select>
+        </label>
+        <button class="primary" type="button" (click)="loadBookingCalendar()">Load booking tools</button>
+      </div>
+
+      @if (calendar(); as cal) {
+        <div class="calendar-card">
+          <div>
+            <span class="eyebrow">Calendar</span>
+            <h3>{{ cal.eventTitle }}</h3>
+            <p>{{ cal.venueName }} · {{ cal.location }}</p>
+            <small>{{ formatDate(cal.startAtUtc) }} → {{ formatDate(cal.endAtUtc) }}</small>
+          </div>
+          <div class="button-stack">
+            <a class="primary link-btn" [href]="cal.googleCalendarUrl" target="_blank" rel="noopener">Add to Google Calendar ↗</a>
+            <button class="secondary" type="button" (click)="downloadIcs()">Download .ics</button>
+          </div>
+        </div>
+      }
+
+      <div class="refund-card">
+        <div>
+          <span class="eyebrow">Cancellation + refund</span>
+          <h3>Cancel a confirmed booking</h3>
+          <p>Eligible confirmed bookings can be cancelled here. Pending, completed or already-cancelled bookings are not eligible.</p>
+        </div>
+        <label class="field">
+          <span>Reason</span>
+          <textarea aria-label="Why are you cancelling?" [(ngModel)]="cancellationReason" rows="3" placeholder="Why are you cancelling?"></textarea>
+        </label>
+        <button
+          class="danger"
+          type="button"
+          (click)="cancelConfirmedBooking()"
+          [disabled]="!selectedBooking() || !isConfirmedBooking(selectedBooking()!)">
+          Cancel confirmed booking & request refund
+        </button>
+
+        @if (refund(); as r) {
+          <div class="refund-result">
+            <strong>{{ refundStatus(r.status) }}</strong>
+            <span>{{ money(r.amount, r.currency) }}</span>
+            <small>Refund reference: {{ r.refundReference || 'Pending provider reference' }}</small>
+          </div>
+        }
+      </div>
+    </article>
+  }
+
+  @if (tab() === 'receipts') {
+    <div class="receipt-layout">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">Receipts</span>
+            <h2>My receipt history</h2>
+          </div>
+          <button class="ghost" type="button" (click)="loadReferenceData()">Refresh</button>
+        </div>
+
+        <div class="receipt-list">
+          @for (receipt of receipts(); track receipt.receiptId) {
+            <button
+              class="receipt-row"
+              type="button"
+              [class.selected]="selectedReceiptId === receipt.receiptId"
+              (click)="chooseReceipt(receipt.receiptId)">
+              <div>
+                <strong>{{ receipt.receiptNumber }}</strong>
+                <small>{{ formatDate(receipt.issuedAtUtc) }}</small>
+              </div>
+              <b>{{ money(receipt.amount, receipt.currency) }}</b>
+            </button>
+          } @empty {
+            <div class="empty">No receipts have been issued yet.</div>
+          }
+        </div>
+      </article>
+
+      <article class="panel">
+        @if (selectedReceipt(); as receipt) {
+          <span class="eyebrow">Receipt detail</span>
+          <h2>{{ receipt.receiptNumber }}</h2>
+          <div class="fact-grid">
+            <div><span>Amount</span><strong>{{ money(receipt.amount, receipt.currency) }}</strong></div>
+            <div><span>Issued</span><strong>{{ formatDate(receipt.issuedAtUtc) }}</strong></div>
+            <div><span>Booking</span><strong class="mono">{{ receipt.bookingId }}</strong></div>
+            <div><span>Payment</span><strong class="mono">{{ receipt.paymentId }}</strong></div>
+          </div>
+
+          <div class="panel-head delivery-head">
+            <div>
+              <span class="eyebrow">Delivery</span>
+              <h3>Email / SMS attempts</h3>
+            </div>
+            <button class="secondary" type="button" (click)="retryReceipt()">Retry delivery</button>
+          </div>
+
+          <div class="delivery-list">
+            @for (delivery of deliveries(); track delivery.receiptDeliveryId) {
+              <div class="delivery-row">
+                <div>
+                  <strong>{{ delivery.channel }}</strong>
+                  <span>{{ delivery.destinationMasked }}</span>
+                </div>
+                <div>
+                  <b [class.bad]="deliveryStatus(delivery.status) === 'Failed'">{{ deliveryStatus(delivery.status) }}</b>
+                  <small>Attempts: {{ delivery.attemptCount }}</small>
+                </div>
+                @if (delivery.lastError) { <p>{{ delivery.lastError }}</p> }
+              </div>
+            } @empty {
+              <div class="empty compact">No delivery records are available for this receipt.</div>
+            }
+          </div>
+        } @else {
+          <div class="empty">Choose a receipt to see its details and delivery history.</div>
+        }
+      </article>
+    </div>
+  }
+
+  @if (tab() === 'parking') {
+    <div class="parking-layout">
+      <article class="panel">
+        <span class="eyebrow">Smart parking</span>
+        <h2>Recommend the best slot</h2>
+        <p class="lead">Choose a venue entrance from the configured parking map and Nvent will recommend the best available slot.</p>
+
+        <label class="field">
+          <span>Venue</span>
+          <select aria-label="Parking venue" [(ngModel)]="parkingVenueId" (ngModelChange)="loadParkingNodes($event, 'recommend')">
+            <option value="">Choose venue</option>
+            @for (venue of venues(); track venueId(venue)) {
+              <option [value]="venueId(venue)">{{ venue.name }}{{ venue.city ? ' · ' + venue.city : '' }}</option>
+            }
+          </select>
+        </label>
+
+        <div class="two-col">
+          <label class="field">
+            <span>Event <small>optional</small></span>
+            <select aria-label="Parking event" [(ngModel)]="parkingEventId">
+              <option value="">No event filter</option>
+              @for (event of events(); track eventId(event)) {
+                <option [value]="eventId(event)">{{ eventName(event) }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Saved vehicle <small>optional</small></span>
+            <select aria-label="Saved vehicle" [(ngModel)]="savedVehicleId">
+              <option value="">No saved vehicle</option>
+              @for (vehicle of vehicles(); track vehicle.id) {
+                <option [value]="vehicle.id">{{ vehicle.nickname }} · {{ vehicle.registrationNo }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Entrance</span>
+          <select aria-label="Entrance" [(ngModel)]="entranceNodeId">
+            <option value="">Choose entrance</option>
+            @for (node of parkingNodes(); track node.id) { <option [value]="node.id">{{ node.nodeCode }} · {{ node.nodeType }}</option> }
+          </select>
+        </label>
+
+        <label class="check">
+          <input aria-label="Accessible parking" type="checkbox" [(ngModel)]="accessibleParking">
+          <span>Accessible parking required</span>
+        </label>
+
+        <button class="primary" type="button" (click)="recommendParking()">Recommend parking</button>
+
+        @if (parkingRecommendation(); as rec) {
+          <div class="parking-result">
+            <span class="slot">{{ rec.slotCode }}</span>
+            <div>
+              <strong>{{ rec.isAccessible ? 'Accessible recommended slot' : 'Recommended slot' }}</strong>
+              <p>{{ rec.reason }}</p>
+              <small>Distance cost: {{ rec.distanceCost }}</small>
+            </div>
+          </div>
+        }
+      </article>
+
+      <article class="panel">
+        <span class="eyebrow">Parking navigation</span>
+        <h2>Find a route through the parking graph</h2>
+
+        <label class="field">
+          <span>Venue</span>
+          <select aria-label="Route venue" [(ngModel)]="routeVenueId" (ngModelChange)="loadParkingNodes($event, 'route')">
+            <option value="">Choose venue</option>
+            @for (venue of venues(); track venueId(venue)) {
+              <option [value]="venueId(venue)">{{ venue.name }}</option>
+            }
+          </select>
+        </label>
+
+        <div class="two-col">
+          <label class="field">
+            <span>Start point</span>
+            <select aria-label="Route start" [(ngModel)]="routeStartNodeId"><option value="">Choose start</option>@for (node of routeNodes(); track node.id) { <option [value]="node.id">{{ node.nodeCode }} · {{ node.nodeType }}</option> }</select>
+          </label>
+          <label class="field">
+            <span>Destination</span>
+            <select aria-label="Route destination" [(ngModel)]="routeEndNodeId"><option value="">Choose destination</option>@for (node of routeNodes(); track node.id) { <option [value]="node.id">{{ node.nodeCode }} · {{ node.nodeType }}</option> }</select>
+          </label>
+        </div>
+
+        <label class="check">
+          <input aria-label="Route accessible only" type="checkbox" [(ngModel)]="routeAccessibleOnly">
+          <span>Use accessible route only</span>
+        </label>
+
+        <button class="primary" type="button" (click)="findParkingRoute()">Find route</button>
+
+        @if (parkingRoute(); as route) {
+          <div class="route-result">
+            <div class="route-summary">
+              <strong>{{ route.nodes.length }} navigation points</strong>
+              <span>Total cost: {{ route.totalCost }}</span>
+            </div>
+            <div class="route-nodes">
+              @for (node of route.nodes; track node.id; let index = $index) {
+                <div>
+                  <span>{{ index + 1 }}</span>
+                  <strong>{{ node.nodeCode || node.nodeType }}</strong>
+                  <small>{{ node.nodeType }} · X {{ node.x }}, Y {{ node.y }}</small>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </article>
+    </div>
+  }
+</section>
