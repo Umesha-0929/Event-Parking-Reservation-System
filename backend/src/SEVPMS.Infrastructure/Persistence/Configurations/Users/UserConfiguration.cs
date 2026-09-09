@@ -47,5 +47,8 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasConversion<string>()
             .HasMaxLength(30)
             .IsRequired();
+
+        builder.Property(x => x.EmailVerificationOtpHash)
+            .HasMaxLength(500);
     }
 }

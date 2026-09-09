@@ -4,8 +4,16 @@ namespace SEVPMS.Application.Features.Auth.Interfaces;
 
 public interface IAuthService
 {
-    Task<AuthResponse> RegisterAsync(
+    Task<RegistrationPendingResponse> RegisterAsync(
         RegisterRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<EmailVerificationResponse> VerifyEmailOtpAsync(
+        VerifyEmailOtpRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<RegistrationPendingResponse> ResendEmailOtpAsync(
+        ResendEmailOtpRequest request,
         CancellationToken cancellationToken = default);
 
     Task<AuthResponse> LoginAsync(

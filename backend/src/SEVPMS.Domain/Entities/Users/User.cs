@@ -27,6 +27,16 @@ public sealed class User : AuditableEntity
 
     public DateTime? LastLoginAtUtc { get; set; }
 
+    public DateTime? EmailVerifiedAtUtc { get; set; }
+
+    public string? EmailVerificationOtpHash { get; set; }
+
+    public DateTime? EmailVerificationOtpExpiresAtUtc { get; set; }
+
+    public DateTime? EmailVerificationOtpSentAtUtc { get; set; }
+
+    public int EmailVerificationFailedAttempts { get; set; }
+
     public ICollection<RefreshToken> RefreshTokens { get; set; }
     = new List<RefreshToken>();
 

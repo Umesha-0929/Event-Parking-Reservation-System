@@ -14,6 +14,7 @@ public sealed class AccountSecurityService(
     IPasswordHasher passwordHasher,
     IRefreshTokenService refreshTokenService,
     IEmailSender emailSender,
+    IApplicationLinkBuilder applicationLinkBuilder,
     IAuditLogService? auditLogService = null)
     : IAccountSecurityService
 {
@@ -94,7 +95,7 @@ public sealed class AccountSecurityService(
         await emailSender.SendAsync(
             user.Email,
             "SEVPMS password reset",
-            $"Use this one-time password reset token within 30 minutes: {rawToken}",
+            $"Open this secure link within 30 minutes to choose a new password: {applicationLinkBuilder.PasswordReset(rawToken)}",
             cancellationToken);
     }
 
