@@ -24,6 +24,15 @@ public sealed class VenueService(
             .ToList();
     }
 
+    public async Task<IReadOnlyList<VenueResponse>> GetActiveVenuesPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+        => (await venueRepository.GetPageAsync(page, pageSize, cancellationToken))
+            .Where(x => x.IsActive)
+            .Select(Map)
+            .ToArray();
+
     public async Task<VenueResponse> GetByIdAsync(
         Guid venueId,
         CancellationToken cancellationToken = default)
@@ -56,6 +65,15 @@ public sealed class VenueService(
             .Select(Map)
             .ToList();
     }
+
+    public async Task<IReadOnlyList<VenueResponse>> GetMyVenuesPageAsync(
+        Guid ownerUserId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+        => (await venueRepository.GetByOwnerPageAsync(ownerUserId, page, pageSize, cancellationToken))
+            .Select(Map)
+            .ToArray();
 
     public async Task<VenueResponse> CreateAsync(
         Guid ownerUserId,
@@ -166,6 +184,16 @@ public sealed class VenueService(
         await venueRepository.SaveChangesAsync(
             cancellationToken);
     }
+
+    public async Task DeletePermanentAsync(Guid ownerUserId, Guid venueId, CancellationToken cancellationToken = default)
+    {
+        var venue = await GetOwnedVenueAsync(ownerUserId, venueId, cancellationToken);
+        if (venue.IsActive) throw new InvalidOperationException("Deactivate the venue before deleting it permanently.");
+        if (await venueRepository.IsReferencedAsync(venueId, cancellationToken)) throw new InvalidOperationException("This venue is referenced by event or rental history and cannot be permanently deleted.");
+        await venueRepository.DeleteAsync(venue, cancellationToken);
+        await venueRepository.SaveChangesAsync(cancellationToken);
+    }
+
 
     private async Task<Venue> GetOwnedVenueAsync(
         Guid ownerUserId,
