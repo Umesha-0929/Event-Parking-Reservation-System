@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using SEVPMS.Application.Common.Exceptions;
 using SEVPMS.Application.Features.Audit.Interfaces;
 using SEVPMS.Application.Features.Notifications.Interfaces;
@@ -26,7 +28,9 @@ public sealed class PaymentService(
     IAuditLogService? auditLogService = null,
     ISeatService? seatService = null,
     ITicketService? ticketService = null,
-    IPayHereGatewayService? payHereGatewayService = null)
+    IPayHereGatewayService? payHereGatewayService = null,
+    IUserRepository? userRepository = null,
+    IEventRepository? eventRepository = null)
     : IPaymentService
 {
     public async Task<IReadOnlyList<PaymentResponse>> GetMineAsync(
@@ -35,6 +39,16 @@ public sealed class PaymentService(
         => (await paymentRepository.GetByCustomerAsync(customerUserId, cancellationToken))
             .Select(Map)
             .ToList();
+
+    public async Task<IReadOnlyList<PaymentResponse>> GetMinePageAsync(
+        Guid customerUserId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+        => (await paymentRepository.GetByCustomerPageAsync(
+                customerUserId, page, pageSize, cancellationToken))
+            .Select(Map)
+            .ToArray();
 
     public async Task<PaymentResponse> StartAsync(
         Guid customerUserId,
@@ -238,11 +252,25 @@ public sealed class PaymentService(
         if (payment.Status != PaymentStatus.Pending)
             throw new InvalidOperationException("Only pending payments can open a PayHere checkout.");
 
+        if (userRepository is null)
+            throw new InvalidOperationException("User repository is not configured for PayHere checkout.");
+
+        var customer = await userRepository.GetByIdAsync(customerUserId, cancellationToken)
+            ?? throw new KeyNotFoundException("Customer was not found.");
+
         payment.Provider = "PayHere";
         payment.UpdatedAtUtc = DateTime.UtcNow;
         await paymentRepository.SaveChangesAsync(cancellationToken);
 
-        return payHereGatewayService.CreateCheckout(payment);
+        return payHereGatewayService.CreateCheckout(
+            payment,
+            new PayHereCustomerDetails
+            {
+                FirstName = customer.FirstName,
+                LastName = customer.LastName,
+                Email = customer.Email,
+                Phone = customer.PhoneNumber ?? string.Empty
+            });
     }
 
     public async Task<PaymentResponse> ProcessPayHereNotificationAsync(
@@ -357,6 +385,127 @@ public sealed class PaymentService(
                 CreatedAtUtc = x.CreatedAtUtc
             })
             .ToList();
+    }
+
+    public async Task<PaymentResponse> SubmitManualProofAsync(
+        Guid customerUserId,
+        Guid paymentId,
+        ManualPaymentProofRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var payment = await paymentRepository.GetByIdAsync(paymentId, cancellationToken)
+            ?? throw new KeyNotFoundException("Payment was not found.");
+        if (payment.CustomerUserId != customerUserId)
+            throw new ForbiddenAccessException("You do not own this payment.");
+        if (payment.Status != PaymentStatus.Pending)
+            throw new InvalidOperationException("Only pending payments can receive payment proof.");
+        if (!Uri.TryCreate(request.ProofUrl, UriKind.RelativeOrAbsolute, out _) ||
+            string.IsNullOrWhiteSpace(request.ProofUrl) || request.ProofUrl.Length > 190)
+            throw new ArgumentException("A valid uploaded payment-proof URL is required.");
+        if (transactionRepository is null)
+            throw new InvalidOperationException("Payment transaction repository is not configured.");
+
+        var existing = await transactionRepository.GetByPaymentAsync(payment.Id, cancellationToken);
+        if (existing.Any(x => x.Type == "ManualProofSubmitted" && x.ProviderReference == request.ProofUrl))
+            return Map(payment);
+
+        payment.Provider = "OrganizerQr";
+        payment.UpdatedAtUtc = DateTime.UtcNow;
+        await paymentRepository.SaveChangesAsync(cancellationToken);
+
+        var referenceHash = string.IsNullOrWhiteSpace(request.Reference)
+            ? null
+            : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(request.Reference.Trim())));
+        await RecordTransactionAsync(payment, "ManualProofSubmitted", request.ProofUrl, PaymentStatus.Pending, referenceHash, cancellationToken);
+        return Map(payment);
+    }
+
+    public async Task<IReadOnlyList<ManualPaymentReviewResponse>> GetManualReviewsAsync(
+        Guid reviewerUserId,
+        bool isAdmin,
+        CancellationToken cancellationToken = default)
+    {
+        if (transactionRepository is null)
+            throw new InvalidOperationException("Payment transaction repository is not configured.");
+
+        var results = new List<ManualPaymentReviewResponse>();
+        foreach (var payment in await paymentRepository.GetPendingManualAsync(cancellationToken))
+        {
+            var booking = await bookingRepository.GetByIdAsync(payment.BookingId, cancellationToken);
+            if (booking is null || !await CanReviewBookingAsync(reviewerUserId, isAdmin, booking, cancellationToken)) continue;
+            var proof = (await transactionRepository.GetByPaymentAsync(payment.Id, cancellationToken))
+                .FirstOrDefault(x => x.Type == "ManualProofSubmitted");
+            if (proof is null) continue;
+            results.Add(new ManualPaymentReviewResponse
+            {
+                PaymentId = payment.Id,
+                BookingId = payment.BookingId,
+                EventId = booking.EventId,
+                Amount = payment.Amount,
+                Currency = payment.Currency,
+                ProofUrl = proof.ProviderReference,
+                SubmittedAtUtc = proof.CreatedAtUtc
+            });
+        }
+        return results;
+    }
+
+    public async Task<PaymentResponse> ApproveManualAsync(
+        Guid reviewerUserId,
+        bool isAdmin,
+        Guid paymentId,
+        CancellationToken cancellationToken = default)
+    {
+        var payment = await paymentRepository.GetByIdAsync(paymentId, cancellationToken)
+            ?? throw new KeyNotFoundException("Payment was not found.");
+        var booking = await bookingRepository.GetByIdAsync(payment.BookingId, cancellationToken)
+            ?? throw new KeyNotFoundException("Booking was not found.");
+        if (!await CanReviewBookingAsync(reviewerUserId, isAdmin, booking, cancellationToken))
+            throw new ForbiddenAccessException("You cannot review this event payment.");
+        if (payment.Provider != "OrganizerQr")
+            throw new InvalidOperationException("This payment was not submitted through Organizer QR proof.");
+
+        return await CompleteVerifiedAsync(
+            payment,
+            $"MANUAL-APPROVED-{payment.Id:N}",
+            null,
+            cancellationToken);
+    }
+
+    public async Task<PaymentResponse> RejectManualAsync(
+        Guid reviewerUserId,
+        bool isAdmin,
+        Guid paymentId,
+        CancellationToken cancellationToken = default)
+    {
+        var payment = await paymentRepository.GetByIdAsync(paymentId, cancellationToken)
+            ?? throw new KeyNotFoundException("Payment was not found.");
+        var booking = await bookingRepository.GetByIdAsync(payment.BookingId, cancellationToken)
+            ?? throw new KeyNotFoundException("Booking was not found.");
+        if (!await CanReviewBookingAsync(reviewerUserId, isAdmin, booking, cancellationToken))
+            throw new ForbiddenAccessException("You cannot review this event payment.");
+        if (payment.Provider != "OrganizerQr" || payment.Status != PaymentStatus.Pending)
+            throw new InvalidOperationException("Only pending Organizer QR proofs can be rejected.");
+
+        payment.Status = PaymentStatus.Failed;
+        payment.UpdatedAtUtc = DateTime.UtcNow;
+        await paymentRepository.SaveChangesAsync(cancellationToken);
+        await RecordTransactionAsync(payment, "ManualProofRejected", $"MANUAL-REJECTED-{payment.Id:N}", PaymentStatus.Failed, null, cancellationToken);
+        await notificationService.CreateAsync(payment.CustomerUserId, "Payment proof needs attention", "Your payment proof was not approved. Please review the payment and try again.", "Payment", cancellationToken);
+        return Map(payment);
+    }
+
+    private async Task<bool> CanReviewBookingAsync(
+        Guid reviewerUserId,
+        bool isAdmin,
+        SEVPMS.Domain.Entities.Bookings.Booking booking,
+        CancellationToken cancellationToken)
+    {
+        if (isAdmin) return true;
+        if (eventRepository is null) throw new InvalidOperationException("Event repository is not configured for payment review.");
+        var eventEntity = await eventRepository.GetByIdAsync(booking.EventId, cancellationToken);
+        return eventEntity is not null && eventEntity.OrganizerUserId == reviewerUserId;
     }
 
     private async Task<PaymentResponse> CompleteVerifiedAsync(

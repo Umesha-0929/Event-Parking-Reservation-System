@@ -5,7 +5,7 @@ namespace SEVPMS.Application.Features.Payments.Interfaces;
 
 public interface IPayHereGatewayService
 {
-    PayHereCheckoutResponse CreateCheckout(Payment payment);
+    PayHereCheckoutResponse CreateCheckout(Payment payment, PayHereCustomerDetails customer);
     bool VerifyNotification(PayHereNotifyRequest request);
     string HashNotificationPayload(PayHereNotifyRequest request);
 }

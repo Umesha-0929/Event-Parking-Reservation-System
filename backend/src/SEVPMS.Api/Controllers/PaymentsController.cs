@@ -14,10 +14,16 @@ public sealed class PaymentsController(IPaymentService paymentService) : Control
     [Authorize(Policy = AuthorizationPolicies.CustomerOnly)]
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<PaymentResponse>>> GetMine(
+        [FromQuery] int page,
+        [FromQuery] int pageSize,
         CancellationToken cancellationToken)
     {
         if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
-        return Ok(await paymentService.GetMineAsync(userId, cancellationToken));
+        return Ok(await paymentService.GetMinePageAsync(
+            userId,
+            page == 0 ? 1 : page,
+            pageSize == 0 ? 50 : pageSize,
+            cancellationToken));
     }
 
     [Authorize(Policy = AuthorizationPolicies.CustomerOnly)]
@@ -78,6 +84,42 @@ public sealed class PaymentsController(IPaymentService paymentService) : Control
     {
         if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
         return Ok(await paymentService.GetTransactionsAsync(userId, id, cancellationToken));
+    }
+
+    [Authorize(Policy = AuthorizationPolicies.CustomerOnly)]
+    [HttpPost("{id:guid}/manual-proof")]
+    public async Task<ActionResult<PaymentResponse>> SubmitManualProof(
+        Guid id,
+        [FromBody] ManualPaymentProofRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+        return Ok(await paymentService.SubmitManualProofAsync(userId, id, request, cancellationToken));
+    }
+
+    [Authorize(Roles = "EventOrganizer,Admin")]
+    [HttpGet("manual-review")]
+    public async Task<ActionResult<IReadOnlyList<ManualPaymentReviewResponse>>> ManualReview(
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+        return Ok(await paymentService.GetManualReviewsAsync(userId, User.IsInRole("Admin"), cancellationToken));
+    }
+
+    [Authorize(Roles = "EventOrganizer,Admin")]
+    [HttpPost("{id:guid}/manual-approve")]
+    public async Task<ActionResult<PaymentResponse>> ApproveManual(Guid id, CancellationToken cancellationToken)
+    {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+        return Ok(await paymentService.ApproveManualAsync(userId, User.IsInRole("Admin"), id, cancellationToken));
+    }
+
+    [Authorize(Roles = "EventOrganizer,Admin")]
+    [HttpPost("{id:guid}/manual-reject")]
+    public async Task<ActionResult<PaymentResponse>> RejectManual(Guid id, CancellationToken cancellationToken)
+    {
+        if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
+        return Ok(await paymentService.RejectManualAsync(userId, User.IsInRole("Admin"), id, cancellationToken));
     }
 
     [AllowAnonymous]
