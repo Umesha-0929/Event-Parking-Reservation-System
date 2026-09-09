@@ -19,6 +19,12 @@
       <h2>Sign in to Nvent</h2>
       <p>Use the email and password you registered with Nvent.</p>
 
+      @if (success()) {
+        <div class="preview-note result success-note" role="status">
+          <div><strong>Email verified</strong><br>{{ success() }}</div>
+        </div>
+      }
+
       <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
         <div class="field">
           <label for="email">Email</label>
@@ -31,6 +37,7 @@
         <div class="field">
           <div class="field-heading">
             <label for="password">Password</label>
+            <a class="forgot-password-link" routerLink="/password-reset">Forgot password?</a>
           </div>
           <div class="password-field">
             <input
@@ -61,7 +68,12 @@
         @if (error()) {
           <div class="preview-note result error-note" role="alert">
             <span>!</span>
-            <div><strong>Sign in failed</strong><br>{{ error() }}</div>
+            <div>
+              <strong>Sign in failed</strong><br>{{ error() }}
+              @if (error().toLowerCase().includes('verify your email')) {
+                <div style="margin-top:8px"><a class="text-action" [href]="verificationLink()">Verify email →</a></div>
+              }
+            </div>
           </div>
         }
 
@@ -76,7 +88,10 @@
       </div>
 
       <div class="preview-links login-footnote">
-        <a routerLink="/">← Back to Nvent</a>
+        <div>
+          <a routerLink="/">← Back to Nvent</a>
+          <a [href]="verificationLink()">Verify email</a>
+        </div>
         <small>Customer, Event Organizer and Venue Owner accounts can be created here. Admin accounts are not publicly registered.</small>
       </div>
     </div>

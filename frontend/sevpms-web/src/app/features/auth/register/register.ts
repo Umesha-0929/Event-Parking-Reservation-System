@@ -2,7 +2,6 @@ import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { SessionService } from '../../../core/services/session.service';
 import { httpErrorMessage } from '../../../core/utils/http-error';
 
 @Component({
@@ -13,7 +12,6 @@ import { httpErrorMessage } from '../../../core/utils/http-error';
 })
 export class RegisterComponent {
   private readonly auth = inject(AuthService);
-  private readonly session = inject(SessionService);
   private readonly router = inject(Router);
 
   readonly submitting = signal(false);
@@ -41,9 +39,14 @@ export class RegisterComponent {
     this.error.set('');
 
     this.auth.register(this.form.getRawValue()).subscribe({
-      next: () => {
+      next: (result) => {
         this.submitting.set(false);
-        void this.router.navigateByUrl(this.session.routeForRole());
+        void this.router.navigate(['/verify-email'], {
+          queryParams: {
+            email: result.email || this.form.controls.email.value.trim(),
+            expires: result.otpExpiresAtUtc || undefined,
+          },
+        });
       },
       error: (error) => {
         this.error.set(httpErrorMessage(error, 'Registration failed.'));

@@ -1,0 +1,105 @@
+<section class="verify-page">
+  <div class="verify-media">
+    <div class="verify-media__glow"></div>
+    <div class="verify-media__copy">
+      <a routerLink="/"><img src="/assets/brand/nvent-logo-horizontal.png" alt="Nvent"></a>
+      <span>Email security</span>
+      <h1>One small step before your workspace opens.</h1>
+      <p>Nvent verifies the email used for your account so sign-in, tickets, receipts and important updates reach the correct person.</p>
+      <div class="security-points">
+        <div><strong>6 digit OTP</strong><span>Sent to the email used during registration.</span></div>
+        <div><strong>5 minute validity</strong><span>Expired codes can be replaced safely.</span></div>
+        <div><strong>Resend protection</strong><span>A short cooldown prevents repeated requests.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="verify-panel">
+    <div class="verify-card">
+      <a class="mobile-logo" routerLink="/"><img src="/assets/brand/nvent-logo-horizontal.png" alt="Nvent"></a>
+
+      <span class="eyebrow">Verify your email</span>
+      <h2>Enter the code from Gmail</h2>
+      <p>We sent a 6 digit verification code to your email address.</p>
+
+      <div class="field">
+        <label for="verifyEmail">Email</label>
+        <input
+          class="input"
+          id="verifyEmail"
+          type="email"
+          [formControl]="email"
+          autocomplete="email"
+          placeholder="name@example.com">
+        @if (email.touched && email.invalid) {
+          <span class="error">Enter the email address used during registration.</span>
+        }
+      </div>
+
+      <div class="field otp-field">
+        <div class="otp-heading">
+          <label for="verifyOtp">Verification code</label>
+          @if (expirySeconds() > 0) {
+            <span class="timer">{{ expiryLabel() }}</span>
+          } @else {
+            <span class="timer timer--expired">Expired</span>
+          }
+        </div>
+        <input
+          class="input otp-input"
+          id="verifyOtp"
+          type="text"
+          inputmode="numeric"
+          maxlength="6"
+          autocomplete="one-time-code"
+          [formControl]="otp"
+          (input)="cleanOtp()"
+          placeholder="000000">
+        @if (otp.touched && otp.invalid) {
+          <span class="error">Enter the complete 6 digit code.</span>
+        }
+      </div>
+
+      @if (notice()) {
+        <div class="verify-note verify-note--success" role="status">{{ notice() }}</div>
+      }
+
+      @if (error()) {
+        <div class="verify-note verify-note--error" role="alert">{{ error() }}</div>
+      }
+
+      <button
+        class="btn btn--primary verify-button"
+        type="button"
+        [disabled]="verifying() || email.invalid || otp.invalid"
+        (click)="verify()">
+        {{ verifying() ? 'Verifying…' : 'Verify email →' }}
+      </button>
+
+      <div class="resend-row">
+        <div>
+          <strong>Didn't receive the email?</strong>
+          <span>Check Spam/Junk first, then request another code.</span>
+        </div>
+        <button
+          type="button"
+          class="resend-button"
+          [disabled]="resending() || resendSeconds() > 0 || email.invalid"
+          (click)="resend()">
+          @if (resending()) {
+            Sending…
+          } @else if (resendSeconds() > 0) {
+            Resend in {{ resendSeconds() }}s
+          } @else {
+            Resend code
+          }
+        </button>
+      </div>
+
+      <div class="verify-links">
+        <a routerLink="/login">← Back to sign in</a>
+        <a routerLink="/register">Use another account</a>
+      </div>
+    </div>
+  </div>
+</section>
