@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SEVPMS.Application.Common.Paging;
 using SEVPMS.Application.Features.Food.Interfaces;
 using SEVPMS.Domain.Entities.Food;
 
@@ -109,6 +110,36 @@ public sealed class FoodRepository(
             .OrderByDescending(order =>
                 order.CreatedAtUtc)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<FoodOrder>> GetOrdersByCustomerPageAsync(
+        Guid customerUserId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (_, size, skip) = PagingRules.Normalize(page, pageSize);
+        return await dbContext.Set<FoodOrder>()
+            .AsNoTracking()
+            .Where(order => order.CustomerUserId == customerUserId)
+            .OrderByDescending(order => order.CreatedAtUtc)
+            .Skip(skip)
+            .Take(size)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<FoodOrderItem>>> GetOrderItemsByOrderIdsAsync(
+        IReadOnlyCollection<Guid> foodOrderIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (foodOrderIds.Count == 0) return new Dictionary<Guid, IReadOnlyList<FoodOrderItem>>();
+        var rows = await dbContext.Set<FoodOrderItem>()
+            .AsNoTracking()
+            .Where(item => foodOrderIds.Contains(item.FoodOrderId))
+            .ToListAsync(cancellationToken);
+        return rows
+            .GroupBy(item => item.FoodOrderId)
+            .ToDictionary(group => group.Key, group => (IReadOnlyList<FoodOrderItem>)group.ToArray());
     }
 
     public async Task<IReadOnlyList<FoodOrderItem>>

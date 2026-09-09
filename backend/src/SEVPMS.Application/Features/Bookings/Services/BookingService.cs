@@ -28,24 +28,39 @@ public sealed class BookingService(
                 customerUserId,
                 cancellationToken);
 
-        var responses =
-            new List<BookingResponse>(
-                bookings.Count);
+        var bookingIds = bookings.Select(x => x.Id).ToArray();
+        var seatIdsByBooking =
+            await bookingRepository.GetSeatIdsByBookingIdsAsync(
+                bookingIds,
+                cancellationToken);
 
-        foreach (var booking in bookings)
-        {
-            var seatIds =
-                await bookingRepository.GetSeatIdsAsync(
-                    booking.Id,
-                    cancellationToken);
-
-            responses.Add(
+        return bookings
+            .Select(booking =>
                 Map(
                     booking,
-                    seatIds));
-        }
+                    seatIdsByBooking.TryGetValue(booking.Id, out var seatIds)
+                        ? seatIds
+                        : Array.Empty<Guid>()))
+            .ToArray();
+    }
 
-        return responses;
+    public async Task<IReadOnlyList<BookingResponse>> GetMinePageAsync(
+        Guid customerUserId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var bookings = await bookingRepository.GetByCustomerPageAsync(
+            customerUserId, page, pageSize, cancellationToken);
+        var bookingIds = bookings.Select(x => x.Id).ToArray();
+        var seatIdsByBooking = await bookingRepository.GetSeatIdsByBookingIdsAsync(
+            bookingIds, cancellationToken);
+
+        return bookings.Select(booking => Map(
+            booking,
+            seatIdsByBooking.TryGetValue(booking.Id, out var seatIds)
+                ? seatIds
+                : Array.Empty<Guid>())).ToArray();
     }
 
     public async Task<BookingResponse> GetByIdAsync(

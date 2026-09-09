@@ -37,9 +37,30 @@ public interface IFoodRepository
         Guid customerUserId,
         CancellationToken cancellationToken = default);
 
+    async Task<IReadOnlyList<FoodOrder>> GetOrdersByCustomerPageAsync(
+        Guid customerUserId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var all = await GetOrdersByCustomerAsync(customerUserId, cancellationToken);
+        var safePage = Math.Max(page, 1);
+        var safePageSize = Math.Clamp(pageSize, 1, 200);
+        return all.Skip((safePage - 1) * safePageSize).Take(safePageSize).ToArray();
+    }
+
     Task<IReadOnlyList<FoodOrderItem>> GetOrderItemsAsync(
         Guid foodOrderId,
         CancellationToken cancellationToken = default);
+
+    async Task<IReadOnlyDictionary<Guid, IReadOnlyList<FoodOrderItem>>> GetOrderItemsByOrderIdsAsync(
+        IReadOnlyCollection<Guid> foodOrderIds,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new Dictionary<Guid, IReadOnlyList<FoodOrderItem>>();
+        foreach (var id in foodOrderIds)
+        {
+            result[id] = await GetOrderItemsAsync(id, cancellationToken);
+        }
+        return result;
+    }
 
     Task<IReadOnlyList<FoodOrderStatusHistory>> GetOrderStatusHistoryAsync(
         Guid foodOrderId,

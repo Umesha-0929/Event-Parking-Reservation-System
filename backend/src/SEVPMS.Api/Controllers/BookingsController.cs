@@ -13,10 +13,17 @@ namespace SEVPMS.Api.Controllers;
 public sealed class BookingsController(IBookingService bookingService) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<BookingResponse>>> GetMine(CancellationToken cancellationToken)
+    public async Task<ActionResult<IReadOnlyList<BookingResponse>>> GetMine(
+        [FromQuery] int page,
+        [FromQuery] int pageSize,
+        CancellationToken cancellationToken)
     {
         if (!TryGetCurrentUserId(out var userId)) return Unauthorized();
-        return Ok(await bookingService.GetMineAsync(userId, cancellationToken));
+        return Ok(await bookingService.GetMinePageAsync(
+            userId,
+            page == 0 ? 1 : page,
+            pageSize == 0 ? 50 : pageSize,
+            cancellationToken));
     }
 
     [HttpGet("{id:guid}")]
