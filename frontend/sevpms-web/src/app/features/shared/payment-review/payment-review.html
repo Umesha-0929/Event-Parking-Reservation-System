@@ -1,0 +1,16 @@
+<header class="review-head"><div><span class="eyebrow">Payment reconciliation</span><h1>Review Organizer QR payment proofs.</h1><p>Only approve a proof after confirming the amount and transaction in your payment account.</p></div><button type="button" class="btn btn--secondary" (click)="load()" [disabled]="loading()">Refresh</button></header>
+@if (message()) { <div class="notice success" role="status">{{ message() }}</div> }
+@if (error()) { <div class="notice error" role="alert">{{ error() }}</div> }
+@if (loading() && !items().length) { <div class="card">Loading payment proofs…</div> }
+@if (!loading() && !items().length) { <div class="empty-state"><h3>No payment proofs waiting for review.</h3><p>Customer submissions for your events will appear here.</p></div> }
+@if (items().length) {
+  <div class="review-grid">
+    @for (item of items(); track item.paymentId) {
+      <article class="card review-card">
+        <div><span class="badge">Pending review</span><h2>LKR {{ item.amount }}</h2><p>Booking {{ item.bookingId }}</p><small>Submitted {{ item.submittedAtUtc | date:'medium' }}</small></div>
+        <a class="proof" [href]="item.proofUrl" target="_blank" rel="noopener">Open payment proof ↗</a>
+        <div class="actions"><button type="button" class="btn btn--primary" (click)="approve(item)" [disabled]="loading()">Approve</button><button type="button" class="btn btn--secondary" (click)="reject(item)" [disabled]="loading()">Reject</button></div>
+      </article>
+    }
+  </div>
+}
