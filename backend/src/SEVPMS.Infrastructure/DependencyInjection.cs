@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using SEVPMS.Application.Features.Admin.Interfaces;
 using SEVPMS.Application.Features.Admin.Services;
 using SEVPMS.Application.Features.Audit.Interfaces;
@@ -35,6 +36,7 @@ using SEVPMS.Infrastructure.Identity;
 using SEVPMS.Infrastructure.Persistence;
 using SEVPMS.Infrastructure.Persistence.Repositories;
 using SEVPMS.Infrastructure.Providers.Email;
+using SEVPMS.Infrastructure.Providers;
 using SEVPMS.Infrastructure.Providers.Payments;
 using SEVPMS.Infrastructure.Providers.Payments.MockPayment;
 using SEVPMS.Infrastructure.Providers.Sms;
@@ -66,6 +68,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
+        services.AddSingleton<IApplicationLinkBuilder, ApplicationLinkBuilder>();
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IVenueRepository, VenueRepository>();
@@ -129,10 +132,14 @@ public static class DependencyInjection
             var cfg =
                 sp.GetRequiredService<IConfiguration>();
 
-            return string.IsNullOrWhiteSpace(
-                cfg["Sms:Http:Endpoint"])
-                ? new ConsoleSmsSender()
-                : new HttpSmsSender(cfg);
+            if (!string.IsNullOrWhiteSpace(cfg["Sms:Http:Endpoint"]))
+                return new HttpSmsSender(cfg);
+
+            var environment = sp.GetRequiredService<IHostEnvironment>();
+            if (!environment.IsProduction() && cfg.GetValue<bool>("Messaging:AllowConsoleProviders"))
+                return new ConsoleSmsSender();
+
+            throw new InvalidOperationException("SMS provider is not configured and console providers are disabled.");
         });
 
         services.AddScoped<IEmailSender>(sp =>
@@ -140,10 +147,14 @@ public static class DependencyInjection
             var cfg =
                 sp.GetRequiredService<IConfiguration>();
 
-            return string.IsNullOrWhiteSpace(
-                cfg["Email:Smtp:Host"])
-                ? new ConsoleEmailSender()
-                : new SmtpEmailSender(cfg);
+            if (!string.IsNullOrWhiteSpace(cfg["Email:Smtp:Host"]))
+                return new SmtpEmailSender(cfg);
+
+            var environment = sp.GetRequiredService<IHostEnvironment>();
+            if (!environment.IsProduction() && cfg.GetValue<bool>("Messaging:AllowConsoleProviders"))
+                return new ConsoleEmailSender();
+
+            throw new InvalidOperationException("Email provider is not configured and console providers are disabled.");
         });
 
         services.AddVehicleModule();
