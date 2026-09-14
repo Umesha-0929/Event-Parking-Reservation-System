@@ -1,0 +1,231 @@
+@import "tailwindcss";
+
+:root {
+  --nvent-blue:#8FB9E8; --nvent-coral:#F58CA6; --nvent-peach:#FFC8A5; --nvent-slate:#8793C7;
+  --bg:#FCFAFF; --surface:#FFFFFF; --surface-2:#F7F4FC; --surface-3:#EFF1FB; --text:#202748; --text-2:#68708A;
+  --border:#E6DFF0; --primary:#7478C9; --primary-strong:#575DB2; --accent:#EC7E9E; --focus:#66B8D3;
+  --success:#2F9D78; --warning:#C9852E; --danger:#C75E6A; --info:#477FB3;
+  --shadow:0 18px 52px rgba(86,76,130,.10); --radius:22px;
+}
+html.dark {
+  --bg:#0F1738; --surface:#18224A; --surface-2:#202A55; --surface-3:#293361; --text:#F7F8FC; --text-2:#BEC6D9;
+  --border:#34406C; --primary:#308196; --primary-strong:#257184; --accent:#DCAAA8; --focus:#80D5CA;
+  --success:#52C69A; --warning:#F2B766; --danger:#E47783; --info:#6FA8DC; --shadow:0 18px 58px rgba(5,10,30,.35);
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+button,input,select,textarea{font:inherit} button,a{transition:transform .18s ease,background-color .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease}
+a{color:inherit;text-decoration:none} :focus-visible{outline:3px solid color-mix(in srgb,var(--focus) 75%,transparent);outline-offset:3px}
+::selection{background:color-mix(in srgb,var(--nvent-coral) 35%,transparent)}
+.nv-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.nv-card-soft{background:color-mix(in srgb,var(--surface) 91%,var(--nvent-blue));border:1px solid var(--border);border-radius:var(--radius)}
+.nv-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:44px;padding:.72rem 1.05rem;border-radius:14px;border:1px solid transparent;font-weight:700;cursor:pointer}
+.nv-btn:disabled{opacity:.5;cursor:not-allowed}.nv-btn-primary{background:linear-gradient(135deg,var(--primary),color-mix(in srgb,var(--accent) 78%,var(--primary)));color:white;box-shadow:0 10px 24px color-mix(in srgb,var(--primary) 20%,transparent)}
+.nv-btn-primary:hover:not(:disabled){transform:translateY(-1px)}.nv-btn-secondary{background:var(--surface);color:var(--text);border-color:var(--border)}
+.nv-input{width:100%;min-height:46px;border-radius:14px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);padding:.72rem .9rem}.nv-input::placeholder{color:color-mix(in srgb,var(--text-2) 80%,transparent)}
+.nv-label{display:block;font-size:.84rem;font-weight:700;color:var(--text-2);margin-bottom:.42rem}.nv-page{max-width:1600px;margin:0 auto;padding:24px 28px 44px}.nv-page-title{font-size:clamp(1.7rem,2vw,2.55rem);font-weight:850;letter-spacing:-.035em}.nv-muted{color:var(--text-2)}
+.nv-chip{display:inline-flex;align-items:center;min-height:36px;padding:.45rem .75rem;border-radius:999px;border:1px solid var(--border);background:var(--surface);font-weight:650;font-size:.86rem;cursor:pointer}.nv-chip.active{background:color-mix(in srgb,var(--primary) 17%,var(--surface));border-color:color-mix(in srgb,var(--primary) 50%,var(--border));color:var(--primary-strong)}
+.nv-status{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .58rem;border-radius:999px;font-size:.76rem;font-weight:800;background:var(--surface-2);border:1px solid var(--border)}
+.nv-hero{position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(115deg,color-mix(in srgb,var(--nvent-blue) 78%,white),color-mix(in srgb,var(--nvent-coral) 75%,white) 52%,color-mix(in srgb,var(--nvent-peach) 88%,white));padding:clamp(24px,4vw,56px);min-height:240px}.dark .nv-hero{background:linear-gradient(115deg,#1A2656,#665A88 55%,#308196)}
+.nv-hero:after{content:"";position:absolute;inset:auto -8% -60% 38%;height:280px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--nvent-peach) 52%,transparent),transparent 66%);filter:blur(8px);pointer-events:none}
+.nv-grid-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.nv-skeleton{background:linear-gradient(90deg,var(--surface-2),var(--surface-3),var(--surface-2));background-size:200% 100%;animation:nv-shimmer 1.35s infinite;border-radius:14px}@keyframes nv-shimmer{to{background-position:-200% 0}}
+@media(max-width:1279px){.nv-grid-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:1023px){.nv-grid-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.nv-page{padding:20px 20px 90px}}@media(max-width:639px){.nv-grid-cards{grid-template-columns:1fr}.nv-page{padding:16px 14px 92px}.nv-card{border-radius:18px}.nv-hero{border-radius:22px;min-height:210px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* Shared semantic aliases used across role workspaces */
+:root{
+  --accent-2:#FAC098;
+  --surface-elevated:var(--surface-2);
+}
+html.dark{
+  --accent-2:#80D5CA;
+  --surface-elevated:var(--surface-3);
+}
+.nv-status.success{background:color-mix(in srgb,var(--success) 14%,var(--surface));border-color:color-mix(in srgb,var(--success) 34%,var(--border));color:var(--success)}
+.nv-status.warning{background:color-mix(in srgb,var(--warning) 14%,var(--surface));border-color:color-mix(in srgb,var(--warning) 34%,var(--border));color:var(--warning)}
+.nv-status.danger,.nv-status.error{background:color-mix(in srgb,var(--danger) 14%,var(--surface));border-color:color-mix(in srgb,var(--danger) 34%,var(--border));color:var(--danger)}
+.nv-status.info{background:color-mix(in srgb,var(--info) 14%,var(--surface));border-color:color-mix(in srgb,var(--info) 34%,var(--border));color:var(--info)}
+.nv-table{width:100%;border-collapse:collapse}.nv-table th{font-size:.78rem;color:var(--text-2);font-weight:800;text-align:left;padding:.8rem 1rem}.nv-table td{padding:1rem;border-top:1px solid var(--border);vertical-align:top}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+.skip-link{position:fixed;left:1rem;top:1rem;z-index:200;transform:translateY(-160%);background:var(--surface);color:var(--text);border:2px solid var(--primary);border-radius:.75rem;padding:.65rem .9rem;font-weight:800;box-shadow:var(--shadow);transition:transform .15s ease}.skip-link:focus{transform:translateY(0)}
+
+/* Nvent commercial polish layer ------------------------------------------------ */
+body{
+  background:
+    radial-gradient(circle at 12% -8%,color-mix(in srgb,var(--nvent-blue) 13%,transparent),transparent 26rem),
+    radial-gradient(circle at 92% 8%,color-mix(in srgb,var(--nvent-peach) 10%,transparent),transparent 24rem),
+    var(--bg);
+}
+.dark body{
+  background:
+    radial-gradient(circle at 10% -6%,rgba(48,129,150,.16),transparent 28rem),
+    radial-gradient(circle at 94% 4%,rgba(220,170,168,.10),transparent 24rem),
+    var(--bg);
+}
+.nv-card,.nv-card-soft{position:relative;isolation:isolate}
+.nv-card{box-shadow:0 18px 55px rgba(60,77,110,.09);backdrop-filter:saturate(120%)}
+.dark .nv-card{box-shadow:0 22px 60px rgba(4,8,24,.28)}
+.nv-card-soft{background:color-mix(in srgb,var(--surface) 88%,var(--nvent-blue) 12%);box-shadow:inset 0 1px 0 color-mix(in srgb,white 35%,transparent)}
+.dark .nv-card-soft{background:color-mix(in srgb,var(--surface) 91%,var(--focus) 9%);box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.nv-page{animation:nv-page-in .42s cubic-bezier(.2,.75,.25,1) both}
+@keyframes nv-page-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.nv-media-shell{position:relative;overflow:hidden;background:linear-gradient(135deg,color-mix(in srgb,var(--nvent-blue) 78%,var(--surface)),color-mix(in srgb,var(--nvent-coral) 68%,var(--surface)) 52%,color-mix(in srgb,var(--nvent-peach) 76%,var(--surface)))}
+.dark .nv-media-shell{background:linear-gradient(135deg,#1a2656,#334b73 52%,#665a88)}
+.nv-media-shell:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 16% 18%,rgba(255,255,255,.30),transparent 24%),radial-gradient(circle at 78% 72%,rgba(255,255,255,.14),transparent 20%);pointer-events:none}
+.nv-media-vignette{position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,23,56,.02) 18%,rgba(15,23,56,.86) 100%);pointer-events:none}
+.nv-img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .55s cubic-bezier(.2,.75,.25,1),filter .35s ease}
+.group:hover .nv-img{transform:scale(1.035)}
+.nv-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:1rem}
+.nv-section-kicker{text-transform:uppercase;letter-spacing:.12em;font-size:.7rem;font-weight:900;color:var(--text-2)}
+.nv-hero-premium{position:relative;overflow:hidden;border-radius:30px;min-height:clamp(310px,44vw,510px);padding:clamp(28px,5vw,68px);display:flex;align-items:flex-end;color:white;background:linear-gradient(120deg,#15204d,#54698e 48%,#9a6f76)}
+.nv-hero-premium:before{content:"";position:absolute;inset:0;background-image:linear-gradient(90deg,rgba(8,14,40,.84) 0%,rgba(8,14,40,.50) 45%,rgba(8,14,40,.16) 78%),linear-gradient(180deg,rgba(15,23,56,.05),rgba(15,23,56,.58)),linear-gradient(135deg,#18224A,#308196 52%,#E49C95);background-size:cover;background-position:center;transform:scale(1.02)}
+.nv-hero-premium:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 74% 26%,rgba(128,213,202,.23),transparent 25%),radial-gradient(circle at 18% 8%,rgba(250,192,152,.20),transparent 22%);pointer-events:none}
+.nv-hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;opacity:.78;animation:nv-media-in .8s ease both}
+.nv-hero-video-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(9,15,43,.88) 0%,rgba(9,15,43,.58) 46%,rgba(9,15,43,.24) 76%),linear-gradient(180deg,rgba(15,23,56,.08),rgba(15,23,56,.56))}
+@keyframes nv-media-in{from{opacity:0;transform:scale(1.035)}to{opacity:.78;transform:scale(1)}}
+.nv-glass-panel{background:color-mix(in srgb,var(--surface) 79%,transparent);border:1px solid color-mix(in srgb,var(--border) 78%,white 10%);box-shadow:0 16px 48px rgba(15,23,56,.10);backdrop-filter:blur(18px) saturate(135%)}
+.dark .nv-glass-panel{background:rgba(24,34,74,.72);border-color:rgba(128,213,202,.12);box-shadow:0 18px 50px rgba(2,6,24,.30)}
+.nv-service-tile{overflow:hidden;transition:transform .24s ease,box-shadow .24s ease,border-color .24s ease}
+.nv-service-tile:hover{transform:translateY(-4px);box-shadow:0 18px 44px color-mix(in srgb,var(--primary) 14%,transparent);border-color:color-mix(in srgb,var(--focus) 45%,var(--border))}
+.nv-service-orb{width:3.3rem;height:3.3rem;border-radius:1.15rem;display:grid;place-items:center;background:linear-gradient(145deg,color-mix(in srgb,var(--surface) 88%,white),color-mix(in srgb,var(--focus) 20%,var(--surface)));box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 10px 24px rgba(60,77,110,.10);font-size:1.25rem;font-weight:950}
+.dark .nv-service-orb{background:linear-gradient(145deg,#25315f,#18224a);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 14px 30px rgba(4,8,28,.28)}
+.nv-image-fallback{background-size:cover;background-position:center;position:absolute;inset:0}
+.nv-image-fallback.event{background-image:linear-gradient(135deg,rgba(29,41,68,.12),rgba(15,23,56,.58)),url('assets/nvent/images/events/event-default.webp'),linear-gradient(135deg,#92ABD3,#E49C95,#FAC098)}
+.nv-image-fallback.venue{background-image:linear-gradient(135deg,rgba(29,41,68,.10),rgba(15,23,56,.52)),url('assets/nvent/images/venues/venue-exterior.webp'),linear-gradient(135deg,#92ABD3,#E49C95,#FAC098)}
+.nv-image-fallback.food{background-image:linear-gradient(180deg,rgba(15,23,56,.02),rgba(15,23,56,.32)),url('assets/nvent/images/food/main-dishes.webp'),linear-gradient(135deg,#fac098,#e49c95,#8599b8)}
+.nv-image-fallback.place{background-image:linear-gradient(180deg,rgba(15,23,56,.03),rgba(15,23,56,.34)),url('assets/nvent/images/places/places-default.webp'),linear-gradient(135deg,#80d5ca,#92abd3,#665a88)}
+.nv-ticket-pattern{background-image:linear-gradient(135deg,color-mix(in srgb,var(--surface) 94%,transparent),color-mix(in srgb,var(--nvent-blue) 7%,var(--surface))),url('assets/nvent/images/tickets/ticket-pattern.webp');background-size:cover;background-position:center}
+.nv-parking-layout{background-image:linear-gradient(180deg,color-mix(in srgb,var(--surface) 18%,transparent),color-mix(in srgb,var(--surface-3) 30%,transparent)),url('assets/nvent/images/parking/parking-layout.webp')!important;background-size:cover!important;background-position:center!important}
+.nv-profile-hero{background-image:linear-gradient(90deg,rgba(15,23,56,.72),rgba(102,90,136,.34)),url('assets/nvent/images/profile/profile-header.webp')!important;background-size:cover!important;background-position:center!important;color:white}
+.nv-facility-pill{display:flex;align-items:center;gap:.65rem;padding:.65rem .8rem;border:1px solid var(--border);border-radius:14px;background:var(--surface-2)}
+.nv-facility-icon{width:2rem;height:2rem;border-radius:.7rem;background:linear-gradient(145deg,color-mix(in srgb,var(--focus) 22%,var(--surface)),var(--surface));display:grid;place-items:center;font-size:.8rem;font-weight:900}
+.nv-input{box-shadow:inset 0 1px 0 color-mix(in srgb,white 22%,transparent);transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
+.nv-input:focus{border-color:color-mix(in srgb,var(--focus) 72%,var(--border));box-shadow:0 0 0 4px color-mix(in srgb,var(--focus) 13%,transparent)}
+.nv-btn{letter-spacing:-.01em}.nv-btn-secondary:hover:not(:disabled){transform:translateY(-1px);border-color:color-mix(in srgb,var(--focus) 45%,var(--border));box-shadow:0 8px 22px color-mix(in srgb,var(--primary) 10%,transparent)}
+.nv-chip{backdrop-filter:blur(10px)}
+.nv-page-state-art{width:5.25rem;height:5.25rem;border-radius:1.65rem;background-size:cover;background-position:center;display:grid;place-items:center;font-size:1.45rem;border:1px solid var(--border);box-shadow:0 12px 30px color-mix(in srgb,var(--primary) 10%,transparent)}
+@media(max-width:639px){.nv-hero-premium{border-radius:22px;min-height:390px;padding:24px}.nv-hero-premium:before{background-position:62% center}.nv-hero-video{object-position:62% center}.nv-glass-panel{backdrop-filter:blur(14px)}}
+
+/* Integrated Nvent media layer */
+.nv-hero-media{isolation:isolate;background:#101936;color:white}
+.nv-section-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;animation:nv-media-in .8s ease both}
+.nv-section-video-overlay,.nv-photo-hero-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(8,14,40,.86) 0%,rgba(8,14,40,.55) 52%,rgba(8,14,40,.20) 100%),linear-gradient(180deg,rgba(8,14,40,.05),rgba(8,14,40,.58));pointer-events:none}
+.nv-photo-hero{isolation:isolate;background-size:cover!important;background-position:center!important}
+.nv-food-hero{background-image:url('assets/nvent/images/food/restaurant-interior.webp')!important}
+.nv-places-hero{background-image:url('assets/nvent/images/places/beach.webp')!important}
+.nv-parking-hero{background-image:url('assets/nvent/images/parking/parking-aerial.webp')!important}
+.nv-photo-hero:after,.nv-hero-media:after{z-index:2;opacity:.55}
+.nv-photo-hero>.relative,.nv-hero-media>.relative{z-index:3!important}
+.nv-media-shell .nv-image-fallback{transition:transform .55s cubic-bezier(.2,.75,.25,1),filter .35s ease}
+.group:hover .nv-image-fallback{transform:scale(1.025)}
+.nv-facility-icon{background-repeat:no-repeat!important;background-size:contain!important;background-position:center!important;color:transparent!important}
+@media(max-width:639px){.nv-section-video{object-position:58% center}.nv-food-hero{background-position:58% center!important}.nv-places-hero{background-position:52% center!important}.nv-parking-hero{background-position:60% center!important}}
+
+/* Bright Nvent light theme ----------------------------------------------------
+   Reference direction: airy sunrise surfaces, soft lavender/peach accents,
+   white glass cards and calm contrast. Dark theme remains unchanged. */
+html:not(.dark) body{
+  background:
+    radial-gradient(circle at 8% -4%,rgba(143,185,232,.20),transparent 30rem),
+    radial-gradient(circle at 92% 3%,rgba(255,200,165,.22),transparent 26rem),
+    radial-gradient(circle at 54% 105%,rgba(245,140,166,.10),transparent 34rem),
+    linear-gradient(180deg,#fffefe 0%,#fcfaff 38%,#f7f8fd 100%);
+}
+html:not(.dark) .nv-card{
+  background:rgba(255,255,255,.92);
+  border-color:rgba(220,213,235,.88);
+  box-shadow:0 16px 42px rgba(83,73,126,.085),0 1px 0 rgba(255,255,255,.9) inset;
+}
+html:not(.dark) .nv-card-soft{
+  background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(246,244,252,.94));
+  border-color:#e9e1f1;
+}
+html:not(.dark) .nv-input{
+  background:rgba(255,255,255,.94);
+  border-color:#e4ddeb;
+  box-shadow:0 5px 18px rgba(73,68,112,.035),inset 0 1px 0 rgba(255,255,255,.95);
+}
+html:not(.dark) .nv-btn-primary{
+  background:linear-gradient(118deg,#7779ce 0%,#a97dc7 46%,#ef8ea4 72%,#f2aa8d 100%);
+  box-shadow:0 12px 28px rgba(129,103,177,.20);
+}
+html:not(.dark) .nv-btn-secondary{
+  background:rgba(255,255,255,.90);
+  border-color:#e5ddec;
+  box-shadow:0 7px 18px rgba(81,72,126,.05);
+}
+html:not(.dark) .nv-chip.active,
+html:not(.dark) .active-nav{
+  background:linear-gradient(135deg,rgba(116,120,201,.13),rgba(236,126,158,.09))!important;
+  border-color:rgba(116,120,201,.22)!important;
+  color:#555bb1!important;
+}
+html:not(.dark) .nv-glass-panel{
+  background:rgba(255,255,255,.78);
+  border-color:rgba(229,220,238,.92);
+  box-shadow:0 18px 44px rgba(87,77,128,.08);
+  backdrop-filter:blur(20px) saturate(125%);
+}
+html:not(.dark) .nv-service-orb{
+  background:linear-gradient(145deg,#fff,#f6f1fb 54%,#edf6ff);
+  border:1px solid rgba(223,215,237,.85);
+  box-shadow:inset 0 1px 0 #fff,0 12px 25px rgba(94,80,139,.09);
+}
+html:not(.dark) .nv-hero-premium{
+  color:#202748;
+  background:linear-gradient(118deg,#fff8f6 0%,#f9f2fb 42%,#eef7ff 100%);
+  border:1px solid rgba(230,217,235,.92);
+  box-shadow:0 24px 58px rgba(83,73,126,.12);
+}
+html:not(.dark) .nv-hero-premium:before{
+  background-image:
+    linear-gradient(90deg,rgba(255,252,250,.94) 0%,rgba(255,250,248,.78) 37%,rgba(255,247,246,.22) 67%,rgba(255,255,255,.06) 100%),
+    linear-gradient(180deg,rgba(255,255,255,.06),rgba(248,238,248,.24)),
+    url('assets/nvent/images/places/beach.webp');
+  background-size:cover;
+  background-position:center 58%;
+  filter:saturate(.90) brightness(1.08);
+}
+html:not(.dark) .nv-hero-premium:after{
+  background:
+    radial-gradient(circle at 76% 24%,rgba(255,200,165,.28),transparent 28%),
+    radial-gradient(circle at 18% 8%,rgba(143,185,232,.20),transparent 24%);
+}
+html:not(.dark) .nv-hero-video{
+  opacity:.20;
+  mix-blend-mode:multiply;
+  filter:brightness(1.28) saturate(.52) contrast(.72);
+}
+html:not(.dark) .nv-hero-video-overlay{
+  background:linear-gradient(90deg,rgba(255,253,252,.96) 0%,rgba(255,249,248,.82) 44%,rgba(250,245,251,.36) 72%,rgba(255,255,255,.12) 100%),linear-gradient(180deg,rgba(255,255,255,.12),rgba(248,241,250,.42));
+}
+html:not(.dark) .nv-hero-premium .nv-muted{color:#66708d}
+html:not(.dark) .nv-hero-premium .nv-input{background:rgba(255,255,255,.93)}
+html:not(.dark) .nv-hero-media{
+  color:#202748;
+  background:#fff8f6;
+  border:1px solid rgba(230,217,235,.88);
+  box-shadow:0 22px 52px rgba(82,72,126,.10);
+}
+html:not(.dark) .nv-hero-media .nv-section-video{opacity:.43;filter:brightness(1.17) saturate(.70)}
+html:not(.dark) .nv-hero-media .nv-section-video-overlay{
+  background:linear-gradient(90deg,rgba(255,252,250,.92) 0%,rgba(255,249,247,.78) 48%,rgba(255,255,255,.34) 100%),linear-gradient(180deg,rgba(255,255,255,.05),rgba(249,241,249,.30));
+}
+html:not(.dark) .nv-photo-hero{color:#202748}
+html:not(.dark) .nv-photo-hero-overlay{
+  background:linear-gradient(90deg,rgba(255,252,250,.90) 0%,rgba(255,250,248,.72) 50%,rgba(255,255,255,.25) 100%),linear-gradient(180deg,rgba(255,255,255,.03),rgba(249,241,249,.28));
+}
+html:not(.dark) .nv-media-vignette{background:linear-gradient(180deg,rgba(32,39,72,.01) 32%,rgba(32,39,72,.68) 100%)}
+html:not(.dark) .nv-table thead{background:rgba(247,244,252,.72)}
+html:not(.dark) .nv-status{box-shadow:inset 0 1px 0 rgba(255,255,255,.72)}
+html:not(.dark) ::-webkit-scrollbar{width:9px;height:9px}
+html:not(.dark) ::-webkit-scrollbar-track{background:#f6f2fa}
+html:not(.dark) ::-webkit-scrollbar-thumb{background:#d9d2e5;border:2px solid #f6f2fa;border-radius:99px}
+
+
+/* Keep hero copy readable when the bright theme is active even on templates that
+   use Tailwind's text-white utility for the dark treatment. */
+html:not(.dark) .nv-hero-media.text-white,
+html:not(.dark) .nv-photo-hero.text-white{color:#202748!important}
+html:not(.dark) .nv-hero-media.text-white .nv-muted,
+html:not(.dark) .nv-photo-hero.text-white .nv-muted{color:#68708A!important}

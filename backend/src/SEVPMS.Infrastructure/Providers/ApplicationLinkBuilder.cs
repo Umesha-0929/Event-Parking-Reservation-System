@@ -11,6 +11,6 @@ public sealed class ApplicationLinkBuilder(IConfiguration configuration) : IAppl
         if (string.IsNullOrWhiteSpace(baseUrl))
             throw new InvalidOperationException("App:FrontendBaseUrl is not configured.");
 
-        return $"{baseUrl.TrimEnd('/')}/password-reset?token={Uri.EscapeDataString(token)}";
+        return $"{baseUrl.TrimEnd('/')}/auth/reset-password?token={Uri.EscapeDataString(token)}";
     }
 }

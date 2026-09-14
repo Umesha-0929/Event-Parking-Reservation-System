@@ -43,6 +43,9 @@ public sealed class UserRepository(SEVPMSDbContext dbContext) : IUserRepository
     public async Task AddAsync(User user, CancellationToken cancellationToken = default)
         => await dbContext.Users.AddAsync(user, cancellationToken);
 
+    public void Remove(User user)
+        => dbContext.Users.Remove(user);
+
     public async Task AddRefreshTokenAsync(RefreshToken refreshToken, CancellationToken cancellationToken = default)
         => await dbContext.RefreshTokens.AddAsync(refreshToken, cancellationToken);
 

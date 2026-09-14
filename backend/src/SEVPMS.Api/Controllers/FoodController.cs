@@ -63,6 +63,51 @@ public sealed class FoodController : ControllerBase
         }
     }
 
+    [HttpGet("admin/orders")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
+    public async Task<ActionResult<IReadOnlyList<FoodOrderDto>>> GetAdminOrders(
+        [FromQuery] int page,
+        [FromQuery] int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var orders = await _foodService.GetAllOrdersPageAsync(
+            page == 0 ? 1 : page,
+            pageSize == 0 ? 100 : pageSize,
+            cancellationToken);
+
+        return Ok(orders);
+    }
+
+    [HttpGet("organizer/orders")]
+    [Authorize(Policy = AuthorizationPolicies.EventOrganizerOnly)]
+    public async Task<ActionResult<IReadOnlyList<FoodOrderDto>>> GetOrganizerOrders(
+        [FromQuery] int page,
+        [FromQuery] int pageSize,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        if (_eventRepository is null)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable);
+        }
+
+        var events = await _eventRepository.GetByOrganizerUserIdAsync(
+            userId,
+            cancellationToken);
+
+        var orders = await _foodService.GetOrdersByEventIdsPageAsync(
+            events.Select(eventEntity => eventEntity.Id).ToArray(),
+            page == 0 ? 1 : page,
+            pageSize == 0 ? 100 : pageSize,
+            cancellationToken);
+
+        return Ok(orders);
+    }
+
     [HttpGet("orders")]
     [Authorize(Policy = AuthorizationPolicies.CustomerOnly)]
     public async Task<ActionResult<IReadOnlyList<FoodOrderDto>>> GetMyOrders(

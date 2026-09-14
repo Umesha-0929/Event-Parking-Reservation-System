@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -9,6 +10,7 @@ using SEVPMS.Api.Authorization;
 using SEVPMS.Api.Bootstrap;
 using SEVPMS.Api.Klegar;
 using SEVPMS.Api.Middleware;
+using SEVPMS.Application.Interfaces.Repositories;
 using SEVPMS.Domain.Enums;
 using SEVPMS.Infrastructure;
 using SEVPMS.Realtime;
@@ -31,13 +33,15 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy(FrontendCorsPolicy, policy =>
     {
-        if (allowedOrigins.Length == 0)
-            throw new InvalidOperationException("Cors:AllowedOrigins must be configured outside Development.");
-
-        policy.WithOrigins(allowedOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
+        // An empty production list is valid for the preferred single-origin deployment.
+        // Add explicit origins only when the Angular app is hosted on another origin.
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        }
     });
 });
 
@@ -113,6 +117,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
                 (path.StartsWithSegments("/hubs/notifications") || path.StartsWithSegments("/hubs/events")))
                 context.Token = accessToken;
             return Task.CompletedTask;
+        },
+        OnTokenValidated = async context =>
+        {
+            var rawUserId = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(rawUserId, out var userId))
+            {
+                context.Fail("Authenticated user id is invalid.");
+                return;
+            }
+
+            var userRepository = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+            var user = await userRepository.GetByIdAsync(userId, context.HttpContext.RequestAborted);
+            if (user is null || user.Status != AccountStatus.Active)
+                context.Fail("Account is not active.");
         }
     };
 });
@@ -136,6 +154,11 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 if (!app.Environment.IsDevelopment()) app.UseHsts();
 
+// When a production Angular build is copied into wwwroot, serve the SPA from the API host.
+// Development continues to use the Angular dev server and proxy configuration.
+var webRoot = app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+var spaIndexPath = Path.Combine(webRoot, "index.html");
+var serveSpa = File.Exists(spaIndexPath);
 if (app.Environment.IsDevelopment())
 {
     await AdminBootstrapSeeder.SeedAsync(app.Services, app.Configuration);
@@ -154,13 +177,20 @@ app.Use(async (context, next) =>
         var headers = context.Response.Headers;
         headers["X-Content-Type-Options"] = "nosniff";
         headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-        headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(self)";
+        headers["Permissions-Policy"] = "camera=(self), microphone=(), geolocation=(self)";
         headers["X-Frame-Options"] = "DENY";
         headers["Content-Security-Policy"] = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' https: wss: ws:; form-action 'self' https://sandbox.payhere.lk https://www.payhere.lk";
         return Task.CompletedTask;
     });
     await next();
 });
+
+// Keep static SPA responses behind the security-header middleware.
+if (serveSpa)
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
 
 app.UseCors(FrontendCorsPolicy);
 app.UseRateLimiter();
@@ -171,6 +201,25 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapHub<EventHub>("/hubs/events");
+
+if (serveSpa)
+{
+    // Only browser navigation should fall back to Angular. Unknown API/hub calls must stay real 404s.
+    app.MapFallback(async context =>
+    {
+        var path = context.Request.Path;
+        if ((!HttpMethods.IsGet(context.Request.Method) && !HttpMethods.IsHead(context.Request.Method))
+            || path.StartsWithSegments("/api")
+            || path.StartsWithSegments("/hubs"))
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        context.Response.ContentType = "text/html; charset=utf-8";
+        await context.Response.SendFileAsync(spaIndexPath);
+    });
+}
 
 app.Run();
 

@@ -6,6 +6,17 @@ public interface IBookingRepository
 {
     Task<Booking?> GetByIdAsync(Guid bookingId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Booking>> GetByCustomerAsync(Guid customerUserId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Booking>> GetAllPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Booking>>(Array.Empty<Booking>());
+    Task<IReadOnlyList<Booking>> GetByEventIdsPageAsync(
+        IReadOnlyCollection<Guid> eventIds,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+        => Task.FromResult<IReadOnlyList<Booking>>(Array.Empty<Booking>());
     async Task<IReadOnlyList<Booking>> GetByCustomerPageAsync(
         Guid customerUserId, int page, int pageSize, CancellationToken cancellationToken = default)
     {

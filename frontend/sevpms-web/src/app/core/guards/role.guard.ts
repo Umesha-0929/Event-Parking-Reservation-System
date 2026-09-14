@@ -1,18 +1,12 @@
-import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { BackendRole } from '../models/api.models';
-import { SessionService } from '../services/session.service';
+import { inject } from '@angular/core';
+import { AuthService } from '../services/auth.service';
+import { UserRole } from '../models/api.models';
 
-export const roleGuard: CanActivateFn = (route, state) => {
-  const session = inject(SessionService);
-  const router = inject(Router);
-  if (!session.hasSession()) {
-    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
-  }
-
-  const allowed = (route.data?.['roles'] ?? []) as BackendRole[];
-  const role = session.role();
-  return !allowed.length || (role && allowed.includes(role))
-    ? true
-    : router.createUrlTree(['/access-denied']);
+export const roleGuard=(roles:UserRole[]):CanActivateFn=>()=>{
+  const auth=inject(AuthService);
+  const router=inject(Router);
+  if(!auth.isAuthenticated()) return router.parseUrl('/auth/sign-in');
+  const role=auth.role();
+  return role!==null&&roles.includes(role) ? true : router.parseUrl('/access-denied');
 };

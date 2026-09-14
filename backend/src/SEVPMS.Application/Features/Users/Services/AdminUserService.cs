@@ -108,6 +108,14 @@ public sealed class AdminUserService(
         user.Status = request.Status;
         user.UpdatedAtUtc = DateTime.UtcNow;
 
+        if (request.Status != SEVPMS.Domain.Enums.AccountStatus.Active)
+        {
+            await userRepository.RevokeActiveRefreshTokensAsync(
+                user.Id,
+                DateTime.UtcNow,
+                cancellationToken);
+        }
+
         await userRepository.SaveChangesAsync(
             cancellationToken);
 
@@ -123,5 +131,19 @@ public sealed class AdminUserService(
             CreatedAtUtc = user.CreatedAtUtc,
             LastLoginAtUtc = user.LastLoginAtUtc
         };
+    }
+
+    public async Task DeleteUserPermanentlyAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+            throw new KeyNotFoundException("User account was not found.");
+
+        // Refresh/password-reset token rows cascade with the user.
+        // Historical business records keep their snapshot user ids for audit/history.
+        userRepository.Remove(user);
+        await userRepository.SaveChangesAsync(cancellationToken);
     }
 }

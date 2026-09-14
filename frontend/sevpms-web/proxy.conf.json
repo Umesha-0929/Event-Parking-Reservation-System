@@ -1,15 +1,4 @@
 {
-  "/api": {
-    "target": "http://localhost:5090",
-    "secure": false,
-    "changeOrigin": true,
-    "logLevel": "warn"
-  },
-  "/hubs": {
-    "target": "http://localhost:5090",
-    "secure": false,
-    "changeOrigin": true,
-    "ws": true,
-    "logLevel": "warn"
-  }
+  "/api": {"target":"http://localhost:5090","secure":false,"changeOrigin":true},
+  "/hubs": {"target":"http://localhost:5090","secure":false,"ws":true,"changeOrigin":true}
 }

@@ -5,6 +5,7 @@ using SEVPMS.Application.Features.Users.DTOs;
 using SEVPMS.Application.Features.Users.Interfaces;
 using System.Security.Claims;
 using SEVPMS.Application.Features.Audit.Interfaces;
+using SEVPMS.Domain.Enums;
 
 namespace SEVPMS.Api.Controllers;
 
@@ -65,6 +66,10 @@ public sealed class AdminUsersController(
             [FromBody] UpdateUserStatusRequest request,
             CancellationToken cancellationToken)
     {
+        var actorUserId = CurrentActorUserId();
+        if (actorUserId == id && request.Status != AccountStatus.Active)
+            return BadRequest(new { message = "You cannot suspend or deactivate your own signed-in admin account." });
+
         var before =
             await adminUserService.GetUserByIdAsync(
                 id,
@@ -75,15 +80,6 @@ public sealed class AdminUsersController(
                 id,
                 request,
                 cancellationToken);
-
-        var rawActor =
-            User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
-
-        Guid? actorUserId =
-            Guid.TryParse(rawActor, out var parsed)
-                ? parsed
-                : null;
 
         await auditLogService.WriteAsync(
             actorUserId,
@@ -97,5 +93,42 @@ public sealed class AdminUsersController(
             cancellationToken);
 
         return Ok(user);
+    }
+
+
+    // =========================================================
+    // PERMANENTLY DELETE USER ACCOUNT
+    // DELETE /api/admin/users/{id}
+    // =========================================================
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteUserPermanently(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var actorUserId = CurrentActorUserId();
+        if (actorUserId == id)
+            return BadRequest(new { message = "You cannot permanently delete your own signed-in admin account." });
+
+        var before = await adminUserService.GetUserByIdAsync(id, cancellationToken);
+        await adminUserService.DeleteUserPermanentlyAsync(id, cancellationToken);
+
+        await auditLogService.WriteAsync(
+            actorUserId,
+            "Admin permanently deleted user account",
+            "User",
+            id.ToString(),
+            $"{before.Email} | {before.Role} | {before.Status}",
+            "Deleted",
+            HttpContext.TraceIdentifier,
+            HttpContext.Connection.RemoteIpAddress?.ToString(),
+            cancellationToken);
+
+        return NoContent();
+    }
+
+    private Guid? CurrentActorUserId()
+    {
+        var rawActor = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(rawActor, out var parsed) ? parsed : null;
     }
 }

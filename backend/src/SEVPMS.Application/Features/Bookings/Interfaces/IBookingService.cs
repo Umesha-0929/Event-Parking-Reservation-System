@@ -4,6 +4,15 @@ namespace SEVPMS.Application.Features.Bookings.Interfaces;
 
 public interface IBookingService
 {
+    Task<IReadOnlyList<BookingResponse>> GetAllPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<BookingResponse>> GetByEventIdsPageAsync(
+        IReadOnlyCollection<Guid> eventIds,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
     Task<IReadOnlyList<BookingResponse>> GetMineAsync(Guid customerUserId, CancellationToken cancellationToken = default);
     async Task<IReadOnlyList<BookingResponse>> GetMinePageAsync(
         Guid customerUserId, int page, int pageSize, CancellationToken cancellationToken = default)
