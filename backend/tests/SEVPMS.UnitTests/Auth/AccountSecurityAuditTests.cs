@@ -196,6 +196,12 @@ public sealed class AccountSecurityAuditTests
             CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
+	public void Remove(User user)
+	{
+
+	}
+
+
         public Task SaveChangesAsync(
             CancellationToken cancellationToken = default)
             => Task.CompletedTask;

@@ -19,6 +19,52 @@ public sealed class BookingService(
     IWaitlistService? waitlistService = null)
     : IBookingService
 {
+    public async Task<IReadOnlyList<BookingResponse>> GetAllPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var bookings = await bookingRepository.GetAllPageAsync(
+            page,
+            pageSize,
+            cancellationToken);
+
+        var bookingIds = bookings.Select(booking => booking.Id).ToArray();
+        var seatIdsByBooking = await bookingRepository.GetSeatIdsByBookingIdsAsync(
+            bookingIds,
+            cancellationToken);
+
+        return bookings.Select(booking => Map(
+            booking,
+            seatIdsByBooking.TryGetValue(booking.Id, out var seatIds)
+                ? seatIds
+                : Array.Empty<Guid>())).ToArray();
+    }
+
+    public async Task<IReadOnlyList<BookingResponse>> GetByEventIdsPageAsync(
+        IReadOnlyCollection<Guid> eventIds,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var bookings = await bookingRepository.GetByEventIdsPageAsync(
+            eventIds,
+            page,
+            pageSize,
+            cancellationToken);
+
+        var bookingIds = bookings.Select(booking => booking.Id).ToArray();
+        var seatIdsByBooking = await bookingRepository.GetSeatIdsByBookingIdsAsync(
+            bookingIds,
+            cancellationToken);
+
+        return bookings.Select(booking => Map(
+            booking,
+            seatIdsByBooking.TryGetValue(booking.Id, out var seatIds)
+                ? seatIds
+                : Array.Empty<Guid>())).ToArray();
+    }
+
     public async Task<IReadOnlyList<BookingResponse>> GetMineAsync(
         Guid customerUserId,
         CancellationToken cancellationToken = default)
@@ -242,11 +288,12 @@ public sealed class BookingService(
                 bookingId,
                 cancellationToken);
 
-        if (booking.Status ==
-            BookingStatus.Confirmed)
+        if (booking.Status is
+            BookingStatus.Confirmed or
+            BookingStatus.Completed)
         {
             throw new InvalidOperationException(
-                "Confirmed bookings cannot be cancelled through this endpoint.");
+                "Only pending bookings can be cancelled through this endpoint.");
         }
 
         if (booking.Status ==

@@ -94,8 +94,8 @@ public sealed class AccountSecurityService(
 
         await emailSender.SendAsync(
             user.Email,
-            "SEVPMS password reset",
-            $"Open this secure link within 30 minutes to choose a new password: {applicationLinkBuilder.PasswordReset(rawToken)}",
+            "Nvent password reset",
+            $"Use this secure Nvent link within 30 minutes to choose a new password: {applicationLinkBuilder.PasswordReset(rawToken)}",
             cancellationToken);
     }
 

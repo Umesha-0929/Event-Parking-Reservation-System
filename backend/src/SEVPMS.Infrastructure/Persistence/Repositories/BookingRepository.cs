@@ -17,6 +17,41 @@ public sealed class BookingRepository(SEVPMSDbContext dbContext) : IBookingRepos
             .OrderByDescending(x => x.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Booking>> GetAllPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (_, size, skip) = PagingRules.Normalize(page, pageSize);
+        return await dbContext.Set<Booking>()
+            .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .Skip(skip)
+            .Take(size)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Booking>> GetByEventIdsPageAsync(
+        IReadOnlyCollection<Guid> eventIds,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        if (eventIds.Count == 0)
+        {
+            return Array.Empty<Booking>();
+        }
+
+        var (_, size, skip) = PagingRules.Normalize(page, pageSize);
+        return await dbContext.Set<Booking>()
+            .AsNoTracking()
+            .Where(x => eventIds.Contains(x.EventId))
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .Skip(skip)
+            .Take(size)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Booking>> GetByCustomerPageAsync(
         Guid customerUserId,
         int page,

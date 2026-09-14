@@ -1,13 +1,15 @@
 using SEVPMS.Application.Features.Food.DTOs;
 using SEVPMS.Application.Features.Food.Interfaces;
 using SEVPMS.Application.Features.Food.Validators;
+using SEVPMS.Application.Interfaces.Repositories;
 using SEVPMS.Domain.Entities.Food;
 using SEVPMS.Domain.Enums;
 
 namespace SEVPMS.Application.Features.Food.Services;
 
 public sealed class FoodService(
-    IFoodRepository foodRepository)
+    IFoodRepository foodRepository,
+    IBookingRepository? bookingRepository = null)
     : IFoodService
 {
     public async Task<IReadOnlyList<EventFoodStallDto>>
@@ -155,6 +157,41 @@ public sealed class FoodService(
                 : Array.Empty<FoodOrderItem>())).ToArray();
     }
 
+    public async Task<IReadOnlyList<FoodOrderDto>> GetOrdersByEventIdsPageAsync(
+        IReadOnlyCollection<Guid> eventIds,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var orders = await foodRepository.GetOrdersByEventIdsPageAsync(
+            eventIds, page, pageSize, cancellationToken);
+        var orderIds = orders.Select(order => order.Id).ToArray();
+        var itemsByOrder = await foodRepository.GetOrderItemsByOrderIdsAsync(
+            orderIds, cancellationToken);
+        return orders.Select(order => MapOrder(
+            order,
+            itemsByOrder.TryGetValue(order.Id, out var items)
+                ? items
+                : Array.Empty<FoodOrderItem>())).ToArray();
+    }
+
+    public async Task<IReadOnlyList<FoodOrderDto>> GetAllOrdersPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var orders = await foodRepository.GetAllOrdersPageAsync(
+            page, pageSize, cancellationToken);
+        var orderIds = orders.Select(order => order.Id).ToArray();
+        var itemsByOrder = await foodRepository.GetOrderItemsByOrderIdsAsync(
+            orderIds, cancellationToken);
+        return orders.Select(order => MapOrder(
+            order,
+            itemsByOrder.TryGetValue(order.Id, out var items)
+                ? items
+                : Array.Empty<FoodOrderItem>())).ToArray();
+    }
+
     public async Task<IReadOnlyList<FoodOrderStatusHistoryDto>>
         GetOrderStatusHistoryAsync(
             Guid customerUserId,
@@ -225,6 +262,34 @@ public sealed class FoodService(
         {
             throw new FoodOrderValidationException(
                 "Food stall does not belong to the selected event.");
+        }
+
+        if (request.BookingId is Guid bookingId)
+        {
+            if (bookingRepository is null)
+            {
+                throw new FoodOrderValidationException(
+                    "Booking validation is unavailable.");
+            }
+
+            var booking = await bookingRepository.GetByIdAsync(bookingId, cancellationToken);
+            if (booking is null || booking.CustomerUserId != customerUserId)
+            {
+                throw new FoodOrderValidationException(
+                    "The selected booking was not found for this customer.");
+            }
+
+            if (booking.EventId != request.EventId)
+            {
+                throw new FoodOrderValidationException(
+                    "The selected booking does not belong to this event.");
+            }
+
+            if (booking.Status is BookingStatus.Cancelled)
+            {
+                throw new FoodOrderValidationException(
+                    "Food cannot be ordered for a cancelled booking.");
+            }
         }
 
         var now = DateTime.UtcNow;

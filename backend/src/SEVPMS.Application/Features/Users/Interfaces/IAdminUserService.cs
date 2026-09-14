@@ -24,4 +24,8 @@ public interface IAdminUserService
         Guid userId,
         UpdateUserStatusRequest request,
         CancellationToken cancellationToken = default);
+
+    Task DeleteUserPermanentlyAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
 }

@@ -1,0 +1,2 @@
+import { Component } from '@angular/core';
+@Component({selector:'app-loading-grid',standalone:true,template:`<div class="nv-grid-cards" aria-label="Loading content">@for(i of items;track i){<div class="nv-card p-3"><div class="nv-skeleton h-40"></div><div class="nv-skeleton h-5 mt-4 w-3/4"></div><div class="nv-skeleton h-4 mt-3 w-1/2"></div><div class="nv-skeleton h-10 mt-5"></div></div>}</div>`}) export class LoadingGridComponent{items=[1,2,3,4];}

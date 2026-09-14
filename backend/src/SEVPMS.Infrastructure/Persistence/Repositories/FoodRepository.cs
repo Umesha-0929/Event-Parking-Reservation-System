@@ -128,6 +128,41 @@ public sealed class FoodRepository(
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<FoodOrder>> GetOrdersByEventIdsPageAsync(
+        IReadOnlyCollection<Guid> eventIds,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        if (eventIds.Count == 0)
+        {
+            return Array.Empty<FoodOrder>();
+        }
+
+        var (_, size, skip) = PagingRules.Normalize(page, pageSize);
+        return await dbContext.Set<FoodOrder>()
+            .AsNoTracking()
+            .Where(order => eventIds.Contains(order.EventId))
+            .OrderByDescending(order => order.CreatedAtUtc)
+            .Skip(skip)
+            .Take(size)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<FoodOrder>> GetAllOrdersPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var (_, size, skip) = PagingRules.Normalize(page, pageSize);
+        return await dbContext.Set<FoodOrder>()
+            .AsNoTracking()
+            .OrderByDescending(order => order.CreatedAtUtc)
+            .Skip(skip)
+            .Take(size)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<FoodOrderItem>>> GetOrderItemsByOrderIdsAsync(
         IReadOnlyCollection<Guid> foodOrderIds,
         CancellationToken cancellationToken = default)

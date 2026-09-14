@@ -341,6 +341,33 @@ public sealed class FoodControllerTests
             return Task.FromResult(Orders);
         }
 
+        public Task<IReadOnlyList<FoodOrderDto>>
+            GetOrdersByEventIdsPageAsync(
+                IReadOnlyCollection<Guid> eventIds,
+                int page,
+                int pageSize,
+                CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<FoodOrderDto> result = Orders
+                .Where(order => eventIds.Contains(order.EventId))
+                .Skip((Math.Max(page, 1) - 1) * Math.Clamp(pageSize, 1, 200))
+                .Take(Math.Clamp(pageSize, 1, 200))
+                .ToArray();
+            return Task.FromResult(result);
+        }
+
+        public Task<IReadOnlyList<FoodOrderDto>> GetAllOrdersPageAsync(
+            int page,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<FoodOrderDto> result = Orders
+                .Skip((Math.Max(page, 1) - 1) * Math.Clamp(pageSize, 1, 200))
+                .Take(Math.Clamp(pageSize, 1, 200))
+                .ToArray();
+            return Task.FromResult(result);
+        }
+
         public Task<IReadOnlyList<FoodOrderStatusHistoryDto>>
             GetOrderStatusHistoryAsync(
                 Guid customerUserId,

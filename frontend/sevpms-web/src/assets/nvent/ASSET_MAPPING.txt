@@ -1,0 +1,24 @@
+NVENT ASSET INTEGRATION
+
+All 73 supplied PNG files and all 4 supplied MP4 files are included inside this folder tree.
+The original numbered assets are preserved once in semantic folders based on their actual visual content.
+Optimized semantic .webp aliases are used by the Angular UI to keep normal page loads lighter.
+
+Key UI aliases:
+- videos/hero/home-hero.mp4
+- videos/events/event-showcase.mp4
+- videos/venue/venue-showcase.mp4
+- images/events/{concert,festival,sports,conference,theatre,family-event,wedding-event,event-default}.webp
+- images/venues/{venue-exterior,venue-hall,stage-setup,auditorium,conference-hall,wedding-hall}.webp
+- images/food/{restaurant-interior,event-catering,main-dishes,snacks,drinks,desserts}.webp
+- images/places/{beach,park,museum,viewpoint,romantic-restaurant,night-activity,adventure,cafe,places-default}.webp
+- images/parking/{parking-aerial,parking-layout,route-map}.webp
+- images/auth/{login-background,register-background,auth-background}.webp
+- images/profile/{profile-header,avatar-fallback}.webp
+- images/tickets/{ticket-pattern,ticket-background,event-thumbnail}.webp
+- seat-view/{front,side,rear,vip,360}/
+- 3d/icons/
+- 3d/facilities/
+- 3d/empty-states/
+
+Runtime priority remains backend/user-uploaded media first, Nvent defaults second.

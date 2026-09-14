@@ -2,6 +2,7 @@ using SEVPMS.Application.Common.Exceptions;
 using SEVPMS.Application.Features.Audit.Interfaces;
 using SEVPMS.Application.Features.Events.DTOs;
 using SEVPMS.Application.Features.Events.Interfaces;
+using SEVPMS.Application.Features.Seats.Interfaces;
 using SEVPMS.Application.Interfaces.Repositories;
 using SEVPMS.Domain.Entities.Events;
 using SEVPMS.Domain.Enums;
@@ -13,7 +14,8 @@ public sealed class EventService(
     IVenueRepository venueRepository,
     IVenueRentalRepository venueRentalRepository,
     IEventCategoryRepository? eventCategoryRepository = null,
-    IAuditLogService? auditLogService = null)
+    IAuditLogService? auditLogService = null,
+    ISeatingLayoutRepository? seatingLayoutRepository = null)
     : IEventService
 {
     public async Task<IReadOnlyList<EventResponse>> GetPublishedAsync(
@@ -230,6 +232,34 @@ public sealed class EventService(
         {
             throw new InvalidOperationException(
                 "An accepted venue rental covering the event time is required before publishing.");
+        }
+
+        if (seatingLayoutRepository is not null)
+        {
+            var layout = await seatingLayoutRepository
+                .GetPublishedLayoutByEventAsync(entity.Id, cancellationToken);
+
+            if (layout is null)
+            {
+                throw new InvalidOperationException(
+                    "A published seating layout is required before publishing the event.");
+            }
+
+            var seats = await seatingLayoutRepository
+                .GetSeatsAsync(entity.Id, cancellationToken);
+            var categories = await seatingLayoutRepository
+                .GetCategoriesAsync(layout.Id, cancellationToken);
+            var activeCategoryIds = categories
+                .Where(category => category.IsActive)
+                .Select(category => category.Id)
+                .ToHashSet();
+
+            if (seats.Count == 0 || activeCategoryIds.Count == 0 ||
+                seats.Any(seat => seat.SeatCategoryId is null || !activeCategoryIds.Contains(seat.SeatCategoryId.Value)))
+            {
+                throw new InvalidOperationException(
+                    "The published seating layout must contain seats with active price categories before publishing the event.");
+            }
         }
 
         if (eventCategoryRepository is not null)

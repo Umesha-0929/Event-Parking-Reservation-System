@@ -367,6 +367,38 @@ public sealed class FoodServiceTests
             return Task.FromResult(result);
         }
 
+        public Task<IReadOnlyList<FoodOrder>> GetOrdersByEventIdsPageAsync(
+            IReadOnlyCollection<Guid> eventIds,
+            int page,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+        {
+            var safePage = Math.Max(page, 1);
+            var safePageSize = Math.Clamp(pageSize, 1, 200);
+            IReadOnlyList<FoodOrder> result = Orders
+                .Where(order => eventIds.Contains(order.EventId))
+                .OrderByDescending(order => order.CreatedAtUtc)
+                .Skip((safePage - 1) * safePageSize)
+                .Take(safePageSize)
+                .ToArray();
+            return Task.FromResult(result);
+        }
+
+        public Task<IReadOnlyList<FoodOrder>> GetAllOrdersPageAsync(
+            int page,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+        {
+            var safePage = Math.Max(page, 1);
+            var safePageSize = Math.Clamp(pageSize, 1, 200);
+            IReadOnlyList<FoodOrder> result = Orders
+                .OrderByDescending(order => order.CreatedAtUtc)
+                .Skip((safePage - 1) * safePageSize)
+                .Take(safePageSize)
+                .ToArray();
+            return Task.FromResult(result);
+        }
+
         public Task<IReadOnlyList<FoodOrderItem>>
             GetOrderItemsAsync(
                 Guid foodOrderId,

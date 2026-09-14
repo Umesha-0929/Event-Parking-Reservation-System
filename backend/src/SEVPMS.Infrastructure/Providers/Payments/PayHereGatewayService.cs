@@ -14,7 +14,7 @@ public sealed class PayHereGatewayService(IConfiguration configuration) : IPayHe
     {
         var merchantId = Required("Payments:PayHere:MerchantId");
         var merchantSecret = Required("Payments:PayHere:MerchantSecret");
-        var returnUrl = Required("Payments:PayHere:ReturnUrl");
+        var returnUrl = AppendQueryParameter(Required("Payments:PayHere:ReturnUrl"), "paymentId", payment.Id.ToString());
         var cancelUrl = Required("Payments:PayHere:CancelUrl");
         var notifyUrl = Required("Payments:PayHere:NotifyUrl");
         var sandboxValue = configuration["Payments:PayHere:Sandbox"];
@@ -61,6 +61,12 @@ public sealed class PayHereGatewayService(IConfiguration configuration) : IPayHe
 
     public string HashNotificationPayload(PayHereNotifyRequest request)
         => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join("|", request.MerchantId, request.OrderId, request.PaymentId, request.PayHereAmount, request.PayHereCurrency, request.StatusCode))));
+
+    private static string AppendQueryParameter(string url, string key, string value)
+    {
+        var separator = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return $"{url}{separator}{Uri.EscapeDataString(key)}={Uri.EscapeDataString(value)}";
+    }
 
     private string Required(string key)
         => configuration[key] is { } value && !string.IsNullOrWhiteSpace(value)

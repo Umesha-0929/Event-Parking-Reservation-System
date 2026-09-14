@@ -18,6 +18,7 @@ public interface IUserRepository
     Task<RefreshToken?> GetByRefreshTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default);
     Task<PasswordResetToken?> GetPasswordResetTokenByHashAsync(string tokenHash, CancellationToken cancellationToken = default);
     Task AddAsync(User user, CancellationToken cancellationToken = default);
+    void Remove(User user);
     Task AddRefreshTokenAsync(RefreshToken refreshToken, CancellationToken cancellationToken = default);
     Task AddPasswordResetTokenAsync(PasswordResetToken token, CancellationToken cancellationToken = default);
     Task RevokeActiveRefreshTokensAsync(Guid userId, DateTime revokedAtUtc, CancellationToken cancellationToken = default);

@@ -21,6 +21,17 @@ public interface IFoodService
         Guid customerUserId,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<FoodOrderDto>> GetOrdersByEventIdsPageAsync(
+        IReadOnlyCollection<Guid> eventIds,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<FoodOrderDto>> GetAllOrdersPageAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
     async Task<IReadOnlyList<FoodOrderDto>> GetOrdersByCustomerPageAsync(
         Guid customerUserId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
