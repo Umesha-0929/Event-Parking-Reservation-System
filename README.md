@@ -1,29 +1,135 @@
-# SEVPMS / Nvent
+# 🎟️ Smart Event, Venue & Parking Management Platform
 
-Smart Event, Venue & Parking Management Platform implemented with Angular, ASP.NET Core Web API, Entity Framework Core, SQL Server and SignalR.
+A full-stack web application for managing events, venues, seat reservations, parking, bookings, payments, notifications and related services.
 
-## Repository structure
+The system is built using **Angular, ASP.NET Core Web API, Entity Framework Core, SQL Server and SignalR**.
 
-- `frontend/sevpms-web` - Angular customer, organizer, venue-owner and admin application.
-- `backend/src/SEVPMS.Api` - HTTP API, authentication, authorization, middleware and SignalR hosting.
-- `backend/src/SEVPMS.Application` - use cases, DTOs, validation and interfaces.
-- `backend/src/SEVPMS.Domain` - domain entities and enums.
-- `backend/src/SEVPMS.Infrastructure` - EF Core, repositories and external providers.
-- `backend/src/SEVPMS.Realtime` - realtime contracts and dispatching.
-- `backend/tests` - backend unit/integration tests.
+## 🚀 Key Features
 
-## Local validation
+- 🔐 User authentication and authorization
+- 🎫 Event management and booking
+- 💺 Seat reservation and seat management
+- 🅿️ Parking reservation
+- 🏢 Venue management
+- 💳 Payment and receipt management
+- 🔔 Notifications
+- 🎟️ Digital tickets and QR check-in
+- 📡 Real-time communication using SignalR
+- 👨‍💼 Admin and organizer management
 
-From the repository root run `VALIDATE_SEVPMS_FINAL.cmd`. It restores, builds and tests the backend, verifies/applies EF migrations, performs a clean frontend install, creates the Angular production build and runs frontend tests.
+## 🛠️ Tech Stack
 
-## Local application URLs
+### Frontend
+- Angular
+- TypeScript
+- HTML
+- CSS
 
-The development API is configured around `http://localhost:5090`. Angular development normally runs on `http://localhost:4200`. Production SSR can proxy `/api` and `/hubs` to the backend by setting `BACKEND_ORIGIN`.
+### Backend
+- ASP.NET Core Web API
+- C#
+- Entity Framework Core
+- SignalR
 
-## Configuration and secrets
+### Database
+- Microsoft SQL Server
 
-Do not store production credentials in source control. Configure SQL Server, JWT signing, SMTP, PayHere and ticket QR signing through environment-specific configuration, environment variables or user-secrets. Production startup validates security-sensitive configuration.
+### Development Tools
+- Git
+- GitHub
+- Swagger
+- Visual Studio / VS Code
 
-## Main platform journeys
+## 👨‍💻 My Contribution
 
-The application includes authentication/email verification, event and venue management, organizer-configured seating and seat views, booking/ticket/QR check-in, venue marketplace/rentals, parking, food/place services, payments/receipts, notifications and administrative workspaces.
+As a team member and team leader, I contributed to the development of the project.
+
+### Frontend Development
+- Developed and worked on the application's frontend pages.
+- Worked with Angular components and user interfaces.
+- Integrated frontend functionality with backend APIs.
+
+### Backend Testing
+- Participated in backend API testing.
+- Tested API functionality and application workflows.
+- Helped identify and verify issues during development.
+
+### Team Contribution
+- Contributed to overall project development and coordination.
+- Worked with the team to integrate different parts of the system.
+
+## 📂 Repository Structure
+
+```text
+frontend/
+└── sevpms-web/
+    └── Angular application
+
+backend/
+├── src/
+│   ├── SEVPMS.Api/
+│   ├── SEVPMS.Application/
+│   ├── SEVPMS.Domain/
+│   ├── SEVPMS.Infrastructure/
+│   └── SEVPMS.Realtime/
+│
+└── tests/
+    └── Backend tests
+```
+
+## 🔄 System Architecture
+
+```text
+Angular Frontend
+       ↓
+ASP.NET Core Web API
+       ↓
+Entity Framework Core
+       ↓
+SQL Server
+
+        ↘
+       SignalR
+        ↘
+ Real-time Communication
+```
+
+## ▶️ Running the Project
+
+### Backend
+
+The backend is built with ASP.NET Core and uses SQL Server for data storage.
+
+### Frontend
+
+The frontend is built with Angular and normally runs on:
+
+```text
+http://localhost:4200
+```
+
+The development API is configured around:
+
+```text
+http://localhost:5090
+```
+
+## 🔒 Configuration & Security
+
+Production credentials and sensitive configuration should not be committed to source control.
+
+Environment-specific configuration should be used for:
+
+- SQL Server connection strings
+- JWT signing keys
+- SMTP configuration
+- Payment provider credentials
+- QR/ticket signing configuration
+
+## 🎯 Project Goal
+
+The goal of this project is to provide a centralized platform for managing **events, venues, seat reservations, parking and related services** through a modern web application.
+
+---
+
+⭐ Developed as a team project with a focus on full-stack web application development.
